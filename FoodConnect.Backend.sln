@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
-VisualStudioVersion = 17.13.35825.156 d17.13
+VisualStudioVersion = 17.13.35825.156
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FoodConnect.Backend.API", "FoodConnect.Backend.API\FoodConnect.Backend.API.csproj", "{0117A572-7D52-4BD6-A0DF-B08AB1DA7099}"
 EndProject
@@ -10,6 +10,9 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FoodConnect.Backend.Infrastructure", "FoodConnect.Backend.Infrastructure\FoodConnect.Backend.Infrastructure.csproj", "{259DF454-768E-48BB-A112-EA06EC69BC23}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FoodConnect.Backend.Application", "FoodConnect.Backend.Application\FoodConnect.Backend.Application.csproj", "{91C36FA3-E923-4C2B-B11B-19523C69C712}"
+	ProjectSection(ProjectDependencies) = postProject
+		{2F6E0C5F-81D4-4B85-A855-36DFA3CC0ECF} = {2F6E0C5F-81D4-4B85-A855-36DFA3CC0ECF}
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
