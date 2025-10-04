@@ -48,7 +48,7 @@ namespace FoodConnect.Backend.Infrastructure.Authentication
             {
                 JwtId = securityToken.Id,
                 UserId = user.Id,
-                CreatedAt = DateTime.UtcNow,
+                CreatedAtUtc = DateTime.UtcNow,
                 ExpiresAtUtc = DateTime.UtcNow.AddDays(double.Parse(jwtSettings["RefreshTokenExpirationDays"])),
                 Token = GenerateRefreshTokenString()
             };
