@@ -1,7 +1,8 @@
-﻿using FoodConnect.Backend.API.Models;
+﻿using FoodConnect.Backend.Application.Commons.DTOs;
 using FoodConnect.Backend.Application.Features.Auth.Commands.RefreshToken;
 using FoodConnect.Backend.Application.Features.Auth.Commands.Register;
 using FoodConnect.Backend.Application.Features.Auth.Queries.Login;
+using FoodConnect.Backend.Domain.Enums;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
@@ -16,7 +17,7 @@ namespace FoodConnect.Backend.API.Controllers
         public async Task<IActionResult> Register(RegisterUserCommand command)
         {
             var result = await Mediator.Send(command);
-            return Ok(BaseResponse<object>.BuildSuccess(result, "Register success"));
+            return result != null ? (result.Success ? Ok(result) : BadRequest(result)) : BadRequest();
         }
 
         [HttpPost("login")]
@@ -24,9 +25,9 @@ namespace FoodConnect.Backend.API.Controllers
         {
             var result = await Mediator.Send(query);
 
-            SetRefreshTokenCookie(result.RefreshToken, result.RefreshTokenExpiresAtUtc);
+            SetRefreshTokenCookie(result.Data.RefreshToken, result.Data.RefreshTokenExpiresAtUtc);
 
-            return Ok(BaseResponse<object>.BuildSuccess(result, "Login success"));
+            return result != null ? (result.Success ? Ok(result) : BadRequest(result)) : BadRequest();
         }
 
         [HttpPost("refresh")]
@@ -36,9 +37,9 @@ namespace FoodConnect.Backend.API.Controllers
 
             var result = await Mediator.Send(command);
 
-            SetRefreshTokenCookie(result.RefreshToken, result.RefreshTokenExpiresAtUtc);
+            SetRefreshTokenCookie(result.Data.RefreshToken, result.Data.RefreshTokenExpiresAtUtc);
 
-            return Ok(BaseResponse<object>.BuildSuccess(result, "Renew token success"));
+            return result != null ? (result.Success ? Ok(result) : BadRequest(result)) : BadRequest();
         }
 
         [HttpGet("me")]
@@ -47,14 +48,14 @@ namespace FoodConnect.Backend.API.Controllers
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             var email = User.FindFirstValue(ClaimTypes.Email);
-            var roles = User.FindAll(ClaimTypes.Role).Select(r => r.Value).ToList();
-            var result = new
+            var fullName = User.FindFirstValue(ClaimTypes.Name);
+            var response = new
             {
                 Id = userId,
                 Email = email,
-                Roles = roles
+                FullName = fullName
             };
-            return Ok(BaseResponse<object>.BuildSuccess(result, "User info retrieved successfully"));
+            return Ok(response);
         }
 
         #region Private methods

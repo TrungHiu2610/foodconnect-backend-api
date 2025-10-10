@@ -2,6 +2,8 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using System.Reflection;
+using FoodConnect.Backend.Application.Commons.Interfaces;
+using FoodConnect.Backend.Infrastructure.Services;
 
 namespace FoodConnect.Backend.Infrastructure.Persistence
 {
@@ -25,7 +27,7 @@ namespace FoodConnect.Backend.Infrastructure.Persistence
 
             optionsBuilder.UseNpgsql(connectionString);
 
-            return new AppDbContext(optionsBuilder.Options);
+            return new AppDbContext(optionsBuilder.Options, currentUserService:null);
         }
     }
 }

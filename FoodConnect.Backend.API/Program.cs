@@ -1,17 +1,25 @@
-﻿using FluentValidation;
+﻿using Amazon.S3;
+using Amazon;
+using FluentValidation;
 using FoodConnect.Backend.API.Middlewares;
 using FoodConnect.Backend.Application.Commons.Behaviors;
+using FoodConnect.Backend.Application.Commons.Interfaces;
+using FoodConnect.Backend.Application.Commons.Options;
 using FoodConnect.Backend.Application.Interfaces;
 using FoodConnect.Backend.Application.Interfaces.IRepositories;
 using FoodConnect.Backend.Infrastructure.Authentication;
 using FoodConnect.Backend.Infrastructure.Persistence;
 using FoodConnect.Backend.Infrastructure.Repositories;
+using FoodConnect.Backend.Infrastructure.Services;
 using MediatR;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using System.Reflection;
 using System.Text;
+using Microsoft.Extensions.DependencyInjection;
+using Amazon.Runtime;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -51,29 +59,53 @@ services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ValidateAudience = true,
             ValidateLifetime = true,
             ValidateIssuerSigningKey = true,
-            ValidIssuer = builder.Configuration["JwtSettings:Issuer"],
-            ValidAudience = builder.Configuration["JwtSettings:Audience"],
+            ValidIssuer = configuration["JwtSettings:Issuer"],
+            ValidAudience = configuration["JwtSettings:Audience"],
             IssuerSigningKey = new SymmetricSecurityKey(
-                Encoding.UTF8.GetBytes(builder.Configuration["JwtSettings:Secret"])),
+                Encoding.UTF8.GetBytes(configuration["JwtSettings:Secret"])),
             ClockSkew = TimeSpan.Zero
         };
     });
 
-// Repositories  
+// AWS S3
+services.Configure<AwsOptions>(configuration.GetSection("AWS"));
+var awsConfig = configuration.GetSection("AWS").Get<AwsOptions>();
+
+var credentials = new BasicAWSCredentials(awsConfig.AccessKey, awsConfig.SecretKey);
+var region = RegionEndpoint.GetBySystemName(awsConfig.Region);
+var awsOptions = new Amazon.Extensions.NETCore.Setup.AWSOptions
+{
+    Credentials = credentials,
+    Region = region
+};
+
+services.AddDefaultAWSOptions(awsOptions);
+services.AddAWSService<IAmazonS3>();
+services.AddScoped<IFileStorageService, AwsS3FileStorageService>();
+
+// Repositories 
 services.AddScoped(typeof(IBaseRepository<>), typeof(BaseRepository<>));
 services.AddScoped<IUserRepository, UserRepository>();
 services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
+services.AddScoped<IProductRepository, ProductRepository>();
+services.AddScoped<IShopRepository, ShopRepository>();
+services.AddScoped<ICategoryRepository, CategoryRepository>();
 
 services.AddScoped<IUnitOfWork, UnitOfWork>();
 
 // Application Services  
 services.AddSingleton<IJwtTokenGenerator, JwtTokenGenerator>();
+services.AddHttpContextAccessor();
+services.AddScoped<ICurrentUserService, CurrentUserService>();
 
 // MediatR  
 services.AddMediatR(cfg =>
    cfg.RegisterServicesFromAssembly(Assembly.Load("FoodConnect.Backend.Application")));
 services.AddTransient(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
 services.AddValidatorsFromAssembly(Assembly.Load("FoodConnect.Backend.Application"));
+
+// Automapper IMapperConfigurationExpression
+services.AddAutoMapper(cfg => { }, typeof(Program).Assembly, Assembly.Load("FoodConnect.Backend.Application"));
 
 services.AddControllers();
 

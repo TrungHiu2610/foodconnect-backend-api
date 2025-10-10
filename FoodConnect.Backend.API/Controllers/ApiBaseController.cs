@@ -1,4 +1,5 @@
-﻿using MediatR;
+﻿using FoodConnect.Backend.Application.Commons.Interfaces;
+using MediatR;
 using Microsoft.AspNetCore.Mvc;
 
 namespace FoodConnect.Backend.API.Controllers

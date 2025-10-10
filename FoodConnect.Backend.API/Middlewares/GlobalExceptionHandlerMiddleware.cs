@@ -1,4 +1,4 @@
-﻿using FoodConnect.Backend.API.Models;
+﻿using FoodConnect.Backend.Application.Commons.DTOs.Responses;
 using FoodConnect.Backend.Application.Commons.Exceptions;
 using System.Net;
 using System.Text.Json;
@@ -32,7 +32,7 @@ namespace FoodConnect.Backend.API.Middlewares
         {
             var actualException = exception.InnerException ?? exception;
             var statusCode = HttpStatusCode.InternalServerError;
-            BaseResponse<object> response;
+            var response = new BaseResponse<object>();
 
             switch (actualException)
             {
@@ -40,22 +40,22 @@ namespace FoodConnect.Backend.API.Middlewares
                     statusCode = HttpStatusCode.BadRequest; 
 
                     var validationErrors = validationException.Errors.SelectMany(kvp => kvp.Value).ToList();
-                    response = BaseResponse<object>.BuildFail("One or more validation errors occurred.", validationErrors);
+                    response = response.BuildFail("One or more validation errors occurred.", validationErrors);
                     break;
 
                 case BadRequestException badRequestException:
                     statusCode = HttpStatusCode.BadRequest; // 400
-                    response = BaseResponse<object>.BuildFail(badRequestException.Message);
+                    response = response.BuildFail(badRequestException.Message);
                     break;
 
                 case NotFoundException notFoundException:
                     statusCode = HttpStatusCode.NotFound; // 404
-                    response = BaseResponse<object>.BuildFail(notFoundException.Message);
+                    response = response.BuildFail(notFoundException.Message);
                     break;
 
                 default:
                     _logger.LogError(exception, "An unhandled exception has occurred.");
-                    response = BaseResponse<object>.BuildFail("An internal server error has occurred. Please try again later.");
+                    response = response.BuildFail("An internal server error has occurred. Please try again later.");
                     break;
             }
 

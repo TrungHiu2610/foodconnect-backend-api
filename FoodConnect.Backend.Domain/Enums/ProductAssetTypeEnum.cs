@@ -6,10 +6,9 @@ using System.Threading.Tasks;
 
 namespace FoodConnect.Backend.Domain.Enums
 {
-    public enum UserStatus
+    public enum ProductAssetTypeEnum
     {
-        Pending = 0,
-        Active = 1,
-        Banned = 2
+        Image,
+        Video 
     }
 }

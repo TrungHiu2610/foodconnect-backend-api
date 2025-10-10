@@ -1,13 +1,13 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using Microsoft.EntityFrameworkCore.Storage;
 
 namespace FoodConnect.Backend.Application.Interfaces
 {
     public interface IUnitOfWork
     {
+        // begin transaction
+        Task<IDbContextTransaction> BeginTransactionAsync();
+        Task CommitTransactionAsync(IDbContextTransaction transaction);
+        Task RollbackTransactionAsync(IDbContextTransaction transaction);
         Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
     }
 }

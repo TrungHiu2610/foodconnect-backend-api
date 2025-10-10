@@ -18,18 +18,22 @@ namespace FoodConnect.Backend.Infrastructure.Authentication
         {
             _configuration = configuration;
         }
-        public (string accessToken, RefreshToken refreshToken) GenerateTokens(User user, string role)
+        public (string accessToken, RefreshToken refreshToken) GenerateTokens(User user, List<string> roleNames)
         {
             var jwtSettings = _configuration.GetSection("JwtSettings");
             var key = Encoding.ASCII.GetBytes(jwtSettings["Secret"]);
 
             var claims = new List<Claim>
-        {
+            {
             new(ClaimTypes.NameIdentifier, user.Id.ToString()),
             new(ClaimTypes.Email, user.Email),
-            new(Microsoft.IdentityModel.JsonWebTokens.JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()), 
-            new(ClaimTypes.Role, role)
-        };
+            new(Microsoft.IdentityModel.JsonWebTokens.JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
+            };
+
+            foreach (var role in roleNames)
+            {
+                claims.Add(new Claim(ClaimTypes.Role, role));
+            }
 
             var tokenDescriptor = new SecurityTokenDescriptor
             {

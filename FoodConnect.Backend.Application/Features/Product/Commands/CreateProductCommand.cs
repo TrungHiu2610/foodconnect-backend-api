@@ -1,0 +1,19 @@
+﻿using FoodConnect.Backend.Application.Commons.DTOs;
+using FoodConnect.Backend.Application.Commons.DTOs.Responses;
+using FoodConnect.Backend.Domain.Enums;
+using MediatR;
+
+namespace FoodConnect.Backend.Application.Features.Product.Commands
+{
+    public class CreateProductCommand : IRequest<BaseResponse<CreateProductResponse>>
+    {
+        public string Name { get; set; }
+        public string? Description { get; set; }
+        public decimal Price { get; set; }
+        public string Unit { get; set; }
+        public string Status { get; set; } = nameof(ProductStatusEnum.Draft);
+        public Guid CategoryId { get; set; }
+
+        public List<ProductAssetDto>? ProductAssets { get; set; }
+    }
+}

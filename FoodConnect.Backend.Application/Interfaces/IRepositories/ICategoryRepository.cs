@@ -1,0 +1,17 @@
+﻿using FoodConnect.Backend.Application.Commons.DTOs.Responses;
+using FoodConnect.Backend.Domain.Entities;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace FoodConnect.Backend.Application.Interfaces.IRepositories
+{
+    public interface ICategoryRepository : IBaseRepository<Category>
+    {
+        Task<GetListCategoryResponse> GetListCategoryResponseAsync();
+        //get cate by id
+
+    }
+}
