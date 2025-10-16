@@ -231,26 +231,5 @@ namespace FoodConnect.Backend.Application.Features.Product.Commands
                 return result.BuildFail("An error occurred while updating the product: " + ex.Message);
             }
         }
-        private static void PrintTrackedEntities(DbContext context)
-        {
-            var entries = context.ChangeTracker.Entries()
-                .Select(e => new
-                {
-                    Entity = e.Entity.GetType().Name,
-                    State = e.State.ToString(),
-                    Values = string.Join(", ",
-                        e.CurrentValues.Properties.Select(p => $"{p.Name}={e.CurrentValues[p]}"))
-                })
-                .ToList();
-
-            Console.WriteLine("Tracked Entities:");
-            foreach (var entry in entries)
-            {
-                Console.WriteLine($"  - {entry.Entity} [{entry.State}]");
-                Console.WriteLine($"    {entry.Values}");
-            }
-            Console.WriteLine();
-        }
-
     }
 }

@@ -12,22 +12,21 @@ namespace FoodConnect.Backend.Infrastructure.Repositories
         public CategoryRepository(AppDbContext context, IMapper mapper) : base(context, mapper)
         {
         }
-
-        public async Task<GetListCategoryResponse> GetListCategoryResponseAsync()
+        
+        public override async Task<IEnumerable<Category>> GetAllAsync()
         {
-            var categories = await GetAllAsync();
-            if (categories == null || !categories.Any())
-            {
-                return new GetListCategoryResponse
-                {
-                    Categories = new List<GetListCategoryDetail>()
-                };
-            }
-            var response = new GetListCategoryResponse
-            {
-                Categories = _mapper.Map<List<GetListCategoryDetail>>(categories)
-            };
-            return response;
+            return await _context.Categories
+                .Include(c => c.Parent)
+                .Include(c => c.Products)
+                .ToListAsync();
+        }
+        public async Task<IEnumerable<Category>> GetActiveCategoriesAsync()
+        {
+            return await _context.Categories
+                .AsNoTracking()
+                .Where(c => c.IsActive) 
+                .Include(c => c.Parent) 
+                .ToListAsync();
         }
     }
 }

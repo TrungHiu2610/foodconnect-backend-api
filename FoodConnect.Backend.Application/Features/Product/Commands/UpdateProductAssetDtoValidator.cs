@@ -8,9 +8,9 @@ using System.Threading.Tasks;
 
 namespace FoodConnect.Backend.Application.Features.Product.Commands
 {
-    public class ProductAssetUpdateDtoValidator : AbstractValidator<ProductAssetUpdateDto>
+    public class UpdateProductAssetDtoValidator : AbstractValidator<ProductAssetUpdateDto>
     {
-        public ProductAssetUpdateDtoValidator() 
+        public UpdateProductAssetDtoValidator() 
         {
             RuleFor(x => x.AssetDescription)
                 .MaximumLength(500).WithMessage("Asset description must not exceed 500 characters.");

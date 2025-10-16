@@ -19,12 +19,12 @@ namespace FoodConnect.Backend.Application.Features.Product.Commands
 
             When(x => x.NewProductAssets != null && x.NewProductAssets.Any(), () =>
             {
-                RuleForEach(x => x.NewProductAssets).SetValidator(new ProductAssetCreateDtoValidator());
+                RuleForEach(x => x.NewProductAssets).SetValidator(new CreateProductAssetDtoValidator());
             });
 
             When(x => x.UpdateProductAssets != null && x.UpdateProductAssets.Any(), () =>
             {
-                RuleForEach(x => x.UpdateProductAssets).SetValidator(new ProductAssetUpdateDtoValidator());
+                RuleForEach(x => x.UpdateProductAssets).SetValidator(new UpdateProductAssetDtoValidator());
             });
         }
     }

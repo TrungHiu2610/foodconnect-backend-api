@@ -10,6 +10,6 @@ namespace FoodConnect.Backend.Application.Interfaces.IRepositories
 {
     public interface ICategoryRepository : IBaseRepository<Category>
     {
-        Task<GetListCategoryResponse> GetListCategoryResponseAsync();
+        Task<IEnumerable<Category>> GetActiveCategoriesAsync();
     }
 }

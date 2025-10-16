@@ -3,9 +3,9 @@ using FoodConnect.Backend.Application.Commons.DTOs;
 
 namespace FoodConnect.Backend.Application.Features.Product.Commands
 {
-    public class ProductAssetCreateDtoValidator : AbstractValidator<ProductAssetCreateDto>
+    public class CreateProductAssetDtoValidator : AbstractValidator<ProductAssetCreateDto>
     {
-        public ProductAssetCreateDtoValidator()
+        public CreateProductAssetDtoValidator()
         {
             When(x => x.File != null, () =>
             {

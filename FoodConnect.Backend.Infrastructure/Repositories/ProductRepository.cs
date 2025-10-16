@@ -16,6 +16,18 @@ namespace FoodConnect.Backend.Infrastructure.Repositories
             _mapper = mapper;
         }
 
+        public async Task<Product?> GetByIdAsync(Guid id)
+        {
+            return await _context.Products
+                .Include(p=>p.ProductAssets)
+                .Include(p => p.Category)
+                .FirstOrDefaultAsync(p=>p.Id == id);
+        }
+        public IQueryable<Product> GetProductsAsQueryable()
+        {
+            return _context.Products.AsQueryable();
+        }
+
         public async Task<Product?> GetProductWithAssetsAsync(Guid id, bool tracking = true)
         {
             var query = _context.Products
@@ -27,32 +39,5 @@ namespace FoodConnect.Backend.Infrastructure.Repositories
             }
             return await query.FirstOrDefaultAsync(p => p.Id == id);
         }
-
-        public async Task<GetListProductResponse> GetListProductResponseAsync()
-        {
-            var products = await GetListProductsAsync();
-            if(products == null || !products.Any())
-            {
-                return new GetListProductResponse
-                {
-                    Products = new List<GetListProductDetail>()
-                };
-            }
-            var response = new GetListProductResponse
-            {
-                Products = _mapper.Map<List<GetListProductDetail>>(products)
-            };
-
-            return response;
-        }
-        public async Task<IEnumerable<Product>> GetListProductsAsync()
-        {
-            return await _context.Products
-                .AsNoTracking()
-                .Include(p => p.Category)
-                .Include(p => p.ProductAssets)
-                .Include(p => p.ProductDailyAvailabilities)
-                .ToListAsync();
-        }   
     }
 }

@@ -32,15 +32,22 @@ namespace FoodConnect.Backend.Application.Commons.Behaviors
                 .ForMember(dest => dest.Product, opt => opt.Ignore())
                 .ReverseMap();
 
-            CreateMap<Product, GetListProductDetail>()
+            CreateMap<Product, GetProductDetailResponse>()
                 .ForMember(dest => dest.CategoryName,
                            opt => opt.MapFrom(src => src.Category.Name))
                 .ForMember(dest => dest.Status,
                            opt => opt.MapFrom(src => nameof(src.Status)))
                 .ForMember(dest => dest.ProductAssets,
-                           opt => opt.MapFrom(src => src.ProductAssets))
-                .ForMember(dest => dest.ProductDailyAvailabilities,
-                           opt => opt.MapFrom(src => src.ProductDailyAvailabilities));
+                           opt => opt.MapFrom(src => src.ProductAssets));
+                //.ForMember(dest => dest.ProductDailyAvailabilities,
+                //           opt => opt.MapFrom(src => src.ProductDailyAvailabilities));
+
+            CreateMap<Product, GetListProductItemResponse>()
+                .ForMember(dest => dest.ThumbnailUrl, 
+                opt => opt.MapFrom(src => (src.ProductAssets != null && src.ProductAssets.Any())
+                           ? src.ProductAssets.FirstOrDefault(a => a.IsThumbnail).AssetUrl ?? src.ProductAssets.FirstOrDefault().AssetUrl
+                           : null
+                ));
 
             // update product
             CreateMap<UpdateProductCommand, Product>()
@@ -58,9 +65,7 @@ namespace FoodConnect.Backend.Application.Commons.Behaviors
             #endregion
 
             // category mappings
-            CreateMap<Category, GetListCategoryDetail>()
-                .ForMember(dest => dest.DeliveryType,
-                    opt => opt.MapFrom(src => nameof(src.DeliveryType)))
+            CreateMap<Category, GetListCategoryItem>()
                 .ForMember(dest => dest.ParentName,
                     opt => opt.MapFrom(src => src.Parent.Name));
         }

@@ -27,7 +27,7 @@ namespace FoodConnect.Backend.Application.Features.Product.Commands
 
             When(x => x.ProductAssets != null && x.ProductAssets.Any(), () =>
             {
-                RuleForEach(x => x.ProductAssets).SetValidator(new ProductAssetCreateDtoValidator());
+                RuleForEach(x => x.ProductAssets).SetValidator(new CreateProductAssetDtoValidator());
             });
         }
     }

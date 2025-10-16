@@ -2,7 +2,6 @@
 using FoodConnect.Backend.Application.Features.Product.Queries;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
 
 namespace FoodConnect.Backend.API.Controllers
 {
@@ -13,6 +12,14 @@ namespace FoodConnect.Backend.API.Controllers
         [HttpGet]
         public async Task<IActionResult> GetListProducts([FromQuery] GetListProductQuery query)
         {
+            var result = await Mediator.Send(query);
+            return result != null ? (result.Success ? Ok(result) : BadRequest(result)) : BadRequest();
+        }
+
+        [HttpGet("{id}")]
+        public async Task<IActionResult> GetProductById(Guid id,[FromQuery] GetProductDetailQuery query)
+        {
+            query.Id = id;
             var result = await Mediator.Send(query);
             return result != null ? (result.Success ? Ok(result) : BadRequest(result)) : BadRequest();
         }
