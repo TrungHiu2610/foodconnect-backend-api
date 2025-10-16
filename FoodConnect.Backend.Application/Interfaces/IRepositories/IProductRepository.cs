@@ -6,6 +6,7 @@ namespace FoodConnect.Backend.Application.Interfaces.IRepositories
     public interface IProductRepository : IBaseRepository<Product>
     {
         Task<Product?> GetByIdAsync(Guid id);
+        Task<IEnumerable<Product>> GetByIdsAsync(IEnumerable<Guid> ids);
         IQueryable<Product> GetProductsAsQueryable();
         Task<Product?> GetProductWithAssetsAsync(Guid id, bool tracking = true);
     }

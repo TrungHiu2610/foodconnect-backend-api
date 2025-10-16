@@ -2,16 +2,20 @@
 using FoodConnect.Backend.Application.Interfaces.IRepositories;
 using FoodConnect.Backend.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
+using static Amazon.S3.Util.S3EventNotification;
+using System.Linq.Expressions;
 
 namespace FoodConnect.Backend.Infrastructure.Repositories
 {
     public class BaseRepository<T> : IBaseRepository<T> where T : class
     {
         protected readonly AppDbContext _context;
+        private readonly DbSet<T> _dbSet;
         protected readonly IMapper? _mapper;
         public BaseRepository(AppDbContext context, IMapper? mapper = null)
         {
             _context = context;
+            _dbSet = _context.Set<T>();
             _mapper = mapper;
         }
 
@@ -29,7 +33,31 @@ namespace FoodConnect.Backend.Infrastructure.Repositories
             await _context.Set<T>().AddRangeAsync(entities);
         }
         public virtual async Task<IEnumerable<T>> GetAllAsync() => await _context.Set<T>().ToListAsync();
-        public async Task<T?> GetByIdAsync(Guid id) => await _context.Set<T>().FindAsync(id);
+        public async Task<T?> GetByIdAsync(Guid id,
+        params Expression<Func<T, object>>[] includes)
+        {
+            IQueryable<T> query = _dbSet;
+
+            foreach (var include in includes)
+            {
+                query = query.Include(include);
+            }
+
+            return await query.FirstOrDefaultAsync(e => EF.Property<Guid>(e, "Id") == id);
+        }
+        public async Task<T?> GetAsync(Expression<Func<T, bool>> predicate,
+        params Expression<Func<T, object>>[] includes)
+        {
+            IQueryable<T> query = _dbSet;
+
+            foreach (var include in includes)
+            {
+                query = query.Include(include);
+            }
+
+            return await query.FirstOrDefaultAsync(predicate);
+        }
+
         public void Remove(T entity)
         {
             _context.Set<T>().Entry(entity).State = EntityState.Deleted;

@@ -5,11 +5,12 @@ using MediatR;
 
 namespace FoodConnect.Backend.Application.Features.Product.Queries
 {
-    public class GetListProductQuery : IRequest<BaseResponse<PaginatedList<GetListProductResponse>>>
+    public class GetListProductQuery : IRequest<BaseResponse<PaginatedList<GetListProductItemResponse>>>
     {
         // Filtering
         public Guid? CategoryId { get; set; }
 
+        // Searching
         public string? TextSearch { get; set; }
 
         // Sorting

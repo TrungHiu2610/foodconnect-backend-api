@@ -12,20 +12,28 @@ using System.Threading.Tasks;
 using FoodConnect.Backend.Application.Commons.DTOs.Responses.Product;
 using Microsoft.EntityFrameworkCore;
 using FoodConnect.Backend.Application.Commons.Models;
+using System.Linq.Expressions;
 
 namespace FoodConnect.Backend.Application.Features.Product.Queries
 {
-    public class GetListProductQueryHandler : IRequestHandler<GetListProductQuery, BaseResponse<PaginatedList<GetListProductResponse>>>
+    public class GetListProductQueryHandler : IRequestHandler<GetListProductQuery, BaseResponse<PaginatedList<GetListProductItemResponse>>>
     {
         private readonly IProductRepository _productRepository;
         private readonly IMapper _mapper;
+        private static readonly Dictionary<string, Expression<Func<Domain.Entities.Product, object>>> _sortableColumns =
+            new Dictionary<string, Expression<Func<Domain.Entities.Product, object>>>(StringComparer.OrdinalIgnoreCase)
+            {
+                { "name", p => p.Name },
+                { "price", p => p.Price },
+                { "createdAt", p => p.CreatedAtUtc }
+            };
 
         public GetListProductQueryHandler(IProductRepository productRepository, IMapper mapper)
         {
             _productRepository = productRepository;
             _mapper = mapper;
         }
-        public async Task<BaseResponse<PaginatedList<GetListProductResponse>>> Handle(GetListProductQuery request, CancellationToken cancellationToken)
+        public async Task<BaseResponse<PaginatedList<GetListProductItemResponse>>> Handle(GetListProductQuery request, CancellationToken cancellationToken)
         {
             var result = new BaseResponse<PaginatedList<GetListProductResponse>>();
 
@@ -43,49 +51,48 @@ namespace FoodConnect.Backend.Application.Features.Product.Queries
             }
 
             // 3. sort
-            if(request.SortInfos!=null && request.SortInfos.Any())
+            if (request.SortInfos != null && request.SortInfos.Any())
             {
                 IOrderedQueryable<Domain.Entities.Product>? orderedQuery = null;
-                for (int i = 0; i < request.SortInfos.Count; i++)
+                foreach (var sortInfo in request.SortInfos)
                 {
-                    var sortInfo = request.SortInfos[i];
-                    if (i == 0)
+                    if (!_sortableColumns.TryGetValue(sortInfo.PropertyName, out var keySelector))
                     {
-                        orderedQuery = sortInfo.IsAscending
-                            ? query.OrderBy(e => EF.Property<object>(e, sortInfo.PropertyName))
-                            : query.OrderByDescending(e => EF.Property<object>(e, sortInfo.PropertyName));
+                        continue; 
                     }
-                    else
+
+                    if (orderedQuery == null) 
                     {
                         orderedQuery = sortInfo.IsAscending
-                            ? orderedQuery.ThenBy(e => EF.Property<object>(e, sortInfo.PropertyName))
-                            : orderedQuery.ThenByDescending(e => EF.Property<object>(e, sortInfo.PropertyName));
+                            ? query.OrderBy(keySelector)
+                            : query.OrderByDescending(keySelector);
+                    }
+                    else 
+                    {
+                        orderedQuery = sortInfo.IsAscending
+                            ? orderedQuery.ThenBy(keySelector)
+                            : orderedQuery.ThenByDescending(keySelector);
                     }
                 }
-                query = orderedQuery ?? query;
+                query = orderedQuery ?? query.OrderByDescending(p => p.CreatedAtUtc);
             }
             else
             {
-                // Default sort by CreatedAt descending
+                // Default sort
                 query = query.OrderByDescending(p => p.CreatedAtUtc);
-                //query = query.OrderByDescending(p => p.Rating);
             }
 
-            // 4. paginate
+            // 4. paginate 
             var totalItems = await query.CountAsync(cancellationToken);
             var products = await query
                 .Skip((request.PageNumber - 1) * request.PageSize)
                 .Take(request.PageSize)
                 .ToListAsync(cancellationToken);
 
-            var productResponses = _mapper.Map<List<GetListProductItemResponse>>(products);
-            var listProductResponses = new GetListProductResponse
-            {
-                Products = productResponses
-            };
-            var paginatedList = new PaginatedList<GetListProductResponse>(listProductResponses, totalItems, request.PageNumber, request.PageSize);
+            var productDtos = _mapper.Map<List<GetListProductItemResponse>>(products);
+            var paginatedList = new PaginatedList<GetListProductItemResponse>(productDtos, totalItems, request.PageNumber, request.PageSize);
 
-            return result.BuildSuccess(paginatedList, "Get list products successfully");
+            return new BaseResponse<PaginatedList<GetListProductItemResponse>>().BuildSuccess(paginatedList, "Get list products successfully");
         }
     }
 }

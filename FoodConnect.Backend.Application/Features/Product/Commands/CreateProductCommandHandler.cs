@@ -55,6 +55,11 @@ namespace FoodConnect.Backend.Application.Features.Product.Commands
                 return result.BuildFail("Shop is not active");
             }
 
+            if(shop.User.Id !=  userId)
+            {
+                return result.BuildFail("You do not have permission to create product for this shop");
+            }
+
             var category = await _categoryRepository.GetByIdAsync(request.CategoryId);
             if (category == null)
             {

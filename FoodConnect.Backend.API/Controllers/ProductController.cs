@@ -9,8 +9,8 @@ namespace FoodConnect.Backend.API.Controllers
     [ApiController]
     public class ProductController : ApiBaseController
     {
-        [HttpGet]
-        public async Task<IActionResult> GetListProducts([FromQuery] GetListProductQuery query)
+        [HttpPost]
+        public async Task<IActionResult> GetListProducts(GetListProductQuery query)
         {
             var result = await Mediator.Send(query);
             return result != null ? (result.Success ? Ok(result) : BadRequest(result)) : BadRequest();
@@ -35,6 +35,14 @@ namespace FoodConnect.Backend.API.Controllers
         [HttpPut]
         [Authorize(Roles = "Seller")]
         public async Task<IActionResult> UpdateProduct([FromForm] UpdateProductCommand command)
+        {
+            var result = await Mediator.Send(command);
+            return result != null ? (result.Success ? Ok(result) : BadRequest(result)) : BadRequest();
+        }
+
+        [HttpDelete]
+        [Authorize(Roles = "Seller")]
+        public async Task<IActionResult> DeleteProduct(DeleteProductCommand command)
         {
             var result = await Mediator.Send(command);
             return result != null ? (result.Success ? Ok(result) : BadRequest(result)) : BadRequest();

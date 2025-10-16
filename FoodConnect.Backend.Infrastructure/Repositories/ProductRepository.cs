@@ -23,6 +23,12 @@ namespace FoodConnect.Backend.Infrastructure.Repositories
                 .Include(p => p.Category)
                 .FirstOrDefaultAsync(p=>p.Id == id);
         }
+        public async Task<IEnumerable<Product>> GetByIdsAsync(IEnumerable<Guid> ids)
+        {
+            return await _context.Products
+                .Where(p => ids.Contains(p.Id))
+                .ToListAsync();
+        }
         public IQueryable<Product> GetProductsAsQueryable()
         {
             return _context.Products.AsQueryable();
