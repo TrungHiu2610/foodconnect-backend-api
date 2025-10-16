@@ -1,4 +1,5 @@
-﻿using FoodConnect.Backend.Domain.Entities;
+﻿using FoodConnect.Backend.Application.Commons.DTOs.Responses.Product;
+using FoodConnect.Backend.Domain.Entities;
 using FoodConnect.Backend.Domain.Enums;
 using Microsoft.AspNetCore.Http;
 using System;
@@ -7,7 +8,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace FoodConnect.Backend.Application.Commons.DTOs.Responses
+namespace FoodConnect.Backend.Application.Commons.DTOs.Responses.Category
 {
     public class GetListCategoryResponse 
     {

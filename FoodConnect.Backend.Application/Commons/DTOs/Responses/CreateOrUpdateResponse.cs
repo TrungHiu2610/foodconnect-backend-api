@@ -6,5 +6,9 @@ using System.Threading.Tasks;
 
 namespace FoodConnect.Backend.Application.Commons.DTOs.Responses
 {
-    public record CreateProductResponse(Guid ProductId);
+    public class CreateOrUpdateResponse
+    {
+        public Guid Id { get; set; }
+        public bool IsSuccess { get; set; }
+    }
 }

@@ -27,24 +27,7 @@ namespace FoodConnect.Backend.Application.Features.Product.Commands
 
             When(x => x.ProductAssets != null && x.ProductAssets.Any(), () =>
             {
-                RuleForEach(x => x.ProductAssets).SetValidator(new ProductAssetDtoValidator());
-            });
-        }
-    }
-
-    public class ProductAssetDtoValidator : AbstractValidator<ProductAssetDto>
-    {
-        public ProductAssetDtoValidator()
-        {
-            When(x => x.File != null, () =>
-            {
-                RuleFor(x => x.File.Length)
-                    .LessThanOrEqualTo(100 * 1024 * 1024) // 100MB
-                    .WithMessage("File size must be less than or equal to 100MB.");
-
-                RuleFor(x => x.File.ContentType.ToLower())
-                    .Must(ct => ct.StartsWith("image") || ct.StartsWith("video"))
-                    .WithMessage("File must be image or video.");
+                RuleForEach(x => x.ProductAssets).SetValidator(new ProductAssetCreateDtoValidator());
             });
         }
     }

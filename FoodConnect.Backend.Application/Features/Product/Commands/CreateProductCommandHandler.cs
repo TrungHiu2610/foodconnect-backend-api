@@ -1,6 +1,7 @@
 ﻿using AutoMapper;
 using FoodConnect.Backend.Application.Commons.Constants;
 using FoodConnect.Backend.Application.Commons.DTOs.Responses;
+using FoodConnect.Backend.Application.Commons.DTOs.Responses.Product;
 using FoodConnect.Backend.Application.Commons.Interfaces;
 using FoodConnect.Backend.Application.Interfaces;
 using FoodConnect.Backend.Application.Interfaces.IRepositories;
@@ -35,25 +36,29 @@ namespace FoodConnect.Backend.Application.Features.Product.Commands
         public async Task<BaseResponse<CreateProductResponse>> Handle(CreateProductCommand request, CancellationToken cancellationToken)
         {
             var result = new BaseResponse<CreateProductResponse>();
+            var response = new CreateProductResponse();
 
             var userId = _currentUserService.UserId;
             if (userId == null)
             {
                 return result.BuildFail("User not found");
             }
+
             var shop = await _shopRepository.GetByUserIdAsync((Guid)userId);
             if (shop == null)
             {
                 return result.BuildFail("Shop not found for this user");
             }
+
             if (shop.Status != ShopStatusEnum.Active)
             {
                 return result.BuildFail("Shop is not active");
             }
+
             var category = await _categoryRepository.GetByIdAsync(request.CategoryId);
             if (category == null)
             {
-                return result.BuildFail("Category not found or not active");
+                return result.BuildFail("Category not found");
             }
 
             var product = _mapper.Map<Domain.Entities.Product>(request);
@@ -67,10 +72,21 @@ namespace FoodConnect.Backend.Application.Features.Product.Commands
             {
                 if (request.ProductAssets != null)
                 {
+                    // validate thumbnail
+                    if (request.ProductAssets.All(a => !a.IsThumbnail))
+                    {
+                        return result.BuildFail("Thumbnail is required");
+                    }
+                    if (request.ProductAssets.Count(a => a.IsThumbnail) > 1)
+                    {
+                        return result.BuildFail("Only one thumbnail is allowed");
+                    }
+
                     foreach (var assetDto in request.ProductAssets)
                     {
                         if (assetDto.File != null)
                         {
+                            assetDto.AssetName = assetDto.File.FileName;
                             var prefix = (assetDto.File.ContentType.ToLower().StartsWith("image")) ? AWSDirectoryConstant.IMAGE_PRODUCT : AWSDirectoryConstant.VIDEO_PRODUCT;
                             prefix += $"/{shop.Id}/{product.Id}";
                             
@@ -87,7 +103,10 @@ namespace FoodConnect.Backend.Application.Features.Product.Commands
                 await _unitOfWork.SaveChangesAsync(cancellationToken);
                 await _unitOfWork.CommitTransactionAsync(transaction);
 
-                return result.BuildSuccess(new CreateProductResponse(product.Id), "Create product success");
+                response.Id = product.Id;
+                response.IsSuccess = true;
+
+                return result.BuildSuccess(response, "Create product success");
             }
             catch (Exception ex) 
             {

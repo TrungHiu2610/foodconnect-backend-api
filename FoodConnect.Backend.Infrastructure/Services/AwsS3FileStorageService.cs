@@ -79,5 +79,24 @@ namespace FoodConnect.Backend.Infrastructure.Services
                 throw new Exception($"DownloadFileAsync throw exception: {ex.Message}");
             }
         }
+
+        public async Task<bool> DeleteFilesAsync(List<string> fileKeys)
+        {
+            try
+            {
+                var objects = fileKeys.Select(key => new KeyVersion { Key = key }).ToList();
+                var request = new DeleteObjectsRequest
+                {
+                    BucketName = _options.BucketName,
+                    Objects = objects
+                };
+                var response = await _s3Client.DeleteObjectsAsync(request);
+                return response.HttpStatusCode == System.Net.HttpStatusCode.OK;
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"DeleteFilesAsync throw exception: {ex.Message}");
+            }
+        }
     }
 }

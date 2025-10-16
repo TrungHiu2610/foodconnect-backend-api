@@ -9,6 +9,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using FoodConnect.Backend.Application.Commons.DTOs.Responses.Product;
 
 namespace FoodConnect.Backend.Application.Features.Product.Queries
 {

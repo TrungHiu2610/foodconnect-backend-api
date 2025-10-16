@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace FoodConnect.Backend.Application.Commons.DTOs.Responses
+namespace FoodConnect.Backend.Application.Commons.DTOs.Responses.Product
 {
     public class GetListProductResponse
     {
@@ -21,7 +21,7 @@ namespace FoodConnect.Backend.Application.Commons.DTOs.Responses
         public string Status { get; set; }
         public Guid CategoryId { get; set; }
         public string CategoryName { get; set; }
-        public ICollection<ProductAssetDto> ProductAssets { get; set; } = new List<ProductAssetDto>();
+        public ICollection<ProductAssetGetDto> ProductAssets { get; set; } = new List<ProductAssetGetDto>();
         public ICollection<ProductDailyAvailability> ProductDailyAvailabilities { get; set; } = new List<ProductDailyAvailability>();
     }
 }

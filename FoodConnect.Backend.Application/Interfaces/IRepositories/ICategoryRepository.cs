@@ -1,4 +1,4 @@
-﻿using FoodConnect.Backend.Application.Commons.DTOs.Responses;
+﻿using FoodConnect.Backend.Application.Commons.DTOs.Responses.Category;
 using FoodConnect.Backend.Domain.Entities;
 using System;
 using System.Collections.Generic;
@@ -11,7 +11,5 @@ namespace FoodConnect.Backend.Application.Interfaces.IRepositories
     public interface ICategoryRepository : IBaseRepository<Category>
     {
         Task<GetListCategoryResponse> GetListCategoryResponseAsync();
-        //get cate by id
-
     }
 }

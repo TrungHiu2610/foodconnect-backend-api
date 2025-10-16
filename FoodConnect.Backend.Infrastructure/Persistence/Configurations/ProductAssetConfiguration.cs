@@ -15,6 +15,7 @@ namespace FoodConnect.Backend.Infrastructure.Persistence.Configurations
         public void Configure(EntityTypeBuilder<ProductAsset> builder)
         {
             builder.HasKey(pa => pa.Id);
+            builder.Property(pa => pa.Id).ValueGeneratedOnAdd();
             builder.Property(pa => pa.AssetName).HasMaxLength(255);
             builder.Property(pa => pa.AssetDescription).HasMaxLength(1000);
             builder.Property(pa => pa.AssetUrl).IsRequired().HasMaxLength(2048);

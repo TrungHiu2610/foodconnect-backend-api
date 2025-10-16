@@ -88,6 +88,7 @@ services.AddScoped(typeof(IBaseRepository<>), typeof(BaseRepository<>));
 services.AddScoped<IUserRepository, UserRepository>();
 services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
 services.AddScoped<IProductRepository, ProductRepository>();
+services.AddScoped<IProductAssetRepository, ProductAssetRepository>();
 services.AddScoped<IShopRepository, ShopRepository>();
 services.AddScoped<ICategoryRepository, CategoryRepository>();
 

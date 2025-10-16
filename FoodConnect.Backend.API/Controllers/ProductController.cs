@@ -24,5 +24,13 @@ namespace FoodConnect.Backend.API.Controllers
             var result = await Mediator.Send(command);
             return result != null ? (result.Success ? Ok(result) : BadRequest(result)) : BadRequest();
         }
+
+        [HttpPut]
+        [Authorize(Roles = "Seller")]
+        public async Task<IActionResult> UpdateProduct([FromForm] UpdateProductCommand command)
+        {
+            var result = await Mediator.Send(command);
+            return result != null ? (result.Success ? Ok(result) : BadRequest(result)) : BadRequest();
+        }
     }
 }

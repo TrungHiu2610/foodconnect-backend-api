@@ -4,9 +4,10 @@ using System.Text.Json.Serialization;
 
 namespace FoodConnect.Backend.Application.Commons.DTOs
 {
-    public class ProductAssetDto
+    public class ProductAssetCreateDto
     {
-        public string AssetName { get; set; }
+        [JsonIgnore]
+        public string? AssetName { get; set; }
         public string? AssetDescription { get; set; }
         [JsonIgnore]
         public string? AssetUrl { get; set; }

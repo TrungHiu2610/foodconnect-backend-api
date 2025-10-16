@@ -1,5 +1,5 @@
 ﻿using AutoMapper;
-using FoodConnect.Backend.Application.Commons.DTOs.Responses;
+using FoodConnect.Backend.Application.Commons.DTOs.Responses.Category;
 using FoodConnect.Backend.Application.Interfaces.IRepositories;
 using FoodConnect.Backend.Domain.Entities;
 using FoodConnect.Backend.Infrastructure.Persistence;

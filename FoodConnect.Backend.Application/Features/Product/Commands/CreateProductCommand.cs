@@ -1,5 +1,6 @@
 ﻿using FoodConnect.Backend.Application.Commons.DTOs;
 using FoodConnect.Backend.Application.Commons.DTOs.Responses;
+using FoodConnect.Backend.Application.Commons.DTOs.Responses.Product;
 using FoodConnect.Backend.Domain.Enums;
 using MediatR;
 
@@ -14,6 +15,6 @@ namespace FoodConnect.Backend.Application.Features.Product.Commands
         public string Status { get; set; } = nameof(ProductStatusEnum.Draft);
         public Guid CategoryId { get; set; }
 
-        public List<ProductAssetDto>? ProductAssets { get; set; }
+        public List<ProductAssetCreateDto>? ProductAssets { get; set; }
     }
 }
