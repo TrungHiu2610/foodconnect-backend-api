@@ -80,6 +80,11 @@ jobs:
             -e "ASPNETCORE_ENVIRONMENT=Development" \
             -e "ConnectionStrings__DefaultConnection=${{ secrets.CONNECTION_STRING }}" \
             -e "JwtSettings__Secret=${{ secrets.JWT_SECRET }}" \
+            -e "AWS__BucketName=${{ secrets.AWS_BUCKET_NAME }}" \
+            -e "AWS__AccessKey=${{ secrets.AWS_ACCESS_KEY }}" \
+            -e "AWS__SecretKey=${{ secrets.AWS_SECRET_KEY }}" \
+            -e "AWS__Region=${{ secrets.AWS_REGION }}" \
+            -e "AWS__PublicBaseUrl=${{ secrets.AWS_PUBLIC_BASE_URL }}" \
             --restart always \
             ${{ secrets.DOCKERHUB_USERNAME }}/foodconnect-backend:develop
 
