@@ -43,7 +43,7 @@ namespace FoodConnect.Backend.Application.Features.Auth.Commands.Register
             {
                 new UserRole { RoleId = RoleEnum.Buyer}
             };
-            var roleNames = roles.Select(ur => ur.Role.Name).ToList();
+            var roleNames = roles.Select(ur => ur.RoleId.ToString()).ToList();
             user.UserRoles = roles;
 
             await _userRepository.AddAsync(user);
