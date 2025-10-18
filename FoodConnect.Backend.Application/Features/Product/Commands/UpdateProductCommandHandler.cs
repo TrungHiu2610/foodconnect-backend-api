@@ -181,7 +181,7 @@ namespace FoodConnect.Backend.Application.Features.Product.Commands
                             var prefix = (assetDto.File.ContentType.ToLower().StartsWith("image")) ? AWSDirectoryConstant.IMAGE_PRODUCT : AWSDirectoryConstant.VIDEO_PRODUCT;
                             prefix += $"/{shop.Id}/{product.Id}";
 
-                            var url = await _fileStorageService.UploadFileAsync(assetDto.File, prefix, assetDto.AssetName);
+                            var url = await _fileStorageService.UploadFileAsync(assetDto.File, prefix);
                             uploadedFiles.Add(url);
                             assetDto.AssetUrl = url;
                         }

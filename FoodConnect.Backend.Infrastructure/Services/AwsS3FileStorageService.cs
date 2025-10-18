@@ -17,10 +17,11 @@ namespace FoodConnect.Backend.Infrastructure.Services
             _options = options.Value;
             _s3Client = new AmazonS3Client(_options.AccessKey,_options.SecretKey, Amazon.RegionEndpoint.GetBySystemName(_options.Region));
         }
-        public async Task<string> UploadFileAsync(IFormFile file, string? prefix, string fileName)
+        public async Task<string> UploadFileAsync(IFormFile file, string? prefix)
         {
             try
             {
+                var fileName = file.FileName;
                 var uniqueName = $"{Guid.NewGuid()}/{fileName}";
                 var fileKey = string.IsNullOrEmpty(prefix) ? uniqueName : $"{prefix}/{uniqueName}";
 

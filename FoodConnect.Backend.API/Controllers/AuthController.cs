@@ -9,18 +9,18 @@ using System.Security.Claims;
 
 namespace FoodConnect.Backend.API.Controllers
 {
-    [Route("api/[controller]")]
+    [Route("api/[controller]/[action]")]
     [ApiController]
     public class AuthController : ApiBaseController
     {
-        [HttpPost("register")]
+        [HttpPost]
         public async Task<IActionResult> Register(RegisterUserCommand command)
         {
             var result = await Mediator.Send(command);
             return result != null ? (result.Success ? Ok(result) : BadRequest(result)) : BadRequest();
         }
 
-        [HttpPost("login")]
+        [HttpPost]
         public async Task<IActionResult> Login(LoginUserQuery query)
         {
             var result = await Mediator.Send(query);
@@ -30,7 +30,7 @@ namespace FoodConnect.Backend.API.Controllers
             return result != null ? (result.Success ? Ok(result) : BadRequest(result)) : BadRequest();
         }
 
-        [HttpPost("refresh")]
+        [HttpPost]
         public async Task<IActionResult> Refresh(RefreshTokenCommand command)
         {
             command.RefreshToken = Request.Cookies["refreshToken"];
@@ -42,7 +42,7 @@ namespace FoodConnect.Backend.API.Controllers
             return result != null ? (result.Success ? Ok(result) : BadRequest(result)) : BadRequest();
         }
 
-        [HttpGet("me")]
+        [HttpGet]
         [Authorize]
         public IActionResult Me()
         {
