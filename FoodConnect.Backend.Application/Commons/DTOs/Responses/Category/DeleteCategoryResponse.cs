@@ -4,12 +4,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace FoodConnect.Backend.Domain.Enums
+namespace FoodConnect.Backend.Application.Commons.DTOs.Responses.Category
 {
-    public enum UserStatus
+    public class DeleteCategoryResponse : DeleteResponse
     {
-        Pending = 0,
-        Active = 1,
-        Banned = 2
     }
 }

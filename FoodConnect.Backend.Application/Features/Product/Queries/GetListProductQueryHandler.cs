@@ -1,0 +1,98 @@
+﻿using AutoMapper;
+using FoodConnect.Backend.Application.Commons.DTOs.Responses;
+using FoodConnect.Backend.Application.Commons.Interfaces;
+using FoodConnect.Backend.Application.Interfaces.IRepositories;
+using FoodConnect.Backend.Application.Interfaces;
+using MediatR;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using FoodConnect.Backend.Application.Commons.DTOs.Responses.Product;
+using Microsoft.EntityFrameworkCore;
+using FoodConnect.Backend.Application.Commons.Models;
+using System.Linq.Expressions;
+
+namespace FoodConnect.Backend.Application.Features.Product.Queries
+{
+    public class GetListProductQueryHandler : IRequestHandler<GetListProductQuery, BaseResponse<PaginatedList<GetListProductItemResponse>>>
+    {
+        private readonly IProductRepository _productRepository;
+        private readonly IMapper _mapper;
+        private static readonly Dictionary<string, Expression<Func<Domain.Entities.Product, object>>> _sortableColumns =
+            new Dictionary<string, Expression<Func<Domain.Entities.Product, object>>>(StringComparer.OrdinalIgnoreCase)
+            {
+                { "name", p => p.Name },
+                { "price", p => p.Price },
+                { "createdAt", p => p.CreatedAtUtc }
+            };
+
+        public GetListProductQueryHandler(IProductRepository productRepository, IMapper mapper)
+        {
+            _productRepository = productRepository;
+            _mapper = mapper;
+        }
+        public async Task<BaseResponse<PaginatedList<GetListProductItemResponse>>> Handle(GetListProductQuery request, CancellationToken cancellationToken)
+        {
+            var result = new BaseResponse<PaginatedList<GetListProductResponse>>();
+
+            var query = _productRepository.GetProductsAsQueryable().Include(p => p.ProductAssets).AsNoTracking();
+            // 1. filter
+            if (request.CategoryId != null)
+            {
+                query = query.Where(p => p.CategoryId == request.CategoryId);
+            }
+
+            // 2. search
+            if (!string.IsNullOrEmpty(request.TextSearch))
+            {
+                query = query.Where(p => p.Name.Contains(request.TextSearch) || p.Description.Contains(request.TextSearch));
+            }
+
+            // 3. sort
+            if (request.SortInfos != null && request.SortInfos.Any())
+            {
+                IOrderedQueryable<Domain.Entities.Product>? orderedQuery = null;
+                foreach (var sortInfo in request.SortInfos)
+                {
+                    if (!_sortableColumns.TryGetValue(sortInfo.PropertyName, out var keySelector))
+                    {
+                        continue; 
+                    }
+
+                    if (orderedQuery == null) 
+                    {
+                        orderedQuery = sortInfo.IsAscending
+                            ? query.OrderBy(keySelector)
+                            : query.OrderByDescending(keySelector);
+                    }
+                    else 
+                    {
+                        orderedQuery = sortInfo.IsAscending
+                            ? orderedQuery.ThenBy(keySelector)
+                            : orderedQuery.ThenByDescending(keySelector);
+                    }
+                }
+                query = orderedQuery ?? query.OrderByDescending(p => p.CreatedAtUtc);
+            }
+            else
+            {
+                // Default sort
+                query = query.OrderByDescending(p => p.CreatedAtUtc);
+            }
+
+            // 4. paginate 
+            var totalItems = await query.CountAsync(cancellationToken);
+            var products = await query
+                .Skip((request.PageNumber - 1) * request.PageSize)
+                .Take(request.PageSize)
+                .ToListAsync(cancellationToken);
+
+            var productDtos = _mapper.Map<List<GetListProductItemResponse>>(products);
+            var paginatedList = new PaginatedList<GetListProductItemResponse>(productDtos, totalItems, request.PageNumber, request.PageSize);
+
+            return new BaseResponse<PaginatedList<GetListProductItemResponse>>().BuildSuccess(paginatedList, "Get list products successfully");
+        }
+    }
+}

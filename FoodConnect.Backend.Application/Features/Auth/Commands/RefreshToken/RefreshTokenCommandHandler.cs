@@ -1,4 +1,4 @@
-﻿using FoodConnect.Backend.Application.Commons.DTOs;
+﻿using FoodConnect.Backend.Application.Commons.DTOs.Responses;
 using FoodConnect.Backend.Application.Commons.Exceptions;
 using FoodConnect.Backend.Application.Interfaces;
 using FoodConnect.Backend.Application.Interfaces.IRepositories;
@@ -12,7 +12,7 @@ using System.Text;
 
 namespace FoodConnect.Backend.Application.Features.Auth.Commands.RefreshToken
 {
-    public class RefreshTokenCommandHandler : IRequestHandler<RefreshTokenCommand, AuthResponseDto>
+    public class RefreshTokenCommandHandler : IRequestHandler<RefreshTokenCommand, BaseResponse<AuthResponse>>
     {
         private readonly IUserRepository _userRepository;
         private readonly IRefreshTokenRepository _refreshTokenRepository;
@@ -30,11 +30,12 @@ namespace FoodConnect.Backend.Application.Features.Auth.Commands.RefreshToken
             _jwtTokenGenerator = jwtTokenGenerator;
             _configuration = configuration;
         }
-        public async Task<AuthResponseDto> Handle(RefreshTokenCommand request, CancellationToken cancellationToken)
+        public async Task<BaseResponse<AuthResponse>> Handle(RefreshTokenCommand request, CancellationToken cancellationToken)
         {
+            var result = new BaseResponse<AuthResponse>();
             if (string.IsNullOrEmpty(request.ExpiredAccessToken) || string.IsNullOrEmpty(request.RefreshToken))
             {
-                throw new ArgumentException("Access token and refresh token must be provided.");
+                return result.BuildFail("Access token and refresh token must be provided.");
             }
 
             var principal = GetPrincipalFromExpiredToken(request.ExpiredAccessToken);
@@ -47,34 +48,37 @@ namespace FoodConnect.Backend.Application.Features.Auth.Commands.RefreshToken
                 storedRefreshToken.ExpiresAtUtc < DateTime.UtcNow ||
                 storedRefreshToken.JwtId != principal.FindFirst(Microsoft.IdentityModel.JsonWebTokens.JwtRegisteredClaimNames.Jti).Value)
             {
-                throw new BadRequestException("Invalid refresh token.");
+                return result.BuildFail("Invalid refresh token.");
             }
 
             if (storedRefreshToken.IsRevoked)
             {
                 await RevokeAllUserTokens(userId, cancellationToken);
-                throw new BadRequestException("This refresh token has been revoked.");
+                return result.BuildFail("This refresh token has been revoked. All sessions have been logged out as a security precaution.");
             }
 
             if (storedRefreshToken.IsUsed)
             {
                 await RevokeAllUserTokens(userId, cancellationToken);
-                throw new BadRequestException("This refresh token has already been used. All sessions have been logged out as a security precaution.");
+                return result.BuildFail("This refresh token has already been used. All sessions have been logged out as a security precaution.");
             }
 
             storedRefreshToken.IsUsed = true;
             _refreshTokenRepository.Update(storedRefreshToken);
 
             var user = await _userRepository.GetByIdAsync(userId);
-            var role = principal.FindFirst(ClaimTypes.Role).Value;
+            var roleNames = principal.Claims
+                        .Where(c => c.Type == ClaimTypes.Role)
+                        .Select(c => c.Value)
+                        .ToList();
 
-            var (newAccessToken, newRefreshToken) = _jwtTokenGenerator.GenerateTokens(user, role);
+            var (newAccessToken, newRefreshToken) = _jwtTokenGenerator.GenerateTokens(user, roleNames);
 
             await _refreshTokenRepository.AddAsync(newRefreshToken);
             await _unitOfWork.SaveChangesAsync(cancellationToken);
 
-            var authResult = new AuthResponseDto(user.Id, user.Email, role, newAccessToken, newRefreshToken.Token, newRefreshToken.ExpiresAtUtc);
-            return authResult;
+            var authResult = new AuthResponse(user.Id, user.Email, roleNames, newAccessToken, newRefreshToken.Token, newRefreshToken.ExpiresAtUtc);
+            return result.BuildSuccess(authResult,"Renew token success");
         }
 
         private async Task RevokeAllUserTokens(Guid userId, CancellationToken cancellationToken)

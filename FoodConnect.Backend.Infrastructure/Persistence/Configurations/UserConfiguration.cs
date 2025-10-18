@@ -1,4 +1,5 @@
 ﻿using FoodConnect.Backend.Domain.Entities;
+using FoodConnect.Backend.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using System;
@@ -18,7 +19,7 @@ namespace FoodConnect.Backend.Infrastructure.Persistence.Configurations
             builder.Property(u => u.FullName).IsRequired().HasMaxLength(100);
 
             builder.Property(u => u.Email).IsRequired().HasMaxLength(255);
-            builder.HasIndex(u => u.Email).IsUnique(); 
+            builder.HasIndex(u => u.Email).IsUnique();
 
             builder.Property(u => u.PasswordHash).IsRequired();
         }
