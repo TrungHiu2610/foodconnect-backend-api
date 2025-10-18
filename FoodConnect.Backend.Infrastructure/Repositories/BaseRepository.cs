@@ -69,20 +69,14 @@ namespace FoodConnect.Backend.Infrastructure.Repositories
         }
         public void Remove(T entity)
         {
-            _context.Set<T>().Entry(entity).State = EntityState.Deleted;
             _context.Set<T>().Remove(entity);
         }
         public void RemoveRange(IEnumerable<T> entities)
         {
-            foreach (var entity in entities)
-            {
-                _context.Set<T>().Entry(entity).State = EntityState.Deleted;
-            }
             _context.Set<T>().RemoveRange(entities);
         }
         public void Update(T entity)
         {
-            _context.Set<T>().Entry(entity).State = EntityState.Modified;
             _context.Set<T>().Update(entity);
         }
     }
