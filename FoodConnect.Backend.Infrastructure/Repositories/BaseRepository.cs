@@ -4,6 +4,7 @@ using FoodConnect.Backend.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using static Amazon.S3.Util.S3EventNotification;
 using System.Linq.Expressions;
+using FoodConnect.Backend.Domain.Entities;
 
 namespace FoodConnect.Backend.Infrastructure.Repositories
 {
@@ -57,7 +58,15 @@ namespace FoodConnect.Backend.Infrastructure.Repositories
 
             return await query.FirstOrDefaultAsync(predicate);
         }
+        public async Task<IEnumerable<T>> GetByIdsAsync(IEnumerable<Guid> ids)
+        {
+            if (ids == null || !ids.Any())
+                return Enumerable.Empty<T>();
 
+            return await _dbSet
+                .Where(e => ids.Contains(EF.Property<Guid>(e, "Id")))
+                .ToListAsync();
+        }
         public void Remove(T entity)
         {
             _context.Set<T>().Entry(entity).State = EntityState.Deleted;

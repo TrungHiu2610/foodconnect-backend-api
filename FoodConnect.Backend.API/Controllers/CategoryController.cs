@@ -30,5 +30,12 @@ namespace FoodConnect.Backend.API.Controllers
             var result = await Mediator.Send(command);
             return result != null ? (result.Success ? Ok(result) : BadRequest(result)) : BadRequest();
         }
+        [HttpDelete]
+        [Authorize(Roles ="Admin")]
+        public async Task<IActionResult> DeleteCategory(DeleteCategoryCommand command)
+        {
+            var result = await Mediator.Send(command);
+            return result != null ? (result.Success ? Ok(result) : BadRequest(result)) : BadRequest();
+        }
     }
 }
