@@ -22,15 +22,10 @@ namespace FoodConnect.Backend.Infrastructure.Repositories
 
         public async Task AddAsync(T entity)
         {
-            _context.Set<T>().Entry(entity).State = EntityState.Added;
             await _context.Set<T>().AddAsync(entity);
         }
         public async Task AddRangeAsync(IEnumerable<T> entities)
         {
-            foreach (var entity in entities)
-            {
-                _context.Set<T>().Entry(entity).State = EntityState.Added;
-            }
             await _context.Set<T>().AddRangeAsync(entities);
         }
         public virtual async Task<IEnumerable<T>> GetAllAsync() => await _context.Set<T>().ToListAsync();
