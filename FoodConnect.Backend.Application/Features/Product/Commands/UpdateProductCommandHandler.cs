@@ -70,7 +70,7 @@ namespace FoodConnect.Backend.Application.Features.Product.Commands
             }
 
             // validate product
-            var product = await _productRepository.GetProductWithAssetsAsync(request.Id, tracking: false);
+            var product = await _productRepository.GetProductWithAssetsAsync(request.Id, tracking: true);
 
             if (product == null)
             {
@@ -114,7 +114,7 @@ namespace FoodConnect.Backend.Application.Features.Product.Commands
                         }
                     }
                     productAssetsToDelete.ForEach(pa => product.ProductAssets.Remove(pa));
-                    _productAssetRepository.RemoveRange(productAssetsToDelete);
+                    //_productAssetRepository.RemoveRange(productAssetsToDelete);
                 }
 
                 // update product assets
@@ -124,7 +124,7 @@ namespace FoodConnect.Backend.Application.Features.Product.Commands
                     var thumbnailTrueCountRequest = request.UpdateProductAssets.Count(pa => pa.IsThumbnail == true);
                     var thumbnailFalseCountRequest = request.UpdateProductAssets.Count(pa => pa.IsThumbnail == false);
                     var thumbnailTrueCountInDb = product.ProductAssets.Count(pa => pa.IsThumbnail == true);
-                    var thumbnailTrueCountNewRequest = request.NewProductAssets.Count(pa => pa.IsThumbnail == true);
+                    var thumbnailTrueCountNewRequest = (request.NewProductAssets == null || !request.NewProductAssets.Any()) ? 0 : request.NewProductAssets.Count(pa => pa.IsThumbnail == true);
 
                     if (thumbnailTrueCountRequest > 1)
                     {
@@ -132,7 +132,8 @@ namespace FoodConnect.Backend.Application.Features.Product.Commands
                         return result.BuildFail("Only one thumbnail is allowed.");
                     }
                     // validate in case we update false to true for a thumbnail
-                    if (thumbnailFalseCountRequest == request.UpdateProductAssets.Count() && thumbnailTrueCountNewRequest == 0)
+                    if (thumbnailFalseCountRequest == request.UpdateProductAssets.Count() && thumbnailTrueCountNewRequest == 0
+                        && thumbnailTrueCountInDb == 0)
                     {
                         await _unitOfWork.RollbackTransactionAsync(transaction);
                         return result.BuildFail("At least one thumbnail is required.");
@@ -148,17 +149,13 @@ namespace FoodConnect.Backend.Application.Features.Product.Commands
                         {
                             assetInDb.AssetDescription = assetUpdateInfo.AssetDescription;
                         }
-
-                        if (newThumbnailId == null && assetInDb.IsThumbnail)
-                        {
-                            assetInDb.IsThumbnail = false;
-                        }
-                        else
+                        // set thumbnail 
+                        if (newThumbnailId != null)
                         {
                             assetInDb.IsThumbnail = (assetInDb.Id == newThumbnailId);
                         }
 
-                        _productAssetRepository.Update(assetInDb);
+                        //_productAssetRepository.Update(assetInDb);
                     }
                 }
 
@@ -191,7 +188,7 @@ namespace FoodConnect.Backend.Application.Features.Product.Commands
                     {
                         newAsset.ProductId = product.Id;
                         product.ProductAssets.Add(newAsset);
-                        await _productAssetRepository.AddAsync(newAsset);
+                        //await _productAssetRepository.AddAsync(newAsset);
                     }
                 }
 

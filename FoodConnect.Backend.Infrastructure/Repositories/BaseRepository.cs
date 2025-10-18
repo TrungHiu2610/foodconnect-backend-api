@@ -22,15 +22,10 @@ namespace FoodConnect.Backend.Infrastructure.Repositories
 
         public async Task AddAsync(T entity)
         {
-            _context.Set<T>().Entry(entity).State = EntityState.Added;
             await _context.Set<T>().AddAsync(entity);
         }
         public async Task AddRangeAsync(IEnumerable<T> entities)
         {
-            foreach (var entity in entities)
-            {
-                _context.Set<T>().Entry(entity).State = EntityState.Added;
-            }
             await _context.Set<T>().AddRangeAsync(entities);
         }
         public virtual async Task<IEnumerable<T>> GetAllAsync() => await _context.Set<T>().ToListAsync();
@@ -69,20 +64,14 @@ namespace FoodConnect.Backend.Infrastructure.Repositories
         }
         public void Remove(T entity)
         {
-            _context.Set<T>().Entry(entity).State = EntityState.Deleted;
             _context.Set<T>().Remove(entity);
         }
         public void RemoveRange(IEnumerable<T> entities)
         {
-            foreach (var entity in entities)
-            {
-                _context.Set<T>().Entry(entity).State = EntityState.Deleted;
-            }
             _context.Set<T>().RemoveRange(entities);
         }
         public void Update(T entity)
         {
-            _context.Set<T>().Entry(entity).State = EntityState.Modified;
             _context.Set<T>().Update(entity);
         }
     }
