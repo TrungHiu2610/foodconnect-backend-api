@@ -21,7 +21,7 @@ namespace FoodConnect.Backend.Infrastructure.Persistence.Configurations
             builder.HasOne(ur => ur.User)
                 .WithMany(u => u.UserRoles)
                 .HasForeignKey(ur => ur.UserId)
-                .OnDelete(DeleteBehavior.Cascade); ;
+                .OnDelete(DeleteBehavior.Cascade); 
 
             builder.HasOne(ur => ur.Role)
                 .WithMany(r => r.UserRoles)

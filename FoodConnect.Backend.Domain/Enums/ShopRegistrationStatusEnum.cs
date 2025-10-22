@@ -6,10 +6,11 @@ using System.Threading.Tasks;
 
 namespace FoodConnect.Backend.Domain.Enums
 {
-    public enum ShopStatusEnum
+    public enum ShopRegistrationStatusEnum
     {
-        Active = 0,
-        Inactive = 1,
-        TemporarilyClosed = 2
+        Pending = 0,
+        Approved = 1,
+        Rejected = 2,
+        CancelledByUser = 3
     }
 }

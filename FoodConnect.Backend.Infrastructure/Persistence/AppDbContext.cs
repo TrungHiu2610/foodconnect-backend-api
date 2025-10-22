@@ -24,6 +24,9 @@ namespace FoodConnect.Backend.Infrastructure.Persistence
         public DbSet<ProductAsset> ProductAssets { get; set; }
         public DbSet<ProductDailyAvailability> ProductDailyAvailabilities { get; set; }
         public DbSet<Shop> Shops { get; set; }
+        public DbSet<ShopOperatingHour> ShopOperatingHours { get; set; }
+        public DbSet<ShopRegistration> ShopRegistrations { get; set; }
+        public DbSet<ShopRegistrationAsset> ShopRegistrationAssets { get; set; }
 
         #endregion
 

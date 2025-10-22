@@ -71,9 +71,9 @@ namespace FoodConnect.Backend.Infrastructure.Migrations
                     Name = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
                     Description = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
                     CoverImageUrl = table.Column<string>(type: "character varying(2048)", maxLength: 2048, nullable: true),
-                    Status = table.Column<string>(type: "text", nullable: false, defaultValue: "PendingApproval"),
+                    Status = table.Column<int>(type: "integer", nullable: false, defaultValue: 0),
                     Rating = table.Column<decimal>(type: "numeric(3,2)", nullable: true),
-                    userId = table.Column<Guid>(type: "uuid", nullable: false),
+                    UserId = table.Column<Guid>(type: "uuid", nullable: false),
                     CreatedAtUtc = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     UpdatedAtUtc = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
                     CreatedBy = table.Column<Guid>(type: "uuid", nullable: true),
@@ -83,8 +83,8 @@ namespace FoodConnect.Backend.Infrastructure.Migrations
                 {
                     table.PrimaryKey("PK_Shops", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_Shops_Users_userId",
-                        column: x => x.userId,
+                        name: "FK_Shops_Users_UserId",
+                        column: x => x.UserId,
                         principalTable: "Users",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
@@ -224,9 +224,9 @@ namespace FoodConnect.Backend.Infrastructure.Migrations
                 column: "ShopId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Shops_userId",
+                name: "IX_Shops_UserId",
                 table: "Shops",
-                column: "userId");
+                column: "UserId");
         }
 
         /// <inheritdoc />
