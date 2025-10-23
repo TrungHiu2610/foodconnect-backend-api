@@ -15,6 +15,9 @@ namespace FoodConnect.Backend.Domain.Entities
         public ShopRegistrationStatusEnum Status { get; set; }
         public string? AdminReason { get; set; }
         public Guid? ReviewedBy { get; set; }
+        public PayoutMethodTypeEnum PayoutMethod { get; set; }
+        public string PayoutAccountInfo { get; set; } 
+        public string PayoutAccountName { get; set; }
 
         public virtual User User { get; set; }
         public virtual ICollection<ShopRegistrationAsset> Assets { get; set; }

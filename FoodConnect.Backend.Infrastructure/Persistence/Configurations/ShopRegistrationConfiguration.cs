@@ -20,7 +20,19 @@ namespace FoodConnect.Backend.Infrastructure.Persistence.Configurations
                 .HasMaxLength(255);
             builder.Property(sr => sr.ShopDescription)
                 .IsRequired();
-            
+
+            builder.Property(sr => sr.PayoutMethod)
+                .IsRequired()
+                .HasConversion<int>();
+
+            builder.Property(sr => sr.PayoutAccountInfo)
+                .IsRequired()
+                .HasMaxLength(20);
+
+            builder.Property(sr => sr.PayoutAccountName)
+                .IsRequired()
+                .HasMaxLength(100);
+
             builder.HasOne(sr => sr.User)
                 .WithMany() 
                 .HasForeignKey(sr => sr.UserId)
