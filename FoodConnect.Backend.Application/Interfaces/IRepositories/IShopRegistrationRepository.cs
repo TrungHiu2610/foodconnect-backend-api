@@ -16,5 +16,6 @@ namespace FoodConnect.Backend.Application.Interfaces.IRepositories
             int pageSize, 
             ShopRegistrationStatusEnum? status = null,
             string? searchTerm = null);
+        Task<ShopRegistration?> GetDetailByIdAsync(Guid id);
     }
 }

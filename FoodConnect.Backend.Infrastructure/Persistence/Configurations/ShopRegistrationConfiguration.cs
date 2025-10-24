@@ -33,6 +33,32 @@ namespace FoodConnect.Backend.Infrastructure.Persistence.Configurations
                 .IsRequired()
                 .HasMaxLength(100);
 
+            builder.Property(sr => sr.Street)
+                .IsRequired()
+                .HasMaxLength(255);
+
+            builder.Property(sr => sr.Ward)
+                .IsRequired()
+                .HasMaxLength(100);
+
+            builder.Property(sr => sr.District)
+                .IsRequired()
+                .HasMaxLength(100);
+
+            builder.Property(sr => sr.City)
+                .IsRequired()
+                .HasMaxLength(100);
+
+            builder.Property(sr => sr.Country)
+                .IsRequired()
+                .HasMaxLength(100);
+
+            builder.Property(sr => sr.Latitude)
+                .IsRequired();
+
+            builder.Property(sr => sr.Longitude)
+                .IsRequired();
+
             builder.HasOne(sr => sr.User)
                 .WithMany() 
                 .HasForeignKey(sr => sr.UserId)
@@ -43,6 +69,16 @@ namespace FoodConnect.Backend.Infrastructure.Persistence.Configurations
                 .WithOne(sra => sra.ShopRegistration)
                 .HasForeignKey(sra => sra.SellerRegistrationId)
                 .IsRequired()
+                .OnDelete(DeleteBehavior.Cascade);
+
+            builder.HasMany(sr => sr.OperatingHours)
+                .WithOne(oh => oh.ShopRegistration)
+                .HasForeignKey(oh => oh.ShopRegistrationId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            builder.HasMany(sr => sr.ShopRegistrationCategories)
+                .WithOne(src => src.ShopRegistration)
+                .HasForeignKey(src => src.ShopRegistrationId)
                 .OnDelete(DeleteBehavior.Cascade); 
         }
     }
