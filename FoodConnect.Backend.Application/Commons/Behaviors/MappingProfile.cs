@@ -2,8 +2,10 @@
 using FoodConnect.Backend.Application.Commons.DTOs;
 using FoodConnect.Backend.Application.Commons.DTOs.Responses.Category;
 using FoodConnect.Backend.Application.Commons.DTOs.Responses.Product;
+using FoodConnect.Backend.Application.Commons.DTOs.Responses.ShopRegistration;
 using FoodConnect.Backend.Application.Features.Category.Commands;
 using FoodConnect.Backend.Application.Features.Product.Commands;
+using FoodConnect.Backend.Application.Features.ShopRegistrations.Commands;
 using FoodConnect.Backend.Domain.Entities;
 using FoodConnect.Backend.Domain.Enums;
 
@@ -89,6 +91,39 @@ namespace FoodConnect.Backend.Application.Commons.Behaviors
                 .ForMember(dest => dest.CreatedBy, opt => opt.Ignore())
                 .ForAllMembers(opts => opts.Condition((src, dest, srcMember) => srcMember != null));
             #endregion
+
+            #region shop registration mappings
+            // create shop registration
+            CreateMap<CreateShopRegistrationCommand, ShopRegistration>()
+                .ForMember(dest => dest.Id, opt => opt.Ignore())
+                .ForMember(dest => dest.UserId, opt => opt.Ignore())
+                .ForMember(dest => dest.Status, opt => opt.Ignore())
+                .ForMember(dest => dest.AdminReason, opt => opt.Ignore())
+                .ForMember(dest => dest.ReviewedBy, opt => opt.Ignore())
+                .ForMember(dest => dest.User, opt => opt.Ignore())
+                .ForMember(dest => dest.Assets, opt => opt.Ignore())
+                .ForMember(dest => dest.PayoutMethod, 
+                    opt => opt.ConvertUsing(new ShortToEnumConverter<PayoutMethodTypeEnum>(), src => src.PayoutMethod));
+
+            // shop registration to response
+            CreateMap<ShopRegistration, ShopRegistrationResponse>()
+                .ForMember(dest => dest.UserFullName, 
+                    opt => opt.MapFrom(src => src.User != null ? src.User.FullName : string.Empty))
+                .ForMember(dest => dest.UserEmail, 
+                    opt => opt.MapFrom(src => src.User != null ? src.User.Email : string.Empty))
+                .ForMember(dest => dest.ReviewedByFullName, opt => opt.Ignore())
+                .ForMember(dest => dest.Assets, 
+                    opt => opt.MapFrom(src => src.Assets));
+
+            CreateMap<ShopRegistrationAsset, ShopRegistrationAssetResponse>();
+
+            // shop registration to list response
+            CreateMap<ShopRegistration, ShopRegistrationListResponse>()
+                .ForMember(dest => dest.UserFullName, 
+                    opt => opt.MapFrom(src => src.User != null ? src.User.FullName : string.Empty))
+                .ForMember(dest => dest.UserEmail, 
+                    opt => opt.MapFrom(src => src.User != null ? src.User.Email : string.Empty));
+            #endregion
         }
     }
     public class StringToEnumConverter<TEnum> : IValueConverter<string, TEnum> where TEnum : struct
@@ -97,6 +132,17 @@ namespace FoodConnect.Backend.Application.Commons.Behaviors
         {
             if (Enum.TryParse<TEnum>(sourceMember, true, out var result))
                 return result;
+
+            return default;
+        }
+    }
+
+    public class ShortToEnumConverter<TEnum> : IValueConverter<short, TEnum> where TEnum : struct
+    {
+        public TEnum Convert(short sourceMember, ResolutionContext context)
+        {
+            if (Enum.IsDefined(typeof(TEnum), (int)sourceMember))
+                return (TEnum)(object)sourceMember;
 
             return default;
         }

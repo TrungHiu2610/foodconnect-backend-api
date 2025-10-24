@@ -6,10 +6,10 @@ using System.Threading.Tasks;
 
 namespace FoodConnect.Backend.Domain.Enums
 {
-    public enum ShopStatusEnum
+    public enum PayoutMethodTypeEnum
     {
-        Active = 0,
-        Inactive = 1,
-        TemporarilyClosed = 2
+        MoMo = 1,
+        VNPay = 2,
+        //BankTransfer = 3
     }
 }
