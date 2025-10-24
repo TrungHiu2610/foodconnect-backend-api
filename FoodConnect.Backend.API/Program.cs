@@ -92,6 +92,7 @@ services.AddScoped<IProductAssetRepository, ProductAssetRepository>();
 services.AddScoped<IShopRepository, ShopRepository>();
 services.AddScoped<ICategoryRepository, CategoryRepository>();
 services.AddScoped<IShopRegistrationRepository, ShopRegistrationRepository>();
+services.AddScoped<ICartRepository, CartRepository>();
 services.AddScoped<IUnitOfWork, UnitOfWork>();
 
 // Application Services  
