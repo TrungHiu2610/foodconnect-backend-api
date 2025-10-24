@@ -56,5 +56,16 @@ namespace FoodConnect.Backend.Infrastructure.Repositories
 
             return (items, totalCount);
         }
+
+        public async Task<ShopRegistration?> GetDetailByIdAsync(Guid id)
+        {
+            return await _context.ShopRegistrations
+                .Include(sr => sr.User)
+                .Include(sr => sr.Assets)
+                .Include(sr => sr.ShopRegistrationCategories)
+                    .ThenInclude(src => src.Category)
+                .Include(sr => sr.OperatingHours)
+                .FirstOrDefaultAsync(sr => sr.Id == id);
+        }
     }
 }

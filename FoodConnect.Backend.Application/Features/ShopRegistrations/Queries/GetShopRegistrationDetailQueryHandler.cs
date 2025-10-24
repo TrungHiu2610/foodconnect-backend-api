@@ -26,10 +26,7 @@ namespace FoodConnect.Backend.Application.Features.ShopRegistrations.Queries
         {
             var result = new BaseResponse<ShopRegistrationResponse>();
 
-            var registration = await _shopRegistrationRepository.GetByIdAsync(
-                request.Id,
-                r => r.User,
-                r => r.Assets);
+            var registration = await _shopRegistrationRepository.GetDetailByIdAsync(request.Id);
 
             if (registration == null)
             {

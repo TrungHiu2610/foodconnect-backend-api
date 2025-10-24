@@ -15,6 +15,7 @@ namespace FoodConnect.Backend.Application.Features.ShopRegistrations.Commands
     {
         private readonly IShopRegistrationRepository _shopRegistrationRepository;
         private readonly IUserRepository _userRepository;
+        private readonly ICategoryRepository _categoryRepository;
         private readonly IUnitOfWork _unitOfWork;
         private readonly IFileStorageService _fileStorageService;
         private readonly ICurrentUserService _currentUserService;
@@ -23,6 +24,7 @@ namespace FoodConnect.Backend.Application.Features.ShopRegistrations.Commands
         public CreateShopRegistrationCommandHandler(
             IShopRegistrationRepository shopRegistrationRepository,
             IUserRepository userRepository,
+            ICategoryRepository categoryRepository,
             IUnitOfWork unitOfWork,
             IFileStorageService fileStorageService,
             ICurrentUserService currentUserService,
@@ -30,6 +32,7 @@ namespace FoodConnect.Backend.Application.Features.ShopRegistrations.Commands
         {
             _shopRegistrationRepository = shopRegistrationRepository;
             _userRepository = userRepository;
+            _categoryRepository = categoryRepository;
             _unitOfWork = unitOfWork;
             _fileStorageService = fileStorageService;
             _currentUserService = currentUserService;
@@ -68,12 +71,37 @@ namespace FoodConnect.Backend.Application.Features.ShopRegistrations.Commands
                 }
             }
 
+            // Kiểm tra categories tồn tại
+            var categories = (await _categoryRepository.GetByIdsAsync(request.CategoryIds)).ToList();
+            if (categories.Count != request.CategoryIds.Count)
+            {
+                return result.BuildFail("One or more categories do not exist");
+            }
+
             // Tạo đơn đăng ký bằng AutoMapper
             var registration = _mapper.Map<ShopRegistration>(request);
             registration.Id = Guid.NewGuid();
             registration.UserId = (Guid)userId;
             registration.Status = ShopRegistrationStatusEnum.Pending;
             registration.Assets = new List<ShopRegistrationAsset>();
+            
+            // Add categories
+            registration.ShopRegistrationCategories = request.CategoryIds.Select(categoryId => new ShopRegistrationCategory
+            {
+                Id = Guid.NewGuid(),
+                ShopRegistrationId = registration.Id,
+                CategoryId = categoryId
+            }).ToList();
+            
+            // Add operating hours
+            registration.OperatingHours = request.OperatingHours.Select(oh => new ShopOperatingHour
+            {
+                Id = Guid.NewGuid(),
+                ShopRegistrationId = registration.Id,
+                DayOfWeek = oh.DayOfWeek,
+                OpenTime = oh.OpenTime,
+                CloseTime = oh.CloseTime
+            }).ToList();
 
             var uploadedFiles = new List<string>();
             await using var transaction = await _unitOfWork.BeginTransactionAsync();

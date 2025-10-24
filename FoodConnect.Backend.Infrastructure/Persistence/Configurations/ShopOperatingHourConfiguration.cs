@@ -24,6 +24,16 @@ namespace FoodConnect.Backend.Infrastructure.Persistence.Configurations
 
             builder.Property(oh => oh.CloseTime)
                 .IsRequired();
+
+            builder.HasOne(oh => oh.ShopRegistration)
+                .WithMany(sr => sr.OperatingHours)
+                .HasForeignKey(oh => oh.ShopRegistrationId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            builder.HasOne(oh => oh.Shop)
+                .WithMany(s => s.OperatingHours)
+                .HasForeignKey(oh => oh.ShopId)
+                .OnDelete(DeleteBehavior.Cascade);
         }
     }
 }

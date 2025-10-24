@@ -101,7 +101,10 @@ namespace FoodConnect.Backend.Application.Commons.Behaviors
                 .ForMember(dest => dest.AdminReason, opt => opt.Ignore())
                 .ForMember(dest => dest.ReviewedBy, opt => opt.Ignore())
                 .ForMember(dest => dest.User, opt => opt.Ignore())
+                .ForMember(dest => dest.Shop, opt => opt.Ignore())
                 .ForMember(dest => dest.Assets, opt => opt.Ignore())
+                .ForMember(dest => dest.ShopRegistrationCategories, opt => opt.Ignore())
+                .ForMember(dest => dest.OperatingHours, opt => opt.Ignore())
                 .ForMember(dest => dest.PayoutMethod, 
                     opt => opt.ConvertUsing(new ShortToEnumConverter<PayoutMethodTypeEnum>(), src => src.PayoutMethod));
 
@@ -113,9 +116,15 @@ namespace FoodConnect.Backend.Application.Commons.Behaviors
                     opt => opt.MapFrom(src => src.User != null ? src.User.Email : string.Empty))
                 .ForMember(dest => dest.ReviewedByFullName, opt => opt.Ignore())
                 .ForMember(dest => dest.Assets, 
-                    opt => opt.MapFrom(src => src.Assets));
+                    opt => opt.MapFrom(src => src.Assets))
+                .ForMember(dest => dest.Categories,
+                    opt => opt.MapFrom(src => src.ShopRegistrationCategories.Select(src => src.Category)))
+                .ForMember(dest => dest.OperatingHours,
+                    opt => opt.MapFrom(src => src.OperatingHours));
 
             CreateMap<ShopRegistrationAsset, ShopRegistrationAssetResponse>();
+            CreateMap<Category, ShopRegistrationCategoryResponse>();
+            CreateMap<ShopOperatingHour, ShopRegistrationOperatingHourResponse>();
 
             // shop registration to list response
             CreateMap<ShopRegistration, ShopRegistrationListResponse>()

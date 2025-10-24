@@ -36,6 +36,33 @@ namespace FoodConnect.Backend.Infrastructure.Persistence.Configurations
             builder.Property(s => s.Rating)
                 .HasColumnType("decimal(3,2)");
 
+            // Address configurations
+            builder.Property(s => s.Street)
+                .IsRequired()
+                .HasMaxLength(255);
+
+            builder.Property(s => s.Ward)
+                .IsRequired()
+                .HasMaxLength(100);
+
+            builder.Property(s => s.District)
+                .IsRequired()
+                .HasMaxLength(100);
+
+            builder.Property(s => s.City)
+                .IsRequired()
+                .HasMaxLength(100);
+
+            builder.Property(s => s.Country)
+                .IsRequired()
+                .HasMaxLength(100);
+
+            builder.Property(s => s.Latitude)
+                .IsRequired();
+
+            builder.Property(s => s.Longitude)
+                .IsRequired();
+
             builder.HasOne(s => s.User)
                 .WithOne() 
                 .HasForeignKey<Shop>(s => s.UserId)

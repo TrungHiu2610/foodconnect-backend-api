@@ -42,10 +42,7 @@ namespace FoodConnect.Backend.Application.Features.ShopRegistrations.Commands
             }
 
             // Lấy đơn đăng ký
-            var registration = await _shopRegistrationRepository.GetByIdAsync(
-                request.ShopRegistrationId,
-                r => r.User,
-                r => r.Assets);
+            var registration = await _shopRegistrationRepository.GetDetailByIdAsync(request.ShopRegistrationId);
 
             if (registration == null)
             {
@@ -82,16 +79,30 @@ namespace FoodConnect.Backend.Application.Features.ShopRegistrations.Commands
                     Name = registration.ShopName,
                     Description = registration.ShopDescription,
                     Status = ShopStatusEnum.Active,
-                    Street = request.Street ?? string.Empty,
-                    Ward = request.Ward ?? string.Empty,
-                    District = request.District ?? string.Empty,
-                    City = request.City ?? string.Empty,
-                    Country = request.Country ?? "Vietnam",
-                    Latitude = request.Latitude ?? 0,
-                    Longitude = request.Longitude ?? 0
+                    Street = registration.Street,
+                    Ward = registration.Ward,
+                    District = registration.District,
+                    City = registration.City,
+                    Country = registration.Country,
+                    Latitude = registration.Latitude,
+                    Longitude = registration.Longitude
                 };
 
                 await _shopRepository.AddAsync(shop);
+
+                // Copy operating hours từ ShopRegistration sang Shop
+                foreach (var operatingHour in registration.OperatingHours)
+                {
+                    var shopOperatingHour = new ShopOperatingHour
+                    {
+                        Id = Guid.NewGuid(),
+                        ShopId = shop.Id,
+                        DayOfWeek = operatingHour.DayOfWeek,
+                        OpenTime = operatingHour.OpenTime,
+                        CloseTime = operatingHour.CloseTime
+                    };
+                    shop.OperatingHours.Add(shopOperatingHour);
+                }
 
                 // Thêm role Seller cho user
                 var user = await _userRepository.GetByIdAsync(registration.UserId, u => u.UserRoles);
