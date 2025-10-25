@@ -77,18 +77,33 @@ namespace FoodConnect.Backend.Application.Features.Cart.Queries
             {
                 foreach (var item in cart.CartItems)
                 {
+                    var product = item.Product;
+                    var shop = product?.Shop;
+                    
+                    // Get today's availability
+                    var todayAvailability = product?.ProductDailyAvailabilities?
+                        .FirstOrDefault(a => a.Date.Date == DateTime.UtcNow.Date);
+                    
                     response.Items.Add(new CartItemResponse
                     {
                         Id = item.Id,
                         ProductId = item.ProductId,
-                        ProductName = item.Product?.Name ?? string.Empty,
-                        ProductThumbnail = item.Product?.ProductAssets?.FirstOrDefault(a => a.IsThumbnail)?.AssetUrl,
-                        ProductPrice = item.Product?.Price ?? 0,
-                        ProductUnit = item.Product?.Unit ?? string.Empty,
+                        ProductName = product?.Name ?? string.Empty,
+                        ProductThumbnail = product?.ProductAssets?.FirstOrDefault(a => a.IsThumbnail)?.AssetUrl,
+                        ProductPrice = product?.Price ?? 0,
+                        ProductUnit = product?.Unit ?? string.Empty,
                         Quantity = item.Quantity,
-                        Subtotal = (item.Product?.Price ?? 0) * item.Quantity,
-                        ShopId = item.Product?.ShopId ?? Guid.Empty,
-                        ShopName = item.Product?.Shop?.ShopName ?? string.Empty
+                        Subtotal = (product?.Price ?? 0) * item.Quantity,
+                        
+                        // Shop info
+                        ShopId = product?.ShopId ?? Guid.Empty,
+                        ShopName = shop?.ShopName ?? string.Empty,
+                        ShopStatus = shop?.Status.ToString() ?? string.Empty,
+                        ShopAddress = null,  // Address removed from Shop entity
+                        
+                        // Product availability
+                        AvailableStock = todayAvailability?.Quantity ?? 0,
+                        IsAvailable = product?.Status == Domain.Enums.ProductStatusEnum.Active
                     });
                 }
             }

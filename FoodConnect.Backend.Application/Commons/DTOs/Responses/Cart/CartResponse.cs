@@ -22,7 +22,15 @@ namespace FoodConnect.Backend.Application.Commons.DTOs.Responses.Cart
         public string ProductUnit { get; set; } = string.Empty;
         public int Quantity { get; set; }
         public decimal Subtotal { get; set; }
+        
+        // Shop info
         public Guid ShopId { get; set; }
         public string ShopName { get; set; } = string.Empty;
+        public string ShopStatus { get; set; } = string.Empty;
+        public string? ShopAddress { get; set; }
+        
+        // Product availability
+        public int AvailableStock { get; set; }
+        public bool IsAvailable { get; set; }
     }
 }

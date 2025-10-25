@@ -73,5 +73,32 @@ namespace FoodConnect.Backend.API.Controllers
             var result = await Mediator.Send(command);
             return result != null ? (result.Success ? Ok(result) : BadRequest(result)) : BadRequest();
         }
+
+        /// <summary>
+        /// Get cart item count for header badge (lightweight)
+        /// Header: X-Session-Id (for guest users)
+        /// </summary>
+        [HttpGet]
+        public async Task<IActionResult> GetCartCount()
+        {
+            var sessionId = Request.Headers["X-Session-Id"].ToString();
+            var query = new GetCartCountQuery { SessionId = sessionId };
+            var result = await Mediator.Send(query);
+            return StatusCode(result.StatusCode, result);
+        }
+
+        /// <summary>
+        /// Validate cart before checkout
+        /// Check stock, prices, shop status
+        /// Header: X-Session-Id (for guest users)
+        /// </summary>
+        [HttpPost]
+        public async Task<IActionResult> ValidateCart([FromBody] ValidateCartQuery query)
+        {
+            var sessionId = Request.Headers["X-Session-Id"].ToString();
+            query.SessionId = sessionId;
+            var result = await Mediator.Send(query);
+            return StatusCode(result.StatusCode, result);
+        }
     }
 }
