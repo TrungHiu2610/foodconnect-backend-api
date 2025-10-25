@@ -88,7 +88,7 @@ namespace FoodConnect.Backend.Application.Features.Cart.Queries
                         Quantity = item.Quantity,
                         Subtotal = (item.Product?.Price ?? 0) * item.Quantity,
                         ShopId = item.Product?.ShopId ?? Guid.Empty,
-                        ShopName = item.Product?.Shop?.Name ?? string.Empty
+                        ShopName = item.Product?.Shop?.ShopName ?? string.Empty
                     });
                 }
             }

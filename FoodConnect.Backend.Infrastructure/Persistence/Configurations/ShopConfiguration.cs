@@ -19,12 +19,30 @@ namespace FoodConnect.Backend.Infrastructure.Persistence.Configurations
             builder.HasIndex(s => s.UserId)
                 .IsUnique();
 
-            builder.Property(s => s.Name)
+            builder.Property(s => s.ShopName)
                 .IsRequired()
                 .HasMaxLength(100);
 
-            builder.Property(s => s.Description)
+            builder.Property(s => s.OwnerName)
+                .IsRequired()
+                .HasMaxLength(100);
+
+            builder.Property(s => s.Phone)
+                .IsRequired()
+                .HasMaxLength(20);
+
+            builder.Property(s => s.Email)
+                .HasMaxLength(100);
+
+            builder.Property(s => s.Address)
+                .IsRequired()
                 .HasMaxLength(500);
+
+            builder.Property(s => s.Description)
+                .HasMaxLength(1000);
+
+            builder.Property(s => s.LogoUrl)
+                .HasMaxLength(2048);
 
             builder.Property(s => s.CoverImageUrl)
                 .HasMaxLength(2048);
@@ -36,32 +54,36 @@ namespace FoodConnect.Backend.Infrastructure.Persistence.Configurations
             builder.Property(s => s.Rating)
                 .HasColumnType("decimal(3,2)");
 
-            // Address configurations
-            builder.Property(s => s.Street)
+            builder.Property(s => s.AdminReason)
+                .HasMaxLength(500);
+
+            builder.Property(s => s.PayoutMethod)
+                .HasConversion<int>()
+                .IsRequired();
+
+            builder.Property(s => s.PayoutAccountInfo)
                 .IsRequired()
+                .HasMaxLength(20);
+
+            builder.Property(s => s.PayoutAccountName)
+                .IsRequired()
+                .HasMaxLength(100);
+
+            // Optional detailed address fields
+            builder.Property(s => s.Street)
                 .HasMaxLength(255);
 
             builder.Property(s => s.Ward)
-                .IsRequired()
                 .HasMaxLength(100);
 
             builder.Property(s => s.District)
-                .IsRequired()
                 .HasMaxLength(100);
 
             builder.Property(s => s.City)
-                .IsRequired()
                 .HasMaxLength(100);
 
             builder.Property(s => s.Country)
-                .IsRequired()
                 .HasMaxLength(100);
-
-            builder.Property(s => s.Latitude)
-                .IsRequired();
-
-            builder.Property(s => s.Longitude)
-                .IsRequired();
 
             builder.HasOne(s => s.User)
                 .WithOne() 
@@ -72,13 +94,21 @@ namespace FoodConnect.Backend.Infrastructure.Persistence.Configurations
             builder.HasMany(s => s.OperatingHours)
                 .WithOne(oh => oh.Shop)
                 .HasForeignKey(oh => oh.ShopId)
-                .IsRequired()
                 .OnDelete(DeleteBehavior.Cascade);
 
             builder.HasMany(s => s.Products)
                 .WithOne(p => p.Shop)
                 .HasForeignKey(p => p.ShopId)
-                .IsRequired()
+                .OnDelete(DeleteBehavior.Cascade);
+
+            builder.HasMany(s => s.Assets)
+                .WithOne(a => a.Shop)
+                .HasForeignKey(a => a.ShopId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            builder.HasMany(s => s.ShopCategories)
+                .WithOne(sc => sc.Shop)
+                .HasForeignKey(sc => sc.ShopId)
                 .OnDelete(DeleteBehavior.Cascade);
         }
     }

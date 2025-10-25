@@ -2,10 +2,9 @@
 using FoodConnect.Backend.Application.Commons.DTOs;
 using FoodConnect.Backend.Application.Commons.DTOs.Responses.Category;
 using FoodConnect.Backend.Application.Commons.DTOs.Responses.Product;
-using FoodConnect.Backend.Application.Commons.DTOs.Responses.ShopRegistration;
+using FoodConnect.Backend.Application.Commons.DTOs.Responses.Shop;
 using FoodConnect.Backend.Application.Features.Category.Commands;
 using FoodConnect.Backend.Application.Features.Product.Commands;
-using FoodConnect.Backend.Application.Features.ShopRegistrations.Commands;
 using FoodConnect.Backend.Domain.Entities;
 using FoodConnect.Backend.Domain.Enums;
 
@@ -92,46 +91,25 @@ namespace FoodConnect.Backend.Application.Commons.Behaviors
                 .ForAllMembers(opts => opts.Condition((src, dest, srcMember) => srcMember != null));
             #endregion
 
-            #region shop registration mappings
-            // create shop registration
-            CreateMap<CreateShopRegistrationCommand, ShopRegistration>()
-                .ForMember(dest => dest.Id, opt => opt.Ignore())
-                .ForMember(dest => dest.UserId, opt => opt.Ignore())
-                .ForMember(dest => dest.Status, opt => opt.Ignore())
-                .ForMember(dest => dest.AdminReason, opt => opt.Ignore())
-                .ForMember(dest => dest.ReviewedBy, opt => opt.Ignore())
-                .ForMember(dest => dest.User, opt => opt.Ignore())
-                .ForMember(dest => dest.Shop, opt => opt.Ignore())
-                .ForMember(dest => dest.Assets, opt => opt.Ignore())
-                .ForMember(dest => dest.ShopRegistrationCategories, opt => opt.Ignore())
-                .ForMember(dest => dest.OperatingHours, opt => opt.Ignore())
-                .ForMember(dest => dest.PayoutMethod, 
-                    opt => opt.ConvertUsing(new ShortToEnumConverter<PayoutMethodTypeEnum>(), src => src.PayoutMethod));
+            #region shop mappings
+            // get shop detail
+            CreateMap<Domain.Entities.Shop, ShopResponse>()
+                .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(src => src.CreatedAtUtc))
+                .ForMember(dest => dest.UpdatedAt, opt => opt.MapFrom(src => src.UpdatedAtUtc))
+                .ForMember(dest => dest.Assets, opt => opt.MapFrom(src => src.Assets))
+                .ForMember(dest => dest.Categories, opt => opt.MapFrom(src => src.ShopCategories))
+                .ForMember(dest => dest.OperatingHours, opt => opt.MapFrom(src => src.OperatingHours));
 
-            // shop registration to response
-            CreateMap<ShopRegistration, ShopRegistrationResponse>()
-                .ForMember(dest => dest.UserFullName, 
-                    opt => opt.MapFrom(src => src.User != null ? src.User.FullName : string.Empty))
-                .ForMember(dest => dest.UserEmail, 
-                    opt => opt.MapFrom(src => src.User != null ? src.User.Email : string.Empty))
-                .ForMember(dest => dest.ReviewedByFullName, opt => opt.Ignore())
-                .ForMember(dest => dest.Assets, 
-                    opt => opt.MapFrom(src => src.Assets))
-                .ForMember(dest => dest.Categories,
-                    opt => opt.MapFrom(src => src.ShopRegistrationCategories.Select(src => src.Category)))
-                .ForMember(dest => dest.OperatingHours,
-                    opt => opt.MapFrom(src => src.OperatingHours));
+            CreateMap<ShopAsset, ShopAssetResponse>();
 
-            CreateMap<ShopRegistrationAsset, ShopRegistrationAssetResponse>();
-            CreateMap<Category, ShopRegistrationCategoryResponse>();
-            CreateMap<ShopOperatingHour, ShopRegistrationOperatingHourResponse>();
+            CreateMap<ShopCategory, ShopCategoryResponse>()
+                .ForMember(dest => dest.CategoryName, opt => opt.MapFrom(src => src.Category.Name));
 
-            // shop registration to list response
-            CreateMap<ShopRegistration, ShopRegistrationListResponse>()
-                .ForMember(dest => dest.UserFullName, 
-                    opt => opt.MapFrom(src => src.User != null ? src.User.FullName : string.Empty))
-                .ForMember(dest => dest.UserEmail, 
-                    opt => opt.MapFrom(src => src.User != null ? src.User.Email : string.Empty));
+            CreateMap<ShopOperatingHour, ShopOperatingHourResponse>();
+
+            // get shop list
+            CreateMap<Domain.Entities.Shop, ShopListResponse>()
+                .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(src => src.CreatedAtUtc));
             #endregion
         }
     }
@@ -150,8 +128,10 @@ namespace FoodConnect.Backend.Application.Commons.Behaviors
     {
         public TEnum Convert(short sourceMember, ResolutionContext context)
         {
-            if (Enum.IsDefined(typeof(TEnum), (int)sourceMember))
-                return (TEnum)(object)sourceMember;
+            if (Enum.IsDefined(typeof(TEnum),(int) sourceMember))
+            {
+                return (TEnum)Enum.ToObject(typeof(TEnum), sourceMember);
+            }
 
             return default;
         }

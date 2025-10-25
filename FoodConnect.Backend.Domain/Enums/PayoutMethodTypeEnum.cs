@@ -8,7 +8,7 @@ namespace FoodConnect.Backend.Domain.Enums
 {
     public enum PayoutMethodTypeEnum
     {
-        MoMo = 1,
+        MOMO = 1,
         VNPay = 2,
         //BankTransfer = 3
     }

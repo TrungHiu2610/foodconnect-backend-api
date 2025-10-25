@@ -11,10 +11,8 @@ namespace FoodConnect.Backend.Infrastructure.Persistence.Configurations
             builder.Property(c => c.SessionId)
                 .HasMaxLength(100);
 
-            // Đảm bảo 1 user chỉ có 1 cart duy nhất
             builder.HasIndex(c => c.UserId)
-                .IsUnique()
-                .HasFilter("[UserId] IS NOT NULL");
+                .IsUnique();
             
             builder.HasIndex(c => c.SessionId);
 
