@@ -24,7 +24,10 @@ namespace FoodConnect.Backend.API.Controllers
         public async Task<IActionResult> Login(LoginUserQuery query)
         {
             var result = await Mediator.Send(query);
-
+            if(result.Data == null)
+            {
+                return BadRequest(result);
+            }
             SetRefreshTokenCookie(result.Data.RefreshToken, result.Data.RefreshTokenExpiresAtUtc);
 
             return result != null ? (result.Success ? Ok(result) : BadRequest(result)) : BadRequest();
@@ -36,7 +39,10 @@ namespace FoodConnect.Backend.API.Controllers
             command.RefreshToken = Request.Cookies["refreshToken"];
 
             var result = await Mediator.Send(command);
-
+            if (result.Data == null)
+            {
+                return BadRequest(result);
+            }
             SetRefreshTokenCookie(result.Data.RefreshToken, result.Data.RefreshTokenExpiresAtUtc);
 
             return result != null ? (result.Success ? Ok(result) : BadRequest(result)) : BadRequest();
