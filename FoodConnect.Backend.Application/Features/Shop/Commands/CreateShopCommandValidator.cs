@@ -10,26 +10,10 @@ namespace FoodConnect.Backend.Application.Features.Shop.Commands
                 .NotEmpty().WithMessage("Shop name is required")
                 .MaximumLength(200).WithMessage("Shop name must not exceed 200 characters");
 
-            RuleFor(x => x.OwnerName)
-                .NotEmpty().WithMessage("Owner name is required")
-                .MaximumLength(100).WithMessage("Owner name must not exceed 100 characters");
-
-            RuleFor(x => x.Phone)
-                .NotEmpty().WithMessage("Phone is required")
-                .Matches(@"^\+?[0-9]{10,15}$").WithMessage("Phone number is invalid");
-
-            RuleFor(x => x.Email)
-                .EmailAddress().When(x => !string.IsNullOrEmpty(x.Email))
-                .WithMessage("Email is invalid");
-
-            RuleFor(x => x.Address)
-                .NotEmpty().WithMessage("Address is required")
-                .MaximumLength(500).WithMessage("Address must not exceed 500 characters");
-
             RuleFor(x => x.PayoutMethod)
                 .NotEmpty().WithMessage("Payout method is required")
-                .Must(x => x == "Bank" || x == "MoMo")
-                .WithMessage("Payout method must be 'Bank' or 'MoMo'");
+                .Must(x => x == 0 || x == 1)  // Bank = 0, MoMo = 1
+                .WithMessage("Payout method must be 0 (Bank) or 1 (MoMo)");
 
             RuleFor(x => x.PayoutAccountInfo)
                 .NotEmpty().WithMessage("Payout account info is required")

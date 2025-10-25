@@ -11,13 +11,8 @@ namespace FoodConnect.Backend.Application.Features.Shop.Commands
         public string ShopName { get; set; } = string.Empty;
         public string? Description { get; set; }
         
-        // Owner info
-        public string OwnerName { get; set; } = string.Empty;
-        public string Phone { get; set; } = string.Empty;
-        public string? Email { get; set; }
         
         // Address
-        public string Address { get; set; } = string.Empty;
         public string? Street { get; set; }
         public string? Ward { get; set; }
         public string? District { get; set; }
@@ -27,7 +22,7 @@ namespace FoodConnect.Backend.Application.Features.Shop.Commands
         public double? Longitude { get; set; }
         
         // Payout info
-        public string PayoutMethod { get; set; } = string.Empty; // "Bank" or "MoMo"
+        public int PayoutMethod { get; set; } 
         public string PayoutAccountInfo { get; set; } = string.Empty;
         public string PayoutAccountName { get; set; } = string.Empty;
         

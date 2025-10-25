@@ -94,13 +94,25 @@ namespace FoodConnect.Backend.Application.Commons.Behaviors
             #region shop mappings
             // get shop detail
             CreateMap<Domain.Entities.Shop, ShopResponse>()
+                .ForMember(dest => dest.Status, opt => opt.MapFrom(src => (int)src.Status))
+                .ForMember(dest => dest.StatusName, opt => opt.MapFrom(src => src.Status.ToString()))
+                .ForMember(dest => dest.PayoutMethod, opt => opt.MapFrom(src => (int)src.PayoutMethod))
+                .ForMember(dest => dest.PayoutMethodName, opt => opt.MapFrom(src => src.PayoutMethod.ToString()))
+                .ForMember(dest => dest.OwnerName, opt => opt.MapFrom(src => src.User.FullName))
+                .ForMember(dest => dest.Phone, opt => opt.MapFrom(src => src.User.PhoneNumber))
+                .ForMember(dest => dest.Email, opt => opt.MapFrom(src => src.User.Email))
+                .ForMember(dest => dest.Address, opt => opt.MapFrom(src => 
+                    string.Join(", ", new[] { src.Street, src.Ward, src.District, src.City, src.Country }
+                        .Where(s => !string.IsNullOrWhiteSpace(s)))))
                 .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(src => src.CreatedAtUtc))
                 .ForMember(dest => dest.UpdatedAt, opt => opt.MapFrom(src => src.UpdatedAtUtc))
                 .ForMember(dest => dest.Assets, opt => opt.MapFrom(src => src.Assets))
                 .ForMember(dest => dest.Categories, opt => opt.MapFrom(src => src.ShopCategories))
                 .ForMember(dest => dest.OperatingHours, opt => opt.MapFrom(src => src.OperatingHours));
 
-            CreateMap<ShopAsset, ShopAssetResponse>();
+            CreateMap<ShopAsset, ShopAssetResponse>()
+                .ForMember(dest => dest.AssetType, opt => opt.MapFrom(src => (int)src.AssetType))
+                .ForMember(dest => dest.AssetTypeName, opt => opt.MapFrom(src => src.AssetType.ToString()));
 
             CreateMap<ShopCategory, ShopCategoryResponse>()
                 .ForMember(dest => dest.CategoryName, opt => opt.MapFrom(src => src.Category.Name));
@@ -109,7 +121,13 @@ namespace FoodConnect.Backend.Application.Commons.Behaviors
 
             // get shop list
             CreateMap<Domain.Entities.Shop, ShopListResponse>()
-                .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(src => src.CreatedAtUtc));
+                .ForMember(dest => dest.Status, opt => opt.MapFrom(src => (int)src.Status))
+                .ForMember(dest => dest.StatusName, opt => opt.MapFrom(src => src.Status.ToString()))
+                .ForMember(dest => dest.OwnerName, opt => opt.MapFrom(src => src.User.FullName))
+                .ForMember(dest => dest.Phone, opt => opt.MapFrom(src => src.User.PhoneNumber))
+                .ForMember(dest => dest.Address, opt => opt.MapFrom(src => 
+                    string.Join(", ", new[] { src.Street, src.Ward, src.District, src.City, src.Country }
+                        .Where(s => !string.IsNullOrWhiteSpace(s)))));
             #endregion
         }
     }
