@@ -10,9 +10,56 @@ namespace FoodConnect.Backend.Infrastructure.Repositories
         public ShopRepository(AppDbContext context) : base(context)
         {
         }
+
         public async Task<Shop?> GetByUserIdAsync(Guid userId)
         {
-            return await _context.Shops.FirstOrDefaultAsync(s => s.userId == userId);
+            return await _context.Shops.FirstOrDefaultAsync(s => s.UserId == userId);
+        }
+
+        public async Task<Shop?> GetDetailByIdAsync(Guid id)
+        {
+            return await _context.Shops
+                .Include(s => s.User)
+                .Include(s => s.Assets)
+                .Include(s => s.ShopCategories)
+                    .ThenInclude(sc => sc.Category)
+                .Include(s => s.OperatingHours)
+                .FirstOrDefaultAsync(s => s.Id == id);
+        }
+
+        public async Task<(IEnumerable<Shop> Items, int TotalCount)> GetPagedAsync(
+            int pageNumber, 
+            int pageSize, 
+            Domain.Enums.ShopStatusEnum? status = null,
+            string? searchTerm = null)
+        {
+            var query = _context.Shops
+                .Include(s => s.User)
+                .AsQueryable();
+
+            // Filter by status
+            if (status.HasValue)
+            {
+                query = query.Where(s => s.Status == status.Value);
+            }
+
+            // Search by shop name or owner name
+            if (!string.IsNullOrEmpty(searchTerm))
+            {
+                query = query.Where(s => 
+                    s.ShopName.Contains(searchTerm) || 
+                    s.OwnerName.Contains(searchTerm));
+            }
+
+            var totalCount = await query.CountAsync();
+
+            var items = await query
+                .OrderByDescending(s => s.CreatedAtUtc)
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
+
+            return (items, totalCount);
         }
     }
 }

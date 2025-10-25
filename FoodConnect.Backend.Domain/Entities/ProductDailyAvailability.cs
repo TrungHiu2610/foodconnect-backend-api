@@ -1,6 +1,4 @@
-﻿
-
-namespace FoodConnect.Backend.Domain.Entities
+﻿namespace FoodConnect.Backend.Domain.Entities
 {
     public class ProductDailyAvailability:BaseEntity
     {

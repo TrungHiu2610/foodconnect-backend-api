@@ -41,7 +41,9 @@ namespace FoodConnect.Backend.Application.Features.Auth.Commands.Register
 
             var roles = new List<UserRole>()
             {
-                new UserRole { RoleId = RoleEnum.Buyer}
+                new UserRole { RoleId = RoleEnum.Buyer, 
+                    //UserId = user.Id
+                }
             };
             var roleNames = roles.Select(ur => ur.RoleId.ToString()).ToList();
             user.UserRoles = roles;

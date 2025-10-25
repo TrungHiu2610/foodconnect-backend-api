@@ -12,8 +12,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace FoodConnect.Backend.Infrastructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20251010054119_AddDescriptionToProductAssets")]
-    partial class AddDescriptionToProductAssets
+    [Migration("20251025050846_InitialCreate")]
+    partial class InitialCreate
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -24,6 +24,84 @@ namespace FoodConnect.Backend.Infrastructure.Migrations
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
+
+            modelBuilder.Entity("FoodConnect.Backend.Domain.Entities.Cart", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("CreatedBy")
+                        .HasColumnType("uuid");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("SessionId")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<DateTime?>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("UpdatedBy")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SessionId");
+
+                    b.HasIndex("UserId")
+                        .IsUnique();
+
+                    b.ToTable("Carts");
+                });
+
+            modelBuilder.Entity("FoodConnect.Backend.Domain.Entities.CartItem", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("CartId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("CreatedBy")
+                        .HasColumnType("uuid");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<Guid>("ProductId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("Quantity")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime?>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("UpdatedBy")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CartId");
+
+                    b.HasIndex("ProductId");
+
+                    b.ToTable("CartItems");
+                });
 
             modelBuilder.Entity("FoodConnect.Backend.Domain.Entities.Category", b =>
                 {
@@ -55,6 +133,9 @@ namespace FoodConnect.Backend.Infrastructure.Migrations
                         .HasColumnType("boolean")
                         .HasDefaultValue(true);
 
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(100)
@@ -79,52 +160,57 @@ namespace FoodConnect.Backend.Infrastructure.Migrations
                         new
                         {
                             Id = new Guid("4286ba6a-3d40-46be-8539-237190c067b6"),
-                            CreatedAtUtc = new DateTime(2025, 10, 10, 5, 41, 18, 51, DateTimeKind.Utc).AddTicks(9246),
+                            CreatedAtUtc = new DateTime(2025, 10, 25, 5, 8, 44, 790, DateTimeKind.Utc).AddTicks(5850),
                             DeliveryType = 0,
                             Description = "Fresh fruits",
                             ImageUrl = "https://example.com/images/fruits.jpg",
                             IsActive = true,
+                            IsDeleted = false,
                             Name = "Fruits"
                         },
                         new
                         {
-                            Id = new Guid("2d3c171b-0eff-469c-9fea-0250b2689414"),
-                            CreatedAtUtc = new DateTime(2025, 10, 10, 5, 41, 18, 51, DateTimeKind.Utc).AddTicks(9262),
+                            Id = new Guid("b146ef79-6089-475a-8f3f-b453b39f6033"),
+                            CreatedAtUtc = new DateTime(2025, 10, 25, 5, 8, 44, 790, DateTimeKind.Utc).AddTicks(5865),
                             DeliveryType = 1,
                             Description = "Fresh vegetables",
                             ImageUrl = "https://example.com/images/vegetables.jpg",
                             IsActive = true,
+                            IsDeleted = false,
                             Name = "Vegetables"
                         },
                         new
                         {
-                            Id = new Guid("6de54913-ac70-43ab-a3fd-9b28add0e873"),
-                            CreatedAtUtc = new DateTime(2025, 10, 10, 5, 41, 18, 51, DateTimeKind.Utc).AddTicks(9264),
+                            Id = new Guid("4c98edea-da6e-40dd-b86a-05317180db73"),
+                            CreatedAtUtc = new DateTime(2025, 10, 25, 5, 8, 44, 790, DateTimeKind.Utc).AddTicks(5907),
                             DeliveryType = 0,
                             Description = "Dairy products",
                             ImageUrl = "https://example.com/images/dairy.jpg",
                             IsActive = true,
+                            IsDeleted = false,
                             Name = "Dairy"
                         },
                         new
                         {
-                            Id = new Guid("d3bec952-40b8-452d-a23e-d54a30a47f81"),
-                            CreatedAtUtc = new DateTime(2025, 10, 10, 5, 41, 18, 51, DateTimeKind.Utc).AddTicks(9275),
+                            Id = new Guid("d0800510-87b5-425e-b357-ee6f2133a402"),
+                            CreatedAtUtc = new DateTime(2025, 10, 25, 5, 8, 44, 790, DateTimeKind.Utc).AddTicks(5909),
                             DeliveryType = 1,
                             Description = "Fresh citrus fruits",
                             ImageUrl = "https://example.com/images/citrus.jpg",
                             IsActive = true,
+                            IsDeleted = false,
                             Name = "Citrus Fruits",
                             ParentId = new Guid("4286ba6a-3d40-46be-8539-237190c067b6")
                         },
                         new
                         {
-                            Id = new Guid("89a67c58-8919-4451-986f-9a8d271e3bcd"),
-                            CreatedAtUtc = new DateTime(2025, 10, 10, 5, 41, 18, 51, DateTimeKind.Utc).AddTicks(9279),
+                            Id = new Guid("2feb568e-736e-40fe-9bb1-5c5ef23c83d8"),
+                            CreatedAtUtc = new DateTime(2025, 10, 25, 5, 8, 44, 790, DateTimeKind.Utc).AddTicks(5914),
                             DeliveryType = 0,
                             Description = "Fresh berries",
                             ImageUrl = "https://example.com/images/berries.jpg",
                             IsActive = true,
+                            IsDeleted = false,
                             Name = "Berries",
                             ParentId = new Guid("4286ba6a-3d40-46be-8539-237190c067b6")
                         });
@@ -148,6 +234,9 @@ namespace FoodConnect.Backend.Infrastructure.Migrations
                     b.Property<string>("Description")
                         .HasMaxLength(1000)
                         .HasColumnType("character varying(1000)");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
 
                     b.Property<string>("Name")
                         .IsRequired()
@@ -214,6 +303,9 @@ namespace FoodConnect.Backend.Infrastructure.Migrations
                     b.Property<Guid?>("CreatedBy")
                         .HasColumnType("uuid");
 
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
                     b.Property<bool>("IsThumbnail")
                         .HasColumnType("boolean");
 
@@ -248,6 +340,9 @@ namespace FoodConnect.Backend.Infrastructure.Migrations
                     b.Property<DateTime>("Date")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
                     b.Property<Guid>("ProductId")
                         .HasColumnType("uuid");
 
@@ -281,6 +376,9 @@ namespace FoodConnect.Backend.Infrastructure.Migrations
 
                     b.Property<DateTime>("ExpiresAtUtc")
                         .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
 
                     b.Property<bool>("IsRevoked")
                         .HasColumnType("boolean");
@@ -353,6 +451,20 @@ namespace FoodConnect.Backend.Infrastructure.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
+                    b.Property<string>("AdminReason")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<string>("City")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("Country")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
                     b.Property<string>("CoverImageUrl")
                         .HasMaxLength(2048)
                         .HasColumnType("character varying(2048)");
@@ -364,22 +476,58 @@ namespace FoodConnect.Backend.Infrastructure.Migrations
                         .HasColumnType("uuid");
 
                     b.Property<string>("Description")
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)");
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
 
-                    b.Property<string>("Name")
+                    b.Property<string>("District")
                         .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)");
 
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<double>("Latitude")
+                        .HasColumnType("double precision");
+
+                    b.Property<string>("LogoUrl")
+                        .HasMaxLength(2048)
+                        .HasColumnType("character varying(2048)");
+
+                    b.Property<double>("Longitude")
+                        .HasColumnType("double precision");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)");
+
+                    b.Property<string>("PayoutAccountInfo")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<string>("PayoutAccountName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<int>("PayoutMethod")
+                        .HasColumnType("integer");
+
                     b.Property<decimal?>("Rating")
                         .HasColumnType("decimal(3,2)");
 
-                    b.Property<string>("Status")
+                    b.Property<Guid?>("ReviewedBy")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Street")
                         .IsRequired()
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("text")
-                        .HasDefaultValue("PendingApproval");
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)");
 
                     b.Property<DateTime?>("UpdatedAtUtc")
                         .HasColumnType("timestamp with time zone");
@@ -387,14 +535,136 @@ namespace FoodConnect.Backend.Infrastructure.Migrations
                     b.Property<Guid?>("UpdatedBy")
                         .HasColumnType("uuid");
 
-                    b.Property<Guid>("userId")
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Ward")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId")
+                        .IsUnique();
+
+                    b.ToTable("Shops");
+                });
+
+            modelBuilder.Entity("FoodConnect.Backend.Domain.Entities.ShopAsset", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("AssetType")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("AssetUrl")
+                        .IsRequired()
+                        .HasMaxLength(2048)
+                        .HasColumnType("character varying(2048)");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("CreatedBy")
+                        .HasColumnType("uuid");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<Guid>("ShopId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("UpdatedBy")
                         .HasColumnType("uuid");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("userId");
+                    b.HasIndex("ShopId");
 
-                    b.ToTable("Shops");
+                    b.ToTable("ShopAssets");
+                });
+
+            modelBuilder.Entity("FoodConnect.Backend.Domain.Entities.ShopCategory", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("CategoryId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("CreatedBy")
+                        .HasColumnType("uuid");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<Guid>("ShopId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("UpdatedBy")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CategoryId");
+
+                    b.HasIndex("ShopId", "CategoryId")
+                        .IsUnique();
+
+                    b.ToTable("ShopCategories");
+                });
+
+            modelBuilder.Entity("FoodConnect.Backend.Domain.Entities.ShopOperatingHour", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<TimeOnly>("CloseTime")
+                        .HasColumnType("time without time zone");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("CreatedBy")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("DayOfWeek")
+                        .HasColumnType("integer");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<TimeOnly>("OpenTime")
+                        .HasColumnType("time without time zone");
+
+                    b.Property<Guid?>("ShopId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("UpdatedBy")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ShopId");
+
+                    b.ToTable("ShopOperatingHours");
                 });
 
             modelBuilder.Entity("FoodConnect.Backend.Domain.Entities.User", b =>
@@ -421,6 +691,9 @@ namespace FoodConnect.Backend.Infrastructure.Migrations
                         .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
 
                     b.Property<string>("PasswordHash")
                         .IsRequired()
@@ -459,6 +732,36 @@ namespace FoodConnect.Backend.Infrastructure.Migrations
                     b.HasIndex("RoleId");
 
                     b.ToTable("UserRoles");
+                });
+
+            modelBuilder.Entity("FoodConnect.Backend.Domain.Entities.Cart", b =>
+                {
+                    b.HasOne("FoodConnect.Backend.Domain.Entities.User", "User")
+                        .WithOne()
+                        .HasForeignKey("FoodConnect.Backend.Domain.Entities.Cart", "UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("FoodConnect.Backend.Domain.Entities.CartItem", b =>
+                {
+                    b.HasOne("FoodConnect.Backend.Domain.Entities.Cart", "Cart")
+                        .WithMany("CartItems")
+                        .HasForeignKey("CartId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("FoodConnect.Backend.Domain.Entities.Product", "Product")
+                        .WithMany()
+                        .HasForeignKey("ProductId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Cart");
+
+                    b.Navigation("Product");
                 });
 
             modelBuilder.Entity("FoodConnect.Backend.Domain.Entities.Category", b =>
@@ -525,12 +828,52 @@ namespace FoodConnect.Backend.Infrastructure.Migrations
             modelBuilder.Entity("FoodConnect.Backend.Domain.Entities.Shop", b =>
                 {
                     b.HasOne("FoodConnect.Backend.Domain.Entities.User", "User")
-                        .WithMany()
-                        .HasForeignKey("userId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .WithOne()
+                        .HasForeignKey("FoodConnect.Backend.Domain.Entities.Shop", "UserId")
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("User");
+                });
+
+            modelBuilder.Entity("FoodConnect.Backend.Domain.Entities.ShopAsset", b =>
+                {
+                    b.HasOne("FoodConnect.Backend.Domain.Entities.Shop", "Shop")
+                        .WithMany("Assets")
+                        .HasForeignKey("ShopId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Shop");
+                });
+
+            modelBuilder.Entity("FoodConnect.Backend.Domain.Entities.ShopCategory", b =>
+                {
+                    b.HasOne("FoodConnect.Backend.Domain.Entities.Category", "Category")
+                        .WithMany()
+                        .HasForeignKey("CategoryId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("FoodConnect.Backend.Domain.Entities.Shop", "Shop")
+                        .WithMany("ShopCategories")
+                        .HasForeignKey("ShopId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Category");
+
+                    b.Navigation("Shop");
+                });
+
+            modelBuilder.Entity("FoodConnect.Backend.Domain.Entities.ShopOperatingHour", b =>
+                {
+                    b.HasOne("FoodConnect.Backend.Domain.Entities.Shop", "Shop")
+                        .WithMany("OperatingHours")
+                        .HasForeignKey("ShopId")
+                        .OnDelete(DeleteBehavior.Cascade);
+
+                    b.Navigation("Shop");
                 });
 
             modelBuilder.Entity("FoodConnect.Backend.Domain.Entities.UserRole", b =>
@@ -552,6 +895,11 @@ namespace FoodConnect.Backend.Infrastructure.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("FoodConnect.Backend.Domain.Entities.Cart", b =>
+                {
+                    b.Navigation("CartItems");
+                });
+
             modelBuilder.Entity("FoodConnect.Backend.Domain.Entities.Category", b =>
                 {
                     b.Navigation("Products");
@@ -571,7 +919,13 @@ namespace FoodConnect.Backend.Infrastructure.Migrations
 
             modelBuilder.Entity("FoodConnect.Backend.Domain.Entities.Shop", b =>
                 {
+                    b.Navigation("Assets");
+
+                    b.Navigation("OperatingHours");
+
                     b.Navigation("Products");
+
+                    b.Navigation("ShopCategories");
                 });
 
             modelBuilder.Entity("FoodConnect.Backend.Domain.Entities.User", b =>

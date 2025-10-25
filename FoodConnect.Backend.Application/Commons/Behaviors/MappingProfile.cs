@@ -2,6 +2,7 @@
 using FoodConnect.Backend.Application.Commons.DTOs;
 using FoodConnect.Backend.Application.Commons.DTOs.Responses.Category;
 using FoodConnect.Backend.Application.Commons.DTOs.Responses.Product;
+using FoodConnect.Backend.Application.Commons.DTOs.Responses.Shop;
 using FoodConnect.Backend.Application.Features.Category.Commands;
 using FoodConnect.Backend.Application.Features.Product.Commands;
 using FoodConnect.Backend.Domain.Entities;
@@ -89,6 +90,27 @@ namespace FoodConnect.Backend.Application.Commons.Behaviors
                 .ForMember(dest => dest.CreatedBy, opt => opt.Ignore())
                 .ForAllMembers(opts => opts.Condition((src, dest, srcMember) => srcMember != null));
             #endregion
+
+            #region shop mappings
+            // get shop detail
+            CreateMap<Domain.Entities.Shop, ShopResponse>()
+                .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(src => src.CreatedAtUtc))
+                .ForMember(dest => dest.UpdatedAt, opt => opt.MapFrom(src => src.UpdatedAtUtc))
+                .ForMember(dest => dest.Assets, opt => opt.MapFrom(src => src.Assets))
+                .ForMember(dest => dest.Categories, opt => opt.MapFrom(src => src.ShopCategories))
+                .ForMember(dest => dest.OperatingHours, opt => opt.MapFrom(src => src.OperatingHours));
+
+            CreateMap<ShopAsset, ShopAssetResponse>();
+
+            CreateMap<ShopCategory, ShopCategoryResponse>()
+                .ForMember(dest => dest.CategoryName, opt => opt.MapFrom(src => src.Category.Name));
+
+            CreateMap<ShopOperatingHour, ShopOperatingHourResponse>();
+
+            // get shop list
+            CreateMap<Domain.Entities.Shop, ShopListResponse>()
+                .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(src => src.CreatedAtUtc));
+            #endregion
         }
     }
     public class StringToEnumConverter<TEnum> : IValueConverter<string, TEnum> where TEnum : struct
@@ -97,6 +119,19 @@ namespace FoodConnect.Backend.Application.Commons.Behaviors
         {
             if (Enum.TryParse<TEnum>(sourceMember, true, out var result))
                 return result;
+
+            return default;
+        }
+    }
+
+    public class ShortToEnumConverter<TEnum> : IValueConverter<short, TEnum> where TEnum : struct
+    {
+        public TEnum Convert(short sourceMember, ResolutionContext context)
+        {
+            if (Enum.IsDefined(typeof(TEnum),(int) sourceMember))
+            {
+                return (TEnum)Enum.ToObject(typeof(TEnum), sourceMember);
+            }
 
             return default;
         }

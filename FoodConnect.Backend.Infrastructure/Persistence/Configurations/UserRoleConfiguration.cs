@@ -15,13 +15,18 @@ namespace FoodConnect.Backend.Infrastructure.Persistence.Configurations
         {
             builder.HasKey(ur => new { ur.UserId, ur.RoleId });
 
+            builder.Property(r => r.RoleId)
+                .HasConversion<int>();
+
             builder.HasOne(ur => ur.User)
                 .WithMany(u => u.UserRoles)
-                .HasForeignKey(ur => ur.UserId);
+                .HasForeignKey(ur => ur.UserId)
+                .OnDelete(DeleteBehavior.Cascade); 
 
             builder.HasOne(ur => ur.Role)
                 .WithMany(r => r.UserRoles)
-                .HasForeignKey(ur => ur.RoleId);
+                .HasForeignKey(ur => ur.RoleId)
+                .OnDelete(DeleteBehavior.Cascade); 
         }
     }
 }

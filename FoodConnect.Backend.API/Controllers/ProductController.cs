@@ -26,6 +26,14 @@ namespace FoodConnect.Backend.API.Controllers
 
         [HttpPost]
         [Authorize(Roles = "Seller")]
+        public async Task<IActionResult> GetSellerListProducts([FromBody] GetSellerListProductsQuery query)
+        {
+            var result = await Mediator.Send(query);
+            return result != null ? (result.Success ? Ok(result) : BadRequest(result)) : BadRequest();
+        }
+
+        [HttpPost]
+        [Authorize(Roles = "Seller")]
         public async Task<IActionResult> CreateProduct([FromForm] CreateProductCommand command)
         {
             var result = await Mediator.Send(command);

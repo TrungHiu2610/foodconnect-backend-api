@@ -87,7 +87,7 @@ namespace FoodConnect.Backend.Application.Features.Category.Commands
                         return result.BuildFail($"Failed to delete uploaded file: {delEx.Message}");
                     }
                 }
-                return result.BuildFail("Update category failed", new List<string> { ex.Message });
+                return result.BuildFail("Update category failed", 400, new List<string> { ex.Message });
             }
         }
     }
