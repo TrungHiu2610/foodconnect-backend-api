@@ -20,8 +20,16 @@ using System.Reflection;
 using System.Text;
 using Microsoft.Extensions.DependencyInjection;
 using Amazon.Runtime;
+using Microsoft.AspNetCore.Http.Features;
+using Microsoft.AspNetCore.Server.Kestrel.Core;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Configure Kestrel for large file uploads
+builder.WebHost.ConfigureKestrel(options =>
+{
+    options.Limits.MaxRequestBodySize = 100 * 1024 * 1024; // 100 MB
+});
 
 var MyAllowSpecificOrigins = "_myAllowSpecificOrigins";
 
@@ -91,7 +99,6 @@ services.AddScoped<IProductRepository, ProductRepository>();
 services.AddScoped<IProductAssetRepository, ProductAssetRepository>();
 services.AddScoped<IShopRepository, ShopRepository>();
 services.AddScoped<ICategoryRepository, CategoryRepository>();
-services.AddScoped<IShopRegistrationRepository, ShopRegistrationRepository>();
 services.AddScoped<ICartRepository, CartRepository>();
 services.AddScoped<ICartItemRepository, CartItemRepository>();
 services.AddScoped<IUnitOfWork, UnitOfWork>();
@@ -109,6 +116,14 @@ services.AddValidatorsFromAssembly(Assembly.Load("FoodConnect.Backend.Applicatio
 
 // Automapper IMapperConfigurationExpression
 services.AddAutoMapper(cfg => { }, typeof(Program).Assembly, Assembly.Load("FoodConnect.Backend.Application"));
+
+// Configure Form Options for large file uploads
+services.Configure<FormOptions>(options =>
+{
+    options.ValueLengthLimit = int.MaxValue;
+    options.MultipartBodyLengthLimit = 100 * 1024 * 1024; // 100 MB
+    options.MultipartHeadersLengthLimit = int.MaxValue;
+});
 
 services.AddControllers();
 

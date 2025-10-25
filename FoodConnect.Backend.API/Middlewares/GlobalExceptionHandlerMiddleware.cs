@@ -40,7 +40,7 @@ namespace FoodConnect.Backend.API.Middlewares
                     statusCode = HttpStatusCode.BadRequest; 
 
                     var validationErrors = validationException.Errors.SelectMany(kvp => kvp.Value).ToList();
-                    response = response.BuildFail("One or more validation errors occurred.", validationErrors);
+                    response = response.BuildFail("One or more validation errors occurred.", 400, validationErrors);
                     break;
 
                 case BadRequestException badRequestException:
