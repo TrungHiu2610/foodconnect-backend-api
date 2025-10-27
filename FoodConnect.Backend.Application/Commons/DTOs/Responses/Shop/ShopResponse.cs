@@ -6,17 +6,17 @@ namespace FoodConnect.Backend.Application.Commons.DTOs.Responses.Shop
         public string ShopName { get; set; } = string.Empty;
         public string? Description { get; set; }
         public string Address { get; set; } = string.Empty;
-        public int Status { get; set; }  // Frontend expects int
+        public int Status { get; set; }  
         public string StatusName { get; set; } = string.Empty;  // "Active", "Draft", etc.
         public string? AdminReason { get; set; }
         public Guid? ReviewedBy { get; set; }
         public DateTime? ReviewedAt { get; set; }
-        public int PayoutMethod { get; set; }  // Frontend expects int
+        public int PayoutMethod { get; set; }  
         public string PayoutMethodName { get; set; } = string.Empty;  // "Bank", "MoMo"
         public string PayoutAccountInfo { get; set; } = string.Empty;
         public string PayoutAccountName { get; set; } = string.Empty;
         
-        // User info (from User entity)
+        // User info 
         public string OwnerName { get; set; } = string.Empty;  // User.FullName
         public string Phone { get; set; } = string.Empty;  // User.PhoneNumber
         public string? Email { get; set; }  // User.Email
@@ -32,7 +32,7 @@ namespace FoodConnect.Backend.Application.Commons.DTOs.Responses.Shop
     {
         public Guid Id { get; set; }
         public string AssetUrl { get; set; } = string.Empty;
-        public int AssetType { get; set; }  // Frontend expects int
+        public int AssetType { get; set; } 
         public string AssetTypeName { get; set; } = string.Empty;  // "IdCardFront", etc.
     }
 

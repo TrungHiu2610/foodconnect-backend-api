@@ -1,6 +1,8 @@
-﻿namespace FoodConnect.Backend.Domain.Entities
+﻿using FoodConnect.Backend.Domain.Interfaces;
+
+namespace FoodConnect.Backend.Domain.Entities
 {
-    public class ShopOperatingHour : BaseEntity
+    public class ShopOperatingHour : BaseEntity, IHardDelete
     {
         public DayOfWeek DayOfWeek { get; set; } 
         public TimeOnly OpenTime { get; set; }   

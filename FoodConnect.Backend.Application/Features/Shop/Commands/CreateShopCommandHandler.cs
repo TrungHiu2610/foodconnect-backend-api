@@ -62,15 +62,14 @@ namespace FoodConnect.Backend.Application.Features.Shop.Commands
             }
 
             // Parse payout method
-            if (!Enum.IsDefined(typeof(PayoutMethodTypeEnum), (int)request.PayoutMethod))
+            if (!Enum.IsDefined(typeof(PaymentMethodEnum), (int)request.PayoutMethod))
             {
                 return result.BuildFail("Invalid payout method");
             }
-            var payoutMethod = (PayoutMethodTypeEnum)request.PayoutMethod;
+            var payoutMethod = (PaymentMethodEnum)request.PayoutMethod;
 
             var shop = new Domain.Entities.Shop
             {
-                Id = Guid.NewGuid(),
                 ShopName = request.ShopName,
                 Description = request.Description,
                 Street = request.Street,
@@ -270,7 +269,6 @@ namespace FoodConnect.Backend.Application.Features.Shop.Commands
                         }
                         catch
                         {
-                            // Log error but continue
                         }
                     }
                 }

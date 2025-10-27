@@ -1,8 +1,9 @@
 ﻿using FoodConnect.Backend.Domain.Enums;
+using FoodConnect.Backend.Domain.Interfaces;
 
 namespace FoodConnect.Backend.Domain.Entities
 {
-    public class ProductAsset : BaseEntity
+    public class ProductAsset : BaseEntity, IHardDelete
     {
         public string AssetName { get; set; }
         public string? AssetDescription { get; set; }

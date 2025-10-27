@@ -7,8 +7,8 @@ namespace FoodConnect.Backend.Application.Commons.DTOs.Responses.Shop
         public string OwnerName { get; set; } = string.Empty;  // User.FullName
         public string Phone { get; set; } = string.Empty;  // User.PhoneNumber
         public string Address { get; set; } = string.Empty;
-        public int Status { get; set; }  // Frontend expects int
-        public string StatusName { get; set; } = string.Empty;  // "Active", "Draft", etc.
+        public int Status { get; set; }  
+        public string StatusName { get; set; } = string.Empty;  // "Active", "Draft"
         public DateTime CreatedAtUtc { get; set; }
     }
 }

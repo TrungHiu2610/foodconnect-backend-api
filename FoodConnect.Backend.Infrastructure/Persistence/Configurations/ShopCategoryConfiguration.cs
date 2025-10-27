@@ -9,6 +9,7 @@ namespace FoodConnect.Backend.Infrastructure.Persistence.Configurations
         public void Configure(EntityTypeBuilder<ShopCategory> builder)
         {
             builder.HasKey(sc => sc.Id);
+            builder.Property(sc => sc.Id).ValueGeneratedOnAdd();
 
             builder.HasIndex(sc => new { sc.ShopId, sc.CategoryId })
                 .IsUnique();

@@ -14,9 +14,6 @@ namespace FoodConnect.Backend.API.Controllers
     [ApiController]
     public class ShopController : ApiBaseController
     {
-        /// <summary>
-        /// Create new shop (Draft status) - User
-        /// </summary>
         [HttpPost]
         [Authorize]
         public async Task<IActionResult> CreateShop([FromForm] CreateShopCommand command)
@@ -25,9 +22,14 @@ namespace FoodConnect.Backend.API.Controllers
             return result != null ? (result.Success ? Ok(result) : BadRequest(result)) : BadRequest();
         }
 
-        /// <summary>
-        /// Submit shop for approval (Draft -> PendingApproval) - User
-        /// </summary>
+        [HttpPut]
+        [Authorize]
+        public async Task<IActionResult> UpdateShop([FromForm] UpdateShopCommand command)
+        {
+            var result = await Mediator.Send(command);
+            return result != null ? (result.Success ? Ok(result) : BadRequest(result)) : BadRequest();
+        }
+
         [HttpPost]
         [Authorize]
         public async Task<IActionResult> SubmitShop([FromBody] SubmitShopCommand command)
@@ -36,9 +38,6 @@ namespace FoodConnect.Backend.API.Controllers
             return result != null ? (result.Success ? Ok(result) : BadRequest(result)) : BadRequest();
         }
 
-        /// <summary>
-        /// Approve shop (PendingApproval -> Active) - Admin
-        /// </summary>
         [HttpPost]
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> ApproveShop([FromBody] ApproveShopCommand command)
@@ -47,9 +46,6 @@ namespace FoodConnect.Backend.API.Controllers
             return result != null ? (result.Success ? Ok(result) : BadRequest(result)) : BadRequest();
         }
 
-        /// <summary>
-        /// Reject shop (PendingApproval -> Rejected) - Admin
-        /// </summary>
         [HttpPost]
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> RejectShop([FromBody] RejectShopCommand command)
@@ -58,9 +54,6 @@ namespace FoodConnect.Backend.API.Controllers
             return result != null ? (result.Success ? Ok(result) : BadRequest(result)) : BadRequest();
         }
 
-        /// <summary>
-        /// Get current user's shop - User
-        /// </summary>
         [HttpGet]
         [Authorize]
         public async Task<IActionResult> GetMyShop()
@@ -70,9 +63,6 @@ namespace FoodConnect.Backend.API.Controllers
             return result != null ? (result.Success ? Ok(result) : BadRequest(result)) : BadRequest();
         }
 
-        /// <summary>
-        /// Get list of shops with pagination and filtering - Admin
-        /// </summary>
         [HttpPost]
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> GetListShops([FromBody] GetListShopsQuery query)
@@ -81,9 +71,6 @@ namespace FoodConnect.Backend.API.Controllers
             return result != null ? (result.Success ? Ok(result) : BadRequest(result)) : BadRequest();
         }
 
-        /// <summary>
-        /// Get shop detail by ID - Admin
-        /// </summary>
         [HttpGet]
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> GetShopDetail([FromRoute] Guid shopId)

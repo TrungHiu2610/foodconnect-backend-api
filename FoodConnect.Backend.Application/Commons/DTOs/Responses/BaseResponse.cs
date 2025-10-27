@@ -53,7 +53,6 @@
             return this;
         }
         
-        // Convenience methods for common status codes
         public BaseResponse<T> BuildNotFound(string message = "Resource not found")
         {
             return BuildFail(message, 404);

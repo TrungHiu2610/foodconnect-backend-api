@@ -114,7 +114,6 @@ namespace FoodConnect.Backend.Application.Features.Product.Commands
                         }
                     }
                     productAssetsToDelete.ForEach(pa => product.ProductAssets.Remove(pa));
-                    //_productAssetRepository.RemoveRange(productAssetsToDelete);
                 }
 
                 // update product assets
@@ -139,10 +138,10 @@ namespace FoodConnect.Backend.Application.Features.Product.Commands
                         return result.BuildFail("At least one thumbnail is required.");
                     }
 
-                    // update assets
-
+                    // Update asset metadata (description only)
                     var updatedAssetsDict = request.UpdateProductAssets.ToDictionary(a => a.Id);
                     var newThumbnailId = request.UpdateProductAssets.FirstOrDefault(a => a.IsThumbnail == true)?.Id;
+                    
                     foreach (var assetInDb in product.ProductAssets)
                     {
                         if (updatedAssetsDict.TryGetValue(assetInDb.Id, out var assetUpdateInfo))
@@ -154,8 +153,6 @@ namespace FoodConnect.Backend.Application.Features.Product.Commands
                         {
                             assetInDb.IsThumbnail = (assetInDb.Id == newThumbnailId);
                         }
-
-                        //_productAssetRepository.Update(assetInDb);
                     }
                 }
 
@@ -183,16 +180,16 @@ namespace FoodConnect.Backend.Application.Features.Product.Commands
                             assetDto.AssetUrl = url;
                         }
                     }
+                    
+                    // Map DTOs to entities and add to product collection
                     var newAssets = _mapper.Map<ICollection<ProductAsset>>(request.NewProductAssets);
                     foreach (var newAsset in newAssets)
                     {
                         newAsset.ProductId = product.Id;
                         product.ProductAssets.Add(newAsset);
-                        //await _productAssetRepository.AddAsync(newAsset);
                     }
                 }
 
-                _productRepository.Update(product);
                 await _unitOfWork.SaveChangesAsync(cancellationToken);
                 await _unitOfWork.CommitTransactionAsync(transaction);
 

@@ -9,6 +9,7 @@ namespace FoodConnect.Backend.Infrastructure.Persistence.Configurations
         public void Configure(EntityTypeBuilder<ShopAsset> builder)
         {
             builder.HasKey(sa => sa.Id);
+            builder.Property(sa => sa.Id).ValueGeneratedOnAdd();
 
             builder.Property(sa => sa.AssetUrl)
                 .IsRequired()

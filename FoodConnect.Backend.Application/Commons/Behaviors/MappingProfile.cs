@@ -5,6 +5,7 @@ using FoodConnect.Backend.Application.Commons.DTOs.Responses.Product;
 using FoodConnect.Backend.Application.Commons.DTOs.Responses.Shop;
 using FoodConnect.Backend.Application.Features.Category.Commands;
 using FoodConnect.Backend.Application.Features.Product.Commands;
+using FoodConnect.Backend.Application.Features.Shop.Commands;
 using FoodConnect.Backend.Domain.Entities;
 using FoodConnect.Backend.Domain.Enums;
 
@@ -128,6 +129,27 @@ namespace FoodConnect.Backend.Application.Commons.Behaviors
                 .ForMember(dest => dest.Address, opt => opt.MapFrom(src => 
                     string.Join(", ", new[] { src.Street, src.Ward, src.District, src.City, src.Country }
                         .Where(s => !string.IsNullOrWhiteSpace(s)))));
+
+            // update shop - only map non-null properties
+            CreateMap<UpdateShopCommand, Domain.Entities.Shop>()
+                .ForMember(dest => dest.Id, opt => opt.Ignore())
+                .ForMember(dest => dest.UserId, opt => opt.Ignore())
+                .ForMember(dest => dest.Status, opt => opt.Ignore())
+                .ForMember(dest => dest.Assets, opt => opt.Ignore())
+                .ForMember(dest => dest.ShopCategories, opt => opt.Ignore())
+                .ForMember(dest => dest.OperatingHours, opt => opt.Ignore())
+                .ForMember(dest => dest.User, opt => opt.Ignore())
+                .ForMember(dest => dest.Products, opt => opt.Ignore())
+                .ForMember(dest => dest.LogoUrl, opt => opt.Ignore())
+                .ForMember(dest => dest.CoverImageUrl, opt => opt.Ignore())
+                .ForMember(dest => dest.AdminReason, opt => opt.Ignore())
+                .ForMember(dest => dest.ReviewedBy, opt => opt.Ignore())
+                .ForMember(dest => dest.ReviewedAt, opt => opt.Ignore())
+                .ForMember(dest => dest.CreatedAtUtc, opt => opt.Ignore())
+                .ForMember(dest => dest.CreatedBy, opt => opt.Ignore())
+                .ForMember(dest => dest.PayoutMethod, opt => opt.MapFrom((src, dest) => 
+                    src.PayoutMethod.HasValue ? (PaymentMethodEnum)src.PayoutMethod.Value : dest.PayoutMethod))
+                .ForAllMembers(opts => opts.Condition((src, dest, srcMember) => srcMember != null));
             #endregion
         }
     }

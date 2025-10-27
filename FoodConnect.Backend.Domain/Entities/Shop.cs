@@ -30,7 +30,7 @@ namespace FoodConnect.Backend.Domain.Entities
         public DateTime? ReviewedAt { get; set; }
         
         // Payout information
-        public PayoutMethodTypeEnum PayoutMethod { get; set; }
+        public PaymentMethodEnum PayoutMethod { get; set; }
         public string PayoutAccountInfo { get; set; } = string.Empty;
         public string PayoutAccountName { get; set; } = string.Empty;
 
