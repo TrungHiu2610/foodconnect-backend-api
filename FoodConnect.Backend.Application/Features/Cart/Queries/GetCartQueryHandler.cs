@@ -36,10 +36,9 @@ namespace FoodConnect.Backend.Application.Features.Cart.Queries
             }
             else
             {
-                // Return empty cart for guest without session
                 return result.BuildSuccess(new CartResponse
                 {
-                    Items = new List<CartItemResponse>(),
+                    ShopGroups = new List<ShopCartGroup>(),
                     TotalItems = 0,
                     TotalAmount = 0
                 }, "Empty cart");
@@ -47,10 +46,9 @@ namespace FoodConnect.Backend.Application.Features.Cart.Queries
 
             if (cart == null)
             {
-                // Return empty cart
                 return result.BuildSuccess(new CartResponse
                 {
-                    Items = new List<CartItemResponse>(),
+                    ShopGroups = new List<ShopCartGroup>(),
                     TotalItems = 0,
                     TotalAmount = 0
                 }, "Empty cart");
@@ -70,46 +68,60 @@ namespace FoodConnect.Backend.Application.Features.Cart.Queries
                 SessionId = cart.SessionId,
                 CreatedAtUtc = cart.CreatedAtUtc,
                 UpdatedAtUtc = cart.UpdatedAtUtc,
-                Items = new List<CartItemResponse>()
+                ShopGroups = new List<ShopCartGroup>()
             };
 
-            if (cart.CartItems != null)
+            if (cart.CartItems != null && cart.CartItems.Any())
             {
-                foreach (var item in cart.CartItems)
-                {
-                    var product = item.Product;
-                    var shop = product?.Shop;
-                    
-                    // Get today's availability
-                    var todayAvailability = product?.ProductDailyAvailabilities?
-                        .FirstOrDefault(a => a.Date.Date == DateTime.UtcNow.Date);
-                    
-                    response.Items.Add(new CartItemResponse
-                    {
-                        Id = item.Id,
-                        ProductId = item.ProductId,
-                        ProductName = product?.Name ?? string.Empty,
-                        ProductThumbnail = product?.ProductAssets?.FirstOrDefault(a => a.IsThumbnail)?.AssetUrl,
-                        ProductPrice = product?.Price ?? 0,
-                        ProductUnit = product?.Unit ?? string.Empty,
-                        Quantity = item.Quantity,
-                        Subtotal = (product?.Price ?? 0) * item.Quantity,
-                        
-                        // Shop info
-                        ShopId = product?.ShopId ?? Guid.Empty,
-                        ShopName = shop?.ShopName ?? string.Empty,
-                        ShopStatus = shop?.Status.ToString() ?? string.Empty,
-                        ShopAddress = null,  // Address removed from Shop entity
-                        
-                        // Product availability
-                        AvailableStock = todayAvailability?.Quantity ?? 0,
-                        IsAvailable = product?.Status == Domain.Enums.ProductStatusEnum.Active
+                var groupedByShop = cart.CartItems
+                    .Where(item => item.Product != null && item.Product.Shop != null)
+                    .GroupBy(item => new 
+                    { 
+                        ShopId = item.Product!.ShopId, 
+                        ShopName = item.Product.Shop!.ShopName,
+                        ShopStatus = item.Product.Shop.Status
                     });
+
+                foreach (var shopGroup in groupedByShop)
+                {
+                    var shopCartGroup = new ShopCartGroup
+                    {
+                        ShopId = shopGroup.Key.ShopId,
+                        ShopName = shopGroup.Key.ShopName,
+                        ShopStatus = shopGroup.Key.ShopStatus.ToString(),
+                        Items = new List<CartItemResponse>()
+                    };
+
+                    foreach (var item in shopGroup)
+                    {
+                        var product = item.Product;
+                        var todayAvailability = product?.ProductDailyAvailabilities?
+                            .FirstOrDefault(a => a.Date.Date == DateTime.UtcNow.Date);
+
+                        var cartItem = new CartItemResponse
+                        {
+                            Id = item.Id,
+                            ProductId = item.ProductId,
+                            ProductName = product?.Name ?? string.Empty,
+                            ProductThumbnail = product?.ProductAssets?.FirstOrDefault(a => a.IsThumbnail)?.AssetUrl,
+                            ProductPrice = product?.Price ?? 0,
+                            ProductUnit = product?.Unit ?? string.Empty,
+                            Quantity = item.Quantity,
+                            Subtotal = (product?.Price ?? 0) * item.Quantity,
+                            AvailableStock = todayAvailability?.Quantity ?? 0,
+                            IsAvailable = product?.Status == Domain.Enums.ProductStatusEnum.Active
+                        };
+
+                        shopCartGroup.Items.Add(cartItem);
+                    }
+
+                    shopCartGroup.ShopSubtotal = shopCartGroup.Items.Sum(i => i.Subtotal);
+                    response.ShopGroups.Add(shopCartGroup);
                 }
             }
 
-            response.TotalItems = response.Items.Sum(i => i.Quantity);
-            response.TotalAmount = response.Items.Sum(i => i.Subtotal);
+            response.TotalItems = response.ShopGroups.SelectMany(g => g.Items).Sum(i => i.Quantity);
+            response.TotalAmount = response.ShopGroups.Sum(g => g.ShopSubtotal);
 
             return response;
         }

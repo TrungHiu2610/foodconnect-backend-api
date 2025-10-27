@@ -6,7 +6,7 @@ namespace FoodConnect.Backend.Application.Features.Cart.Commands
 {
     public class RemoveCartItemCommand : IRequest<BaseResponse<CartResponse>>
     {
-        public Guid CartItemId { get; set; }
+        public List<Guid> CartItemIds { get; set; } = new List<Guid>();
         public string? SessionId { get; set; }
     }
 }

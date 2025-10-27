@@ -123,31 +123,58 @@ namespace FoodConnect.Backend.Application.Features.Cart.Commands
                 SessionId = cart.SessionId,
                 CreatedAtUtc = cart.CreatedAtUtc,
                 UpdatedAtUtc = cart.UpdatedAtUtc,
-                Items = new List<CartItemResponse>()
+                ShopGroups = new List<ShopCartGroup>()
             };
 
-            if (cart.CartItems != null)
+            if (cart.CartItems != null && cart.CartItems.Any())
             {
-                foreach (var item in cart.CartItems)
-                {
-                    response.Items.Add(new CartItemResponse
+                var groupedByShop = cart.CartItems
+                    .Where(item => item.Product != null && item.Product.Shop != null)
+                    .GroupBy(item => new
                     {
-                        Id = item.Id,
-                        ProductId = item.ProductId,
-                        ProductName = item.Product?.Name ?? string.Empty,
-                        ProductThumbnail = item.Product?.ProductAssets?.FirstOrDefault(a => a.IsThumbnail)?.AssetUrl,
-                        ProductPrice = item.Product?.Price ?? 0,
-                        ProductUnit = item.Product?.Unit ?? string.Empty,
-                        Quantity = item.Quantity,
-                        Subtotal = (item.Product?.Price ?? 0) * item.Quantity,
-                        ShopId = item.Product?.ShopId ?? Guid.Empty,
-                        ShopName = item.Product?.Shop?.ShopName ?? string.Empty
+                        ShopId = item.Product!.ShopId,
+                        ShopName = item.Product.Shop!.ShopName,
+                        ShopStatus = item.Product.Shop.Status
                     });
+
+                foreach (var shopGroup in groupedByShop)
+                {
+                    var shopCartGroup = new ShopCartGroup
+                    {
+                        ShopId = shopGroup.Key.ShopId,
+                        ShopName = shopGroup.Key.ShopName,
+                        ShopStatus = shopGroup.Key.ShopStatus.ToString(),
+                        Items = new List<CartItemResponse>()
+                    };
+
+                    foreach (var item in shopGroup)
+                    {
+                        var product = item.Product;
+                        var todayAvailability = product?.ProductDailyAvailabilities?
+                            .FirstOrDefault(a => a.Date.Date == DateTime.UtcNow.Date);
+
+                        shopCartGroup.Items.Add(new CartItemResponse
+                        {
+                            Id = item.Id,
+                            ProductId = item.ProductId,
+                            ProductName = product?.Name ?? string.Empty,
+                            ProductThumbnail = product?.ProductAssets?.FirstOrDefault(a => a.IsThumbnail)?.AssetUrl,
+                            ProductPrice = product?.Price ?? 0,
+                            ProductUnit = product?.Unit ?? string.Empty,
+                            Quantity = item.Quantity,
+                            Subtotal = (product?.Price ?? 0) * item.Quantity,
+                            AvailableStock = todayAvailability?.Quantity ?? 0,
+                            IsAvailable = product?.Status == Domain.Enums.ProductStatusEnum.Active
+                        });
+                    }
+
+                    shopCartGroup.ShopSubtotal = shopCartGroup.Items.Sum(i => i.Subtotal);
+                    response.ShopGroups.Add(shopCartGroup);
                 }
             }
 
-            response.TotalItems = response.Items.Sum(i => i.Quantity);
-            response.TotalAmount = response.Items.Sum(i => i.Subtotal);
+            response.TotalItems = response.ShopGroups.SelectMany(g => g.Items).Sum(i => i.Quantity);
+            response.TotalAmount = response.ShopGroups.Sum(g => g.ShopSubtotal);
 
             return response;
         }
