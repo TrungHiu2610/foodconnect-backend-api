@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace FoodConnect.Backend.Domain.Enums
 {
-    public enum PayoutMethodTypeEnum
+    public enum PaymentMethodEnum
     {
         MOMO = 1,
         VNPay = 2,

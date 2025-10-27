@@ -7,6 +7,8 @@ using FoodConnect.Backend.Application.Interfaces.IRepositories;
 using FoodConnect.Backend.Domain.Enums;
 using MediatR;
 using System.Text.Json;
+using FoodConnect.Backend.Application.Commons.DTOs;
+using System;
 
 namespace FoodConnect.Backend.Application.Features.Shop.Commands
 {
@@ -60,20 +62,16 @@ namespace FoodConnect.Backend.Application.Features.Shop.Commands
             }
 
             // Parse payout method
-            if (!Enum.TryParse<PayoutMethodTypeEnum>(request.PayoutMethod, true, out var payoutMethod))
+            if (!Enum.IsDefined(typeof(PaymentMethodEnum), (int)request.PayoutMethod))
             {
                 return result.BuildFail("Invalid payout method");
             }
+            var payoutMethod = (PaymentMethodEnum)request.PayoutMethod;
 
             var shop = new Domain.Entities.Shop
             {
-                Id = Guid.NewGuid(),
                 ShopName = request.ShopName,
                 Description = request.Description,
-                OwnerName = request.OwnerName,
-                Phone = request.Phone,
-                Email = request.Email,
-                Address = request.Address,
                 Street = request.Street,
                 Ward = request.Ward,
                 District = request.District,
@@ -86,7 +84,6 @@ namespace FoodConnect.Backend.Application.Features.Shop.Commands
                 PayoutAccountName = request.PayoutAccountName,
                 UserId = (Guid)userId,
                 Status = ShopStatusEnum.Draft,
-                CreatedAtUtc = DateTime.UtcNow
             };
 
             // Handle file uploads
@@ -272,7 +269,6 @@ namespace FoodConnect.Backend.Application.Features.Shop.Commands
                         }
                         catch
                         {
-                            // Log error but continue
                         }
                     }
                 }
@@ -280,12 +276,5 @@ namespace FoodConnect.Backend.Application.Features.Shop.Commands
                 return result.BuildFail($"Failed to create shop: {ex.Message}");
             }
         }
-    }
-
-    public class OperatingHourDto
-    {
-        public DayOfWeek DayOfWeek { get; set; }
-        public string OpenTime { get; set; } = string.Empty;
-        public string CloseTime { get; set; } = string.Empty;
     }
 }

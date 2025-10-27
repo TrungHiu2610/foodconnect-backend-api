@@ -40,15 +40,23 @@ namespace FoodConnect.Backend.Infrastructure.Persistence
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             modelBuilder.ApplyConfigurationsFromAssembly(Assembly.GetExecutingAssembly());
+            
             foreach (var entityType in modelBuilder.Model.GetEntityTypes())
             {
                 if (typeof(BaseEntity).IsAssignableFrom(entityType.ClrType))
                 {
-                    var method = typeof(AppDbContext)
-                        .GetMethod(nameof(SetSoftDeleteFilter), BindingFlags.NonPublic | BindingFlags.Static)!
-                        .MakeGenericMethod(entityType.ClrType);
+                    var isHardDelete = entityType.ClrType
+                        .GetInterfaces()
+                        .Any(i => i.Name == nameof(Domain.Interfaces.IHardDelete));
 
-                    method.Invoke(null, new object[] { modelBuilder });
+                    if (!isHardDelete)
+                    {
+                        var method = typeof(AppDbContext)
+                            .GetMethod(nameof(SetSoftDeleteFilter), BindingFlags.NonPublic | BindingFlags.Static)!
+                            .MakeGenericMethod(entityType.ClrType);
+
+                        method.Invoke(null, new object[] { modelBuilder });
+                    }
                 }
             }
             base.OnModelCreating(modelBuilder);
@@ -72,12 +80,20 @@ namespace FoodConnect.Backend.Infrastructure.Persistence
                     entry.Entity.UpdatedAtUtc = DateTime.UtcNow;
                     entry.Entity.UpdatedBy = userId;
                 }
+                
                 if (entry.State == EntityState.Deleted)
                 {
-                    entry.State = EntityState.Modified;
-                    entry.Entity.IsDeleted = true;
-                    entry.Entity.UpdatedAtUtc = DateTime.UtcNow;
-                    entry.Entity.UpdatedBy = userId;
+                    var isHardDelete = entry.Entity.GetType()
+                        .GetInterfaces()
+                        .Any(i => i.Name == nameof(Domain.Interfaces.IHardDelete));
+
+                    if (!isHardDelete)
+                    {
+                        entry.State = EntityState.Modified;
+                        entry.Entity.IsDeleted = true;
+                        entry.Entity.UpdatedAtUtc = DateTime.UtcNow;
+                        entry.Entity.UpdatedBy = userId;
+                    }
                 }
             }
 

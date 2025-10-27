@@ -3,6 +3,7 @@ using System;
 using FoodConnect.Backend.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace FoodConnect.Backend.Infrastructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251027100102_UpdateShopCategoryUniqueIndexWithFilter")]
+    partial class UpdateShopCategoryUniqueIndexWithFilter
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -157,7 +160,7 @@ namespace FoodConnect.Backend.Infrastructure.Migrations
                         new
                         {
                             Id = new Guid("4286ba6a-3d40-46be-8539-237190c067b6"),
-                            CreatedAtUtc = new DateTime(2025, 10, 27, 11, 58, 37, 498, DateTimeKind.Utc).AddTicks(5240),
+                            CreatedAtUtc = new DateTime(2025, 10, 27, 10, 1, 1, 720, DateTimeKind.Utc).AddTicks(9343),
                             DeliveryType = 0,
                             Description = "Fresh fruits",
                             ImageUrl = "https://example.com/images/fruits.jpg",
@@ -168,7 +171,7 @@ namespace FoodConnect.Backend.Infrastructure.Migrations
                         new
                         {
                             Id = new Guid("2fa4cb76-edee-44e3-95e2-1f841b27929a"),
-                            CreatedAtUtc = new DateTime(2025, 10, 27, 11, 58, 37, 498, DateTimeKind.Utc).AddTicks(5261),
+                            CreatedAtUtc = new DateTime(2025, 10, 27, 10, 1, 1, 720, DateTimeKind.Utc).AddTicks(9359),
                             DeliveryType = 1,
                             Description = "Fresh vegetables",
                             ImageUrl = "https://example.com/images/vegetables.jpg",
@@ -179,7 +182,7 @@ namespace FoodConnect.Backend.Infrastructure.Migrations
                         new
                         {
                             Id = new Guid("ac8e66b0-4fbc-4c97-ad4b-427eab61db1b"),
-                            CreatedAtUtc = new DateTime(2025, 10, 27, 11, 58, 37, 498, DateTimeKind.Utc).AddTicks(5263),
+                            CreatedAtUtc = new DateTime(2025, 10, 27, 10, 1, 1, 720, DateTimeKind.Utc).AddTicks(9363),
                             DeliveryType = 0,
                             Description = "Dairy products",
                             ImageUrl = "https://example.com/images/dairy.jpg",
@@ -190,7 +193,7 @@ namespace FoodConnect.Backend.Infrastructure.Migrations
                         new
                         {
                             Id = new Guid("30d76555-7ff9-41d5-a11e-92a347f725bf"),
-                            CreatedAtUtc = new DateTime(2025, 10, 27, 11, 58, 37, 498, DateTimeKind.Utc).AddTicks(5289),
+                            CreatedAtUtc = new DateTime(2025, 10, 27, 10, 1, 1, 720, DateTimeKind.Utc).AddTicks(9366),
                             DeliveryType = 1,
                             Description = "Fresh citrus fruits",
                             ImageUrl = "https://example.com/images/citrus.jpg",
@@ -202,7 +205,7 @@ namespace FoodConnect.Backend.Infrastructure.Migrations
                         new
                         {
                             Id = new Guid("4cf8d54f-d15c-4f02-b3a4-c40c5206b624"),
-                            CreatedAtUtc = new DateTime(2025, 10, 27, 11, 58, 37, 498, DateTimeKind.Utc).AddTicks(5293),
+                            CreatedAtUtc = new DateTime(2025, 10, 27, 10, 1, 1, 720, DateTimeKind.Utc).AddTicks(9369),
                             DeliveryType = 0,
                             Description = "Fresh berries",
                             ImageUrl = "https://example.com/images/berries.jpg",
@@ -617,7 +620,8 @@ namespace FoodConnect.Backend.Infrastructure.Migrations
                     b.HasIndex("CategoryId");
 
                     b.HasIndex("ShopId", "CategoryId")
-                        .IsUnique();
+                        .IsUnique()
+                        .HasFilter("[IsDeleted] = 0");
 
                     b.ToTable("ShopCategories");
                 });

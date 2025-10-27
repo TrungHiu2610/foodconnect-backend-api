@@ -1,16 +1,16 @@
 using FoodConnect.Backend.Application.Commons.DTOs.Responses;
-using FoodConnect.Backend.Domain.Enums;
 using MediatR;
 using Microsoft.AspNetCore.Http;
 
 namespace FoodConnect.Backend.Application.Features.Shop.Commands
 {
-    public class CreateShopCommand : IRequest<BaseResponse<CreateOrUpdateResponse>>
+    public class UpdateShopCommand : IRequest<BaseResponse<CreateOrUpdateResponse>>
     {
-        // Basic info
-        public string ShopName { get; set; } = string.Empty;
-        public string? Description { get; set; }
+        public Guid ShopId { get; set; }
         
+        // Basic info - All nullable for partial update
+        public string? ShopName { get; set; }
+        public string? Description { get; set; }
         
         // Address
         public string? Street { get; set; }
@@ -22,14 +22,17 @@ namespace FoodConnect.Backend.Application.Features.Shop.Commands
         public double? Longitude { get; set; }
         
         // Payout info
-        public int PayoutMethod { get; set; } 
-        public string PayoutAccountInfo { get; set; } = string.Empty;
-        public string PayoutAccountName { get; set; } = string.Empty;
+        public int? PayoutMethod { get; set; }
+        public string? PayoutAccountInfo { get; set; }
+        public string? PayoutAccountName { get; set; }
         
         // Categories
-        public List<Guid> CategoryIds { get; set; } = new List<Guid>();
+        public List<Guid>? CategoryIds { get; set; }
         
-        // Assets
+        // Asset IDs to delete (optional)
+        public List<Guid>? AssetIdsToDelete { get; set; }
+        
+        // New assets to upload (optional)
         public IFormFile? IdCardFront { get; set; }
         public IFormFile? IdCardBack { get; set; }
         public IFormFile? PortraitPhoto { get; set; }

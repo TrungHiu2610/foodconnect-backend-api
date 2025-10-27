@@ -23,21 +23,6 @@ namespace FoodConnect.Backend.Infrastructure.Persistence.Configurations
                 .IsRequired()
                 .HasMaxLength(100);
 
-            builder.Property(s => s.OwnerName)
-                .IsRequired()
-                .HasMaxLength(100);
-
-            builder.Property(s => s.Phone)
-                .IsRequired()
-                .HasMaxLength(20);
-
-            builder.Property(s => s.Email)
-                .HasMaxLength(100);
-
-            builder.Property(s => s.Address)
-                .IsRequired()
-                .HasMaxLength(500);
-
             builder.Property(s => s.Description)
                 .HasMaxLength(1000);
 

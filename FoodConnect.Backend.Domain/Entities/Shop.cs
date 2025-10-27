@@ -16,14 +16,6 @@ namespace FoodConnect.Backend.Domain.Entities
         public string? CoverImageUrl { get; set; }
         public decimal? Rating { get; set; }
         public ShopStatusEnum Status { get; set; }
-        
-        // Owner info
-        public string OwnerName { get; set; } = string.Empty;
-        public string Phone { get; set; } = string.Empty;
-        public string? Email { get; set; }
-        
-        // Address (simplified for registration)
-        public string Address { get; set; } = string.Empty;
         public string? Street { get; set; }
         public string? Ward { get; set; }
         public string? District { get; set; }
@@ -38,7 +30,7 @@ namespace FoodConnect.Backend.Domain.Entities
         public DateTime? ReviewedAt { get; set; }
         
         // Payout information
-        public PayoutMethodTypeEnum PayoutMethod { get; set; }
+        public PaymentMethodEnum PayoutMethod { get; set; }
         public string PayoutAccountInfo { get; set; } = string.Empty;
         public string PayoutAccountName { get; set; } = string.Empty;
 

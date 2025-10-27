@@ -43,17 +43,18 @@ namespace FoodConnect.Backend.Infrastructure.Repositories
                 query = query.Where(s => s.Status == status.Value);
             }
 
-            // Search by shop name or owner name
+            // Search by shop name or owner name (from User)
             if (!string.IsNullOrEmpty(searchTerm))
             {
                 query = query.Where(s => 
                     s.ShopName.Contains(searchTerm) || 
-                    s.OwnerName.Contains(searchTerm));
+                    s.User.FullName.Contains(searchTerm));
             }
 
             var totalCount = await query.CountAsync();
 
             var items = await query
+                .Include(s => s.User)  // Include User for FullName
                 .OrderByDescending(s => s.CreatedAtUtc)
                 .Skip((pageNumber - 1) * pageSize)
                 .Take(pageSize)

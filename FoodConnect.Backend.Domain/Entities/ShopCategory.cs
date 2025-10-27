@@ -1,6 +1,8 @@
+using FoodConnect.Backend.Domain.Interfaces;
+
 namespace FoodConnect.Backend.Domain.Entities
 {
-    public class ShopCategory : BaseEntity
+    public class ShopCategory : BaseEntity, IHardDelete
     {
         public Guid ShopId { get; set; }
         public Guid CategoryId { get; set; }

@@ -3,6 +3,7 @@ using System;
 using FoodConnect.Backend.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace FoodConnect.Backend.Infrastructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251025133857_RemoveShopAddress")]
+    partial class RemoveShopAddress
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -157,7 +160,7 @@ namespace FoodConnect.Backend.Infrastructure.Migrations
                         new
                         {
                             Id = new Guid("4286ba6a-3d40-46be-8539-237190c067b6"),
-                            CreatedAtUtc = new DateTime(2025, 10, 27, 11, 58, 37, 498, DateTimeKind.Utc).AddTicks(5240),
+                            CreatedAtUtc = new DateTime(2025, 10, 25, 13, 38, 55, 668, DateTimeKind.Utc).AddTicks(6508),
                             DeliveryType = 0,
                             Description = "Fresh fruits",
                             ImageUrl = "https://example.com/images/fruits.jpg",
@@ -167,8 +170,8 @@ namespace FoodConnect.Backend.Infrastructure.Migrations
                         },
                         new
                         {
-                            Id = new Guid("2fa4cb76-edee-44e3-95e2-1f841b27929a"),
-                            CreatedAtUtc = new DateTime(2025, 10, 27, 11, 58, 37, 498, DateTimeKind.Utc).AddTicks(5261),
+                            Id = new Guid("1f107c3d-468f-4c25-b256-76feabefc788"),
+                            CreatedAtUtc = new DateTime(2025, 10, 25, 13, 38, 55, 668, DateTimeKind.Utc).AddTicks(6526),
                             DeliveryType = 1,
                             Description = "Fresh vegetables",
                             ImageUrl = "https://example.com/images/vegetables.jpg",
@@ -178,8 +181,8 @@ namespace FoodConnect.Backend.Infrastructure.Migrations
                         },
                         new
                         {
-                            Id = new Guid("ac8e66b0-4fbc-4c97-ad4b-427eab61db1b"),
-                            CreatedAtUtc = new DateTime(2025, 10, 27, 11, 58, 37, 498, DateTimeKind.Utc).AddTicks(5263),
+                            Id = new Guid("d4f8181f-73ec-4bad-a60b-676ad680205f"),
+                            CreatedAtUtc = new DateTime(2025, 10, 25, 13, 38, 55, 668, DateTimeKind.Utc).AddTicks(6584),
                             DeliveryType = 0,
                             Description = "Dairy products",
                             ImageUrl = "https://example.com/images/dairy.jpg",
@@ -189,8 +192,8 @@ namespace FoodConnect.Backend.Infrastructure.Migrations
                         },
                         new
                         {
-                            Id = new Guid("30d76555-7ff9-41d5-a11e-92a347f725bf"),
-                            CreatedAtUtc = new DateTime(2025, 10, 27, 11, 58, 37, 498, DateTimeKind.Utc).AddTicks(5289),
+                            Id = new Guid("ba060b89-e36a-42d4-99d6-004d0fb8dd89"),
+                            CreatedAtUtc = new DateTime(2025, 10, 25, 13, 38, 55, 668, DateTimeKind.Utc).AddTicks(6587),
                             DeliveryType = 1,
                             Description = "Fresh citrus fruits",
                             ImageUrl = "https://example.com/images/citrus.jpg",
@@ -201,8 +204,8 @@ namespace FoodConnect.Backend.Infrastructure.Migrations
                         },
                         new
                         {
-                            Id = new Guid("4cf8d54f-d15c-4f02-b3a4-c40c5206b624"),
-                            CreatedAtUtc = new DateTime(2025, 10, 27, 11, 58, 37, 498, DateTimeKind.Utc).AddTicks(5293),
+                            Id = new Guid("ef2ec044-4dac-47fb-8a66-b068f150e463"),
+                            CreatedAtUtc = new DateTime(2025, 10, 25, 13, 38, 55, 668, DateTimeKind.Utc).AddTicks(6590),
                             DeliveryType = 0,
                             Description = "Fresh berries",
                             ImageUrl = "https://example.com/images/berries.jpg",

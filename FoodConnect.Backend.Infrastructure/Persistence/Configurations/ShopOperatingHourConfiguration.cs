@@ -14,6 +14,7 @@ namespace FoodConnect.Backend.Infrastructure.Persistence.Configurations
         public void Configure(EntityTypeBuilder<ShopOperatingHour> builder)
         {
             builder.HasKey(oh => oh.Id);
+            builder.Property(oh => oh.Id).ValueGeneratedOnAdd(); 
 
             builder.Property(oh => oh.DayOfWeek)
                 .IsRequired()
