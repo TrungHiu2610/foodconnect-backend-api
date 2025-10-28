@@ -33,7 +33,7 @@ namespace FoodConnect.Backend.Application.Features.Shop.Commands
                 return result.BuildUnauthorized("User not found");
             }
 
-            var shop = await _shopRepository.GetByIdAsync(request.ShopId);
+            var shop = await _shopRepository.GetByIdAsync(request.ShopId, s=>s.Assets);
             if (shop == null)
             {
                 return result.BuildNotFound("Shop not found");
@@ -63,7 +63,6 @@ namespace FoodConnect.Backend.Application.Features.Shop.Commands
 
             // Change status to PendingApproval
             shop.Status = ShopStatusEnum.PendingApproval;
-            shop.UpdatedAtUtc = DateTime.UtcNow;
 
             _shopRepository.Update(shop);
             await _unitOfWork.SaveChangesAsync(cancellationToken);
