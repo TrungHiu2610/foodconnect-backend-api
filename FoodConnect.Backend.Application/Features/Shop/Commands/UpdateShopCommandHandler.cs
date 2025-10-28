@@ -295,12 +295,10 @@ namespace FoodConnect.Backend.Application.Features.Shop.Commands
                         if (operatingHours != null)
                         {
                             var existingHours = shop.OperatingHours.ToList();
+                            var requestedDays = operatingHours.Select(oh => oh.DayOfWeek).ToList();
 
                             var hoursToRemove = existingHours
-                                .Where(existing => !operatingHours.Any(oh =>
-                                    oh.DayOfWeek == existing.DayOfWeek &&
-                                    oh.OpenTime == existing.OpenTime.ToString("HH:mm") &&
-                                    oh.CloseTime == existing.CloseTime.ToString("HH:mm")))
+                                .Where(existing => !requestedDays.Contains(existing.DayOfWeek))
                                 .ToList();
 
                             foreach (var hour in hoursToRemove)
@@ -310,12 +308,14 @@ namespace FoodConnect.Backend.Application.Features.Shop.Commands
 
                             foreach (var oh in operatingHours)
                             {
-                                var existing = existingHours.FirstOrDefault(e =>
-                                    e.DayOfWeek == oh.DayOfWeek &&
-                                    e.OpenTime.ToString("HH:mm") == oh.OpenTime &&
-                                    e.CloseTime.ToString("HH:mm") == oh.CloseTime);
+                                var existing = existingHours.FirstOrDefault(e => e.DayOfWeek == oh.DayOfWeek);
 
-                                if (existing == null)
+                                if (existing != null)
+                                {
+                                    existing.OpenTime = TimeOnly.Parse(oh.OpenTime);
+                                    existing.CloseTime = TimeOnly.Parse(oh.CloseTime);
+                                }
+                                else
                                 {
                                     shop.OperatingHours.Add(new Domain.Entities.ShopOperatingHour
                                     {
