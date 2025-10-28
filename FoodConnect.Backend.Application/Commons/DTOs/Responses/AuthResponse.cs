@@ -7,5 +7,5 @@ using System.Threading.Tasks;
 
 namespace FoodConnect.Backend.Application.Commons.DTOs.Responses
 {
-    public record AuthResponse(Guid UserId, string Email, List<string> Roles, string AccessToken, string RefreshToken, DateTime RefreshTokenExpiresAtUtc);
+    public record AuthResponse(Guid UserId, string Email, string FullName, List<string> Roles, string AccessToken, string RefreshToken, DateTime RefreshTokenExpiresAtUtc);
 }
