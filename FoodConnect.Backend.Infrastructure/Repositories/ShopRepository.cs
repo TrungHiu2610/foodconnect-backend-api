@@ -13,7 +13,7 @@ namespace FoodConnect.Backend.Infrastructure.Repositories
 
         public async Task<Shop?> GetByUserIdAsync(Guid userId)
         {
-            return await _context.Shops.FirstOrDefaultAsync(s => s.UserId == userId);
+            return await _context.Shops.Include(s=>s.User).FirstOrDefaultAsync(s => s.UserId == userId);
         }
 
         public async Task<Shop?> GetDetailByIdAsync(Guid id)
