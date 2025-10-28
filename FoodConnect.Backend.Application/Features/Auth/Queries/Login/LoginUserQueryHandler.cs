@@ -43,7 +43,7 @@ namespace FoodConnect.Backend.Application.Features.Auth.Queries.Login
             await _refreshTokenRepository.AddAsync(refreshToken);
             await _unitOfWork.SaveChangesAsync(cancellationToken);
 
-            var authResult = new AuthResponse(user.Id, user.Email, roleNames, accessToken, refreshToken.Token, refreshToken.ExpiresAtUtc);
+            var authResult = new AuthResponse(user.Id, user.Email, user.FullName, roleNames, accessToken, refreshToken.Token, refreshToken.ExpiresAtUtc);
             return result.BuildSuccess(authResult, "Login success");
         }
     }

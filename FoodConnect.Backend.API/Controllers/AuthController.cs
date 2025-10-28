@@ -55,11 +55,19 @@ namespace FoodConnect.Backend.API.Controllers
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             var email = User.FindFirstValue(ClaimTypes.Email);
             var fullName = User.FindFirstValue(ClaimTypes.Name);
+            
+            // Get all roles from claims
+            var roles = User.Claims
+                .Where(c => c.Type == ClaimTypes.Role)
+                .Select(c => c.Value)
+                .ToList();
+
             var response = new
             {
                 Id = userId,
                 Email = email,
-                FullName = fullName
+                FullName = fullName,
+                Roles = roles
             };
             return Ok(response);
         }

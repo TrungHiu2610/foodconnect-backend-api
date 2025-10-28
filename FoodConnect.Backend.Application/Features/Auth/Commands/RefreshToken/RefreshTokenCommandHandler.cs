@@ -77,7 +77,7 @@ namespace FoodConnect.Backend.Application.Features.Auth.Commands.RefreshToken
             await _refreshTokenRepository.AddAsync(newRefreshToken);
             await _unitOfWork.SaveChangesAsync(cancellationToken);
 
-            var authResult = new AuthResponse(user.Id, user.Email, roleNames, newAccessToken, newRefreshToken.Token, newRefreshToken.ExpiresAtUtc);
+            var authResult = new AuthResponse(user.Id, user.Email, user.FullName, roleNames, newAccessToken, newRefreshToken.Token, newRefreshToken.ExpiresAtUtc);
             return result.BuildSuccess(authResult,"Renew token success");
         }
 
