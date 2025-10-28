@@ -55,7 +55,6 @@ namespace FoodConnect.Backend.Application.Features.Shop.Commands
                 shop.Status = ShopStatusEnum.Active;
                 shop.ReviewedBy = userId;
                 shop.ReviewedAt = DateTime.UtcNow;
-                shop.UpdatedAtUtc = DateTime.UtcNow;
                 
                 _shopRepository.Update(shop);
 

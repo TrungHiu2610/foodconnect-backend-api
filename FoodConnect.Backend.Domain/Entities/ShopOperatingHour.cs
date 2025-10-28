@@ -8,7 +8,7 @@ namespace FoodConnect.Backend.Domain.Entities
         public TimeOnly OpenTime { get; set; }   
         public TimeOnly CloseTime { get; set; }
 
-        public Guid? ShopId { get; set; }
+        public Guid ShopId { get; set; }  // Required - OperatingHour phải thuộc về Shop
         public virtual Shop? Shop { get; set; }
     }
 }
