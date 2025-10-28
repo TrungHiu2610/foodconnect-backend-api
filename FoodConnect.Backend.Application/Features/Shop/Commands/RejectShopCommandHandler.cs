@@ -50,7 +50,6 @@ namespace FoodConnect.Backend.Application.Features.Shop.Commands
             shop.AdminReason = request.Reason;
             shop.ReviewedBy = userId;
             shop.ReviewedAt = DateTime.UtcNow;
-            shop.UpdatedAtUtc = DateTime.UtcNow;
 
             _shopRepository.Update(shop);
             await _unitOfWork.SaveChangesAsync(cancellationToken);
