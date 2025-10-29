@@ -39,10 +39,6 @@ namespace FoodConnect.Backend.Infrastructure.Persistence.Configurations
                 .WithOne(pa => pa.Product)
                 .HasForeignKey(pa => pa.ProductId)
                 .OnDelete(DeleteBehavior.Cascade);
-            builder.HasMany(p => p.ProductDailyAvailabilities)
-                .WithOne(pda => pda.Product)
-                .HasForeignKey(pda => pda.ProductId)
-                .OnDelete(DeleteBehavior.Cascade);
         }
     }
 }

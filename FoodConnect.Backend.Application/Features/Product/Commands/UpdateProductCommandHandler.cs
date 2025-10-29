@@ -190,6 +190,27 @@ namespace FoodConnect.Backend.Application.Features.Product.Commands
                     }
                 }
 
+                var categoryId = request.CategoryId ?? product.CategoryId;
+                var category = await _categoryRepository.GetByIdAsync(categoryId);
+                
+                if (category != null)
+                {
+                    if (category.DeliveryType == DeliveryTypeEnum.Standard)
+                    {
+                        if (request.StockQuantity.HasValue)
+                            product.StockQuantity = request.StockQuantity.Value;
+
+                        product.IsAvailable = product.StockQuantity > 0;
+                    }
+                    else
+                    {
+                        if (request.IsAvailable.HasValue)
+                            product.IsAvailable = request.IsAvailable.Value;
+                        
+                        product.StockQuantity = null;
+                    }
+                }
+
                 await _unitOfWork.SaveChangesAsync(cancellationToken);
                 await _unitOfWork.CommitTransactionAsync(transaction);
 

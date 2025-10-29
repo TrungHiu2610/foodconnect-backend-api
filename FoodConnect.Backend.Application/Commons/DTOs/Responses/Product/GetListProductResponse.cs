@@ -17,6 +17,10 @@ namespace FoodConnect.Backend.Application.Commons.DTOs.Responses.Product
         public string Name { get; set; }
         public decimal Price { get; set; }
         public string ThumbnailUrl { get; set; }
+        public string Unit { get; set; }
+        public bool IsAvailable { get; set; }
+        public int? StockQuantity { get; set; } 
+        
         //public string ShopName { get; set; }
         //public decimal? Rating { get; set; }
     }

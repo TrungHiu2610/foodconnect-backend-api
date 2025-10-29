@@ -15,6 +15,9 @@ namespace FoodConnect.Backend.Application.Features.Product.Commands
         public string Status { get; set; } = nameof(ProductStatusEnum.Draft);
         public Guid CategoryId { get; set; }
 
+        public bool IsAvailable { get; set; } = true;
+        public int? StockQuantity { get; set; }
+
         public List<ProductAssetCreateDto>? ProductAssets { get; set; }
     }
 }

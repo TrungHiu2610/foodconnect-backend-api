@@ -70,6 +70,19 @@ namespace FoodConnect.Backend.Application.Features.Product.Commands
             product.ShopId = shop.Id;
             product.Id = Guid.NewGuid();
 
+            // Apply inventory logic based on DeliveryType
+            if (category.DeliveryType == DeliveryTypeEnum.Standard)
+            {
+                // Standard products: Auto-set IsAvailable based on stock only
+                product.IsAvailable = request.StockQuantity > 0;
+            }
+            else
+            {
+                // Express products: Use seller's IsAvailable setting, ignore stock
+                product.IsAvailable = request.IsAvailable;
+                product.StockQuantity = null;
+            }
+
             var uploadedFiles = new List<string>();
             await using var transaction = await _unitOfWork.BeginTransactionAsync();
 

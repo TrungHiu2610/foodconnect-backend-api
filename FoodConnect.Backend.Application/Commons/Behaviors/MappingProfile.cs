@@ -42,8 +42,6 @@ namespace FoodConnect.Backend.Application.Commons.Behaviors
                            opt => opt.MapFrom(src => nameof(src.Status)))
                 .ForMember(dest => dest.ProductAssets,
                            opt => opt.MapFrom(src => src.ProductAssets));
-                //.ForMember(dest => dest.ProductDailyAvailabilities,
-                //           opt => opt.MapFrom(src => src.ProductDailyAvailabilities));
 
             CreateMap<Product, GetListProductItemResponse>()
                 .ForMember(dest => dest.ThumbnailUrl, 
@@ -71,7 +69,9 @@ namespace FoodConnect.Backend.Application.Commons.Behaviors
             // get category
             CreateMap<Category, GetListCategoryItem>()
                 .ForMember(dest => dest.ParentName,
-                    opt => opt.MapFrom(src => src.Parent.Name));
+                    opt => opt.MapFrom(src => src.Parent.Name))
+                .ForMember(dest => dest.ProductCount,
+                    opt => opt.MapFrom(src => src.Products.Count()));
 
             // create category
             CreateMap<CreateCategoryCommand, Category>()
