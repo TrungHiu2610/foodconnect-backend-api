@@ -36,7 +36,10 @@ namespace FoodConnect.Backend.API.Controllers
         [HttpPost]
         public async Task<IActionResult> Refresh(RefreshTokenCommand command)
         {
-            command.RefreshToken = Request.Cookies["refreshToken"];
+            if (string.IsNullOrEmpty(command.RefreshToken))
+            {
+                command.RefreshToken = Request.Cookies["refreshToken"];
+            }
 
             var result = await Mediator.Send(command);
             if (result.Data == null)
