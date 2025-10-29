@@ -9,13 +9,17 @@ namespace FoodConnect.Backend.Domain.Entities
 {
     public class Shop : BaseEntity
     {
-        // Basic shop info
         public string ShopName { get; set; } = string.Empty;
         public string? Description { get; set; }
         public string? LogoUrl { get; set; }
         public string? CoverImageUrl { get; set; }
         public decimal? Rating { get; set; }
         public ShopStatusEnum Status { get; set; }
+        
+        public string SellerFullName { get; set; } = string.Empty;
+        public string SellerEmail { get; set; } = string.Empty;
+        public string SellerPhone { get; set; } = string.Empty;
+        
         public string? Street { get; set; }
         public string? Ward { get; set; }
         public string? District { get; set; }
@@ -24,12 +28,10 @@ namespace FoodConnect.Backend.Domain.Entities
         public double? Latitude { get; set; }
         public double? Longitude { get; set; }
         
-        // Approval metadata
-        public string? AdminReason { get; set; }  // Reject/Suspend reason
+        public string? AdminReason { get; set; }  
         public Guid? ReviewedBy { get; set; }
         public DateTime? ReviewedAt { get; set; }
         
-        // Payout information
         public PaymentMethodEnum PayoutMethod { get; set; }
         public string PayoutAccountInfo { get; set; } = string.Empty;
         public string PayoutAccountName { get; set; } = string.Empty;

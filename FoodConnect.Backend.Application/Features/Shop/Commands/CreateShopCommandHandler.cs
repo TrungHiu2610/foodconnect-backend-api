@@ -72,6 +72,9 @@ namespace FoodConnect.Backend.Application.Features.Shop.Commands
             {
                 ShopName = request.ShopName,
                 Description = request.Description,
+                SellerFullName = request.SellerFullName,
+                SellerEmail = request.SellerEmail,
+                SellerPhone = request.SellerPhone,
                 Street = request.Street,
                 Ward = request.Ward,
                 District = request.District,
@@ -93,11 +96,11 @@ namespace FoodConnect.Backend.Application.Features.Shop.Commands
             try
             {
                 var shopAssets = new List<Domain.Entities.ShopAsset>();
+                var prefix = $"{AWSDirectoryConstant.IMAGE_SHOP}/{shop.Id}";
 
                 // ID Card Front
                 if (request.IdCardFront != null)
                 {
-                    var prefix = $"{AWSDirectoryConstant.IMAGE_SHOP}/{shop.Id}";
                     var url = await _fileStorageService.UploadFileAsync(request.IdCardFront, prefix);
                     uploadedFiles.Add(url);
                     
@@ -113,7 +116,6 @@ namespace FoodConnect.Backend.Application.Features.Shop.Commands
                 // ID Card Back
                 if (request.IdCardBack != null)
                 {
-                    var prefix = $"{AWSDirectoryConstant.IMAGE_SHOP}/{shop.Id}";
                     var url = await _fileStorageService.UploadFileAsync(request.IdCardBack, prefix);
                     uploadedFiles.Add(url);
                     
@@ -129,7 +131,6 @@ namespace FoodConnect.Backend.Application.Features.Shop.Commands
                 // Portrait Photo
                 if (request.PortraitPhoto != null)
                 {
-                    var prefix = $"{AWSDirectoryConstant.IMAGE_SHOP}/{shop.Id}";
                     var url = await _fileStorageService.UploadFileAsync(request.PortraitPhoto, prefix);
                     uploadedFiles.Add(url);
                     
@@ -142,74 +143,18 @@ namespace FoodConnect.Backend.Application.Features.Shop.Commands
                     });
                 }
 
-                // Kitchen Photos
-                if (request.KitchenPhotos != null && request.KitchenPhotos.Any())
+                // Food Safety Certificate (Required)
+                var foodSafetyCertUrl = await _fileStorageService.UploadFileAsync(request.FoodSafetyCertificate, prefix);
+                uploadedFiles.Add(foodSafetyCertUrl);
+                
+                shopAssets.Add(new Domain.Entities.ShopAsset
                 {
-                    foreach (var kitchenPhoto in request.KitchenPhotos)
-                    {
-                        var prefix = $"{AWSDirectoryConstant.IMAGE_SHOP}/{shop.Id}";
-                        var url = await _fileStorageService.UploadFileAsync(kitchenPhoto, prefix);
-                        uploadedFiles.Add(url);
-                        
-                        shopAssets.Add(new Domain.Entities.ShopAsset
-                        {
-                            Id = Guid.NewGuid(),
-                            ShopId = shop.Id,
-                            AssetUrl = url,
-                            AssetType = ShopAssetTypeEnum.KitchenPhoto
-                        });
-                    }
-                }
+                    Id = Guid.NewGuid(),
+                    ShopId = shop.Id,
+                    AssetUrl = foodSafetyCertUrl,
+                    AssetType = ShopAssetTypeEnum.FoodSafetyCertificate
+                });
 
-                // Food Safety Certificate
-                if (request.FoodSafetyCertificate != null)
-                {
-                    var prefix = $"{AWSDirectoryConstant.IMAGE_SHOP}/{shop.Id}";
-                    var url = await _fileStorageService.UploadFileAsync(request.FoodSafetyCertificate, prefix);
-                    uploadedFiles.Add(url);
-                    
-                    shopAssets.Add(new Domain.Entities.ShopAsset
-                    {
-                        Id = Guid.NewGuid(),
-                        ShopId = shop.Id,
-                        AssetUrl = url,
-                        AssetType = ShopAssetTypeEnum.FoodSafetyCertificate
-                    });
-                }
-
-                // Logo
-                if (request.Logo != null)
-                {
-                    var prefix = $"{AWSDirectoryConstant.IMAGE_SHOP}/{shop.Id}";
-                    var url = await _fileStorageService.UploadFileAsync(request.Logo, prefix);
-                    uploadedFiles.Add(url);
-                    shop.LogoUrl = url;
-                    
-                    shopAssets.Add(new Domain.Entities.ShopAsset
-                    {
-                        Id = Guid.NewGuid(),
-                        ShopId = shop.Id,
-                        AssetUrl = url,
-                        AssetType = ShopAssetTypeEnum.Logo
-                    });
-                }
-
-                // Cover Image
-                if (request.CoverImage != null)
-                {
-                    var prefix = $"{AWSDirectoryConstant.IMAGE_SHOP}/{shop.Id}";
-                    var url = await _fileStorageService.UploadFileAsync(request.CoverImage, prefix);
-                    uploadedFiles.Add(url);
-                    shop.CoverImageUrl = url;
-                    
-                    shopAssets.Add(new Domain.Entities.ShopAsset
-                    {
-                        Id = Guid.NewGuid(),
-                        ShopId = shop.Id,
-                        AssetUrl = url,
-                        AssetType = ShopAssetTypeEnum.CoverImage
-                    });
-                }
 
                 shop.Assets = shopAssets;
 

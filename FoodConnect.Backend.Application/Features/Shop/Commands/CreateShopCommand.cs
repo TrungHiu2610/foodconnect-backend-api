@@ -7,10 +7,12 @@ namespace FoodConnect.Backend.Application.Features.Shop.Commands
 {
     public class CreateShopCommand : IRequest<BaseResponse<CreateOrUpdateResponse>>
     {
-        // Basic info
         public string ShopName { get; set; } = string.Empty;
         public string? Description { get; set; }
         
+        public string SellerFullName { get; set; } = string.Empty;
+        public string SellerEmail { get; set; } = string.Empty;
+        public string SellerPhone { get; set; } = string.Empty;
         
         // Address
         public string? Street { get; set; }
@@ -21,24 +23,17 @@ namespace FoodConnect.Backend.Application.Features.Shop.Commands
         public double? Latitude { get; set; }
         public double? Longitude { get; set; }
         
-        // Payout info
         public int PayoutMethod { get; set; } 
         public string PayoutAccountInfo { get; set; } = string.Empty;
         public string PayoutAccountName { get; set; } = string.Empty;
         
-        // Categories
         public List<Guid> CategoryIds { get; set; } = new List<Guid>();
         
-        // Assets
         public IFormFile? IdCardFront { get; set; }
         public IFormFile? IdCardBack { get; set; }
         public IFormFile? PortraitPhoto { get; set; }
-        public List<IFormFile>? KitchenPhotos { get; set; }
-        public IFormFile? FoodSafetyCertificate { get; set; }
-        public IFormFile? Logo { get; set; }
-        public IFormFile? CoverImage { get; set; }
+        public IFormFile FoodSafetyCertificate { get; set; } = null!; // Bắt buộc
         
-        // Operating hours (JSON string)
         public string? OperatingHoursJson { get; set; }
     }
 }

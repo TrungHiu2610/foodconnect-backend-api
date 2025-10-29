@@ -59,12 +59,6 @@ namespace FoodConnect.Backend.Application.Features.Shop.Commands
                 return result.BuildForbidden("You don't have permission to update this shop");
             }
 
-            // CRITICAL: Only allow update if status is Draft
-            if (shop.Status != ShopStatusEnum.Draft)
-            {
-                return result.BuildFail("Only shops in Draft status can be updated");
-            }
-
             // Validate categories if provided
             if (request.CategoryIds != null && request.CategoryIds.Any())
             {
@@ -93,10 +87,8 @@ namespace FoodConnect.Backend.Application.Features.Shop.Commands
 
             try
             {
-                // Use AutoMapper to update basic fields (only non-null properties)
                 _mapper.Map(request, shop);
 
-                // Delete assets if requested
                 if (request.AssetIdsToDelete != null && request.AssetIdsToDelete.Any())
                 {
                     var assetsToDelete = shop.Assets.Where(a => request.AssetIdsToDelete.Contains(a.Id)).ToList();
