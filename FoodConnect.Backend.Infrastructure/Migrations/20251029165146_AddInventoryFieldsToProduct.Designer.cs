@@ -3,6 +3,7 @@ using System;
 using FoodConnect.Backend.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace FoodConnect.Backend.Infrastructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251029165146_AddInventoryFieldsToProduct")]
+    partial class AddInventoryFieldsToProduct
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -157,7 +160,7 @@ namespace FoodConnect.Backend.Infrastructure.Migrations
                         new
                         {
                             Id = new Guid("4286ba6a-3d40-46be-8539-237190c067b6"),
-                            CreatedAtUtc = new DateTime(2025, 10, 29, 17, 41, 28, 781, DateTimeKind.Utc).AddTicks(5806),
+                            CreatedAtUtc = new DateTime(2025, 10, 29, 16, 51, 45, 695, DateTimeKind.Utc).AddTicks(3522),
                             DeliveryType = 0,
                             Description = "Fresh fruits",
                             ImageUrl = "https://example.com/images/fruits.jpg",
@@ -168,7 +171,7 @@ namespace FoodConnect.Backend.Infrastructure.Migrations
                         new
                         {
                             Id = new Guid("2fa4cb76-edee-44e3-95e2-1f841b27929a"),
-                            CreatedAtUtc = new DateTime(2025, 10, 29, 17, 41, 28, 781, DateTimeKind.Utc).AddTicks(5821),
+                            CreatedAtUtc = new DateTime(2025, 10, 29, 16, 51, 45, 695, DateTimeKind.Utc).AddTicks(3544),
                             DeliveryType = 1,
                             Description = "Fresh vegetables",
                             ImageUrl = "https://example.com/images/vegetables.jpg",
@@ -179,7 +182,7 @@ namespace FoodConnect.Backend.Infrastructure.Migrations
                         new
                         {
                             Id = new Guid("ac8e66b0-4fbc-4c97-ad4b-427eab61db1b"),
-                            CreatedAtUtc = new DateTime(2025, 10, 29, 17, 41, 28, 781, DateTimeKind.Utc).AddTicks(5822),
+                            CreatedAtUtc = new DateTime(2025, 10, 29, 16, 51, 45, 695, DateTimeKind.Utc).AddTicks(3547),
                             DeliveryType = 0,
                             Description = "Dairy products",
                             ImageUrl = "https://example.com/images/dairy.jpg",
@@ -190,7 +193,7 @@ namespace FoodConnect.Backend.Infrastructure.Migrations
                         new
                         {
                             Id = new Guid("30d76555-7ff9-41d5-a11e-92a347f725bf"),
-                            CreatedAtUtc = new DateTime(2025, 10, 29, 17, 41, 28, 781, DateTimeKind.Utc).AddTicks(5825),
+                            CreatedAtUtc = new DateTime(2025, 10, 29, 16, 51, 45, 695, DateTimeKind.Utc).AddTicks(3550),
                             DeliveryType = 1,
                             Description = "Fresh citrus fruits",
                             ImageUrl = "https://example.com/images/citrus.jpg",
@@ -202,7 +205,7 @@ namespace FoodConnect.Backend.Infrastructure.Migrations
                         new
                         {
                             Id = new Guid("4cf8d54f-d15c-4f02-b3a4-c40c5206b624"),
-                            CreatedAtUtc = new DateTime(2025, 10, 29, 17, 41, 28, 781, DateTimeKind.Utc).AddTicks(5828),
+                            CreatedAtUtc = new DateTime(2025, 10, 29, 16, 51, 45, 695, DateTimeKind.Utc).AddTicks(3555),
                             DeliveryType = 0,
                             Description = "Fresh berries",
                             ImageUrl = "https://example.com/images/berries.jpg",
@@ -231,6 +234,9 @@ namespace FoodConnect.Backend.Infrastructure.Migrations
                     b.Property<string>("Description")
                         .HasMaxLength(1000)
                         .HasColumnType("character varying(1000)");
+
+                    b.Property<DateTime?>("ExpiryDate")
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<bool>("IsAvailable")
                         .HasColumnType("boolean");
@@ -326,6 +332,43 @@ namespace FoodConnect.Backend.Infrastructure.Migrations
                     b.HasIndex("ProductId");
 
                     b.ToTable("ProductAssets");
+                });
+
+            modelBuilder.Entity("FoodConnect.Backend.Domain.Entities.ProductDailyAvailability", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("CreatedBy")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("Date")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<Guid>("ProductId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("Quantity")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime?>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("UpdatedBy")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ProductId");
+
+                    b.ToTable("ProductDailyAvailabilities");
                 });
 
             modelBuilder.Entity("FoodConnect.Backend.Domain.Entities.RefreshToken", b =>
@@ -779,6 +822,17 @@ namespace FoodConnect.Backend.Infrastructure.Migrations
                     b.Navigation("Product");
                 });
 
+            modelBuilder.Entity("FoodConnect.Backend.Domain.Entities.ProductDailyAvailability", b =>
+                {
+                    b.HasOne("FoodConnect.Backend.Domain.Entities.Product", "Product")
+                        .WithMany("ProductDailyAvailabilities")
+                        .HasForeignKey("ProductId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Product");
+                });
+
             modelBuilder.Entity("FoodConnect.Backend.Domain.Entities.RefreshToken", b =>
                 {
                     b.HasOne("FoodConnect.Backend.Domain.Entities.User", "User")
@@ -874,6 +928,8 @@ namespace FoodConnect.Backend.Infrastructure.Migrations
             modelBuilder.Entity("FoodConnect.Backend.Domain.Entities.Product", b =>
                 {
                     b.Navigation("ProductAssets");
+
+                    b.Navigation("ProductDailyAvailabilities");
                 });
 
             modelBuilder.Entity("FoodConnect.Backend.Domain.Entities.Role", b =>

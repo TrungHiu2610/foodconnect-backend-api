@@ -36,5 +36,15 @@ namespace FoodConnect.Backend.Infrastructure.Repositories
                 .Where(c => c.IsActive && c.ParentId == null)  // Only parent categories
                 .ToListAsync();
         }
+
+        public async Task<IEnumerable<Category>> GetAllCategoriesWithDetailsAsync()
+        {
+            return await _context.Categories
+                .AsNoTracking()
+                .Include(c => c.Parent)
+                .Include(c => c.Products)
+                .OrderByDescending(c => c.CreatedAtUtc)
+                .ToListAsync();
+        }
     }
 }
