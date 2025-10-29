@@ -101,6 +101,8 @@ services.AddScoped<ICategoryRepository, CategoryRepository>();
 services.AddScoped<ICartRepository, CartRepository>();
 services.AddScoped<ICartItemRepository, CartItemRepository>();
 services.AddScoped<IAddressRepository, AddressRepository>();
+services.AddScoped<IOrderRepository, OrderRepository>();
+services.AddScoped<IOrderItemRepository, OrderItemRepository>();
 services.AddScoped<IUnitOfWork, UnitOfWork>();
 
 // Application Services  
