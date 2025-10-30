@@ -14,6 +14,8 @@ namespace FoodConnect.Backend.Application.Features.Product.Commands
         public string? Description { get; set; }
         public decimal? Price { get; set; }
         public string? Unit { get; set; }
+        public string? Ingredients { get; set; }
+        public string? Weight { get; set; }
         public string? Status { get; set; } = nameof(ProductStatusEnum.Draft);
         public Guid? CategoryId { get; set; }
 

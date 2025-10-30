@@ -13,9 +13,12 @@ namespace FoodConnect.Backend.Application.Commons.DTOs.Responses.Product
         public string? Description { get; set; }
         public decimal Price { get; set; }
         public string Unit { get; set; }
+        public string? Ingredients { get; set; }
+        public string? Weight { get; set; }
         public string Status { get; set; }
         public Guid CategoryId { get; set; }
         public string CategoryName { get; set; }
+        public string DeliveryType { get; set; }
         public bool IsAvailable { get; set; }
         public int? StockQuantity { get; set; }
         

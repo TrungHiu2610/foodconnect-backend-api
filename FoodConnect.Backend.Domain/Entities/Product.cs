@@ -8,6 +8,8 @@ namespace FoodConnect.Backend.Domain.Entities
         public string? Description { get; set; }
         public decimal Price { get; set; }
         public string Unit { get; set; }
+        public string? Ingredients { get; set; }
+        public string? Weight { get; set; }
         public ProductStatusEnum Status { get; set; } = ProductStatusEnum.Draft;
         public bool IsAvailable { get; set; } = true;
         public int? StockQuantity { get; set; }
