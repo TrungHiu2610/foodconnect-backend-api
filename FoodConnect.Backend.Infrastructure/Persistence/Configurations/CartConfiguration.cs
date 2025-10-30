@@ -19,7 +19,7 @@ namespace FoodConnect.Backend.Infrastructure.Persistence.Configurations
             builder.HasOne(c => c.User)
                 .WithOne()
                 .HasForeignKey<Cart>(c => c.UserId)
-                .OnDelete(DeleteBehavior.Cascade);
+                .OnDelete(DeleteBehavior.SetNull); 
 
             builder.HasMany(c => c.CartItems)
                 .WithOne(ci => ci.Cart)
