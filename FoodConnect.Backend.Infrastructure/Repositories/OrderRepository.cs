@@ -88,5 +88,15 @@ namespace FoodConnect.Backend.Infrastructure.Repositories
             return await _context.Orders
                 .AnyAsync(o => o.Id == orderId && o.ShopId == shopId);
         }
+
+        public async Task<List<Guid>> GetBuyersWithPendingOrdersContainingProductAsync(Guid productId)
+        {
+            // Return all buyer IDs who have pending orders containing the product
+            return await _context.Orders
+                .Where(o => o.Status == OrderStatusEnum.Pending && o.OrderItems.Any(oi => oi.ProductId == productId))
+                .Select(o => o.BuyerId)
+                .Distinct()
+                .ToListAsync();
+        }
     }
 }

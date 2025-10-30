@@ -22,6 +22,8 @@ using Microsoft.Extensions.DependencyInjection;
 using Amazon.Runtime;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
+using FoodConnect.Backend.Infrastructure.Hubs;
+using FoodConnect.Backend.Application.Features.Notification.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -72,6 +74,21 @@ services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
                 Encoding.UTF8.GetBytes(configuration["JwtSettings:Secret"])),
             ClockSkew = TimeSpan.Zero
         };
+
+        // Configure JWT authentication for SignalR
+        options.Events = new JwtBearerEvents
+        {
+            OnMessageReceived = context =>
+            {
+                var accessToken = context.Request.Query["access_token"];
+                var path = context.HttpContext.Request.Path;
+                if (!string.IsNullOrEmpty(accessToken) && path.StartsWithSegments("/hubs"))
+                {
+                    context.Token = accessToken;
+                }
+                return Task.CompletedTask;
+            }
+        };
     });
 
 // AWS S3
@@ -102,12 +119,18 @@ services.AddScoped<ICartRepository, CartRepository>();
 services.AddScoped<ICartItemRepository, CartItemRepository>();
 services.AddScoped<IOrderRepository, OrderRepository>();
 services.AddScoped<IOrderItemRepository, OrderItemRepository>();
+services.AddScoped<INotificationRepository, NotificationRepository>();
 services.AddScoped<IUnitOfWork, UnitOfWork>();
 
 // Application Services  
 services.AddSingleton<IJwtTokenGenerator, JwtTokenGenerator>();
 services.AddHttpContextAccessor();
 services.AddScoped<ICurrentUserService, CurrentUserService>();
+
+// SignalR & Notification Services
+services.AddSignalR();
+services.AddScoped<INotificationService, NotificationService>();
+services.AddScoped<OrderNotificationService>();
 
 // MediatR  
 services.AddMediatR(cfg =>
@@ -150,6 +173,7 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+app.MapHub<NotificationHub>("/hubs/notifications");
 
 app.Run();
 public partial class Program { }

@@ -1,5 +1,6 @@
 using FoodConnect.Backend.Application.Commons.DTOs.Responses;
 using FoodConnect.Backend.Application.Commons.Interfaces;
+using FoodConnect.Backend.Application.Features.Notification.Services;
 using FoodConnect.Backend.Application.Features.Order.DTOs;
 using FoodConnect.Backend.Application.Features.Order.Mappers;
 using FoodConnect.Backend.Application.Interfaces;
@@ -14,15 +15,18 @@ namespace FoodConnect.Backend.Application.Features.Order.Commands
         private readonly IOrderRepository _orderRepository;
         private readonly IUnitOfWork _unitOfWork;
         private readonly ICurrentUserService _currentUserService;
+        private readonly OrderNotificationService _orderNotificationService;
 
         public ConfirmOrderReceivedCommandHandler(
             IOrderRepository orderRepository,
             IUnitOfWork unitOfWork,
-            ICurrentUserService currentUserService)
+            ICurrentUserService currentUserService,
+            OrderNotificationService orderNotificationService)
         {
             _orderRepository = orderRepository;
             _unitOfWork = unitOfWork;
             _currentUserService = currentUserService;
+            _orderNotificationService = orderNotificationService;
         }
 
         public async Task<BaseResponse<OrderDetailDto>> Handle(ConfirmOrderReceivedCommand request, CancellationToken cancellationToken)
@@ -64,6 +68,10 @@ namespace FoodConnect.Backend.Application.Features.Order.Commands
 
             // Reload order with full details
             order = await _orderRepository.GetOrderWithDetailsAsync(request.OrderId);
+
+            // Send notification to seller
+            await _orderNotificationService.NotifyOrderCompletedAsync(order!, cancellationToken);
+
             var orderDto = OrderMapper.MapToDetailDto(order!);
 
             return result.BuildSuccess(orderDto, "Order confirmed as received successfully");

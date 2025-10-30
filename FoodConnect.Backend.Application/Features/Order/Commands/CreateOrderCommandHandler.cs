@@ -1,5 +1,6 @@
 using FoodConnect.Backend.Application.Commons.DTOs.Responses;
 using FoodConnect.Backend.Application.Commons.Interfaces;
+using FoodConnect.Backend.Application.Features.Notification.Services;
 using FoodConnect.Backend.Application.Features.Order.DTOs;
 using FoodConnect.Backend.Application.Features.Order.Mappers;
 using FoodConnect.Backend.Application.Interfaces;
@@ -18,6 +19,7 @@ namespace FoodConnect.Backend.Application.Features.Order.Commands
         private readonly IProductRepository _productRepository;
         private readonly IUnitOfWork _unitOfWork;
         private readonly ICurrentUserService _currentUserService;
+        private readonly OrderNotificationService _orderNotificationService;
         private const double DEFAULT_SHIPPING_FEE = 15000; // 15,000 VND per order
 
         public CreateOrderCommandHandler(
@@ -26,7 +28,8 @@ namespace FoodConnect.Backend.Application.Features.Order.Commands
             ICartItemRepository cartItemRepository,
             IProductRepository productRepository,
             IUnitOfWork unitOfWork,
-            ICurrentUserService currentUserService)
+            ICurrentUserService currentUserService,
+            OrderNotificationService orderNotificationService)
         {
             _orderRepository = orderRepository;
             _cartRepository = cartRepository;
@@ -34,6 +37,7 @@ namespace FoodConnect.Backend.Application.Features.Order.Commands
             _productRepository = productRepository;
             _unitOfWork = unitOfWork;
             _currentUserService = currentUserService;
+            _orderNotificationService = orderNotificationService;
         }
 
         public async Task<BaseResponse<List<OrderDetailDto>>> Handle(CreateOrderCommand request, CancellationToken cancellationToken)
@@ -137,7 +141,7 @@ namespace FoodConnect.Backend.Application.Features.Order.Commands
                 await _unitOfWork.SaveChangesAsync(cancellationToken);
                 await _unitOfWork.CommitTransactionAsync(transaction);
 
-                // Load orders with full details
+                // Load orders with full details and send notifications
                 var orderDetails = new List<OrderDetailDto>();
                 foreach (var order in createdOrders)
                 {
@@ -145,6 +149,9 @@ namespace FoodConnect.Backend.Application.Features.Order.Commands
                     if (fullOrder != null)
                     {
                         orderDetails.Add(OrderMapper.MapToDetailDto(fullOrder));
+                        
+                        // Send notification to seller
+                        await _orderNotificationService.NotifyNewOrderAsync(fullOrder, cancellationToken);
                     }
                 }
 
