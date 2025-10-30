@@ -4,6 +4,7 @@ using FoodConnect.Backend.Application.Commons.Interfaces;
 using FoodConnect.Backend.Application.Interfaces;
 using FoodConnect.Backend.Application.Interfaces.IRepositories;
 using FoodConnect.Backend.Domain.Entities;
+using FoodConnect.Backend.Application.Commons.Constants;
 using MediatR;
 
 namespace FoodConnect.Backend.Application.Features.Cart.Commands
@@ -81,12 +82,28 @@ namespace FoodConnect.Backend.Application.Features.Cart.Commands
 
                 if (existingItem != null)
                 {
+                    // Check if total quantity exceeds maximum
+                    var newQuantity = existingItem.Quantity + request.Quantity;
+                    if (newQuantity > CartConstants.MaxQuantityPerProduct)
+                    {
+                        await transaction.RollbackAsync();
+                        return result.BuildFail($"Total quantity cannot exceed {CartConstants.MaxQuantityPerProduct}. Current: {existingItem.Quantity}, Adding: {request.Quantity}");
+                    }
+                    
                     // Update quantity
-                    existingItem.Quantity += request.Quantity;
+                    existingItem.Quantity = newQuantity;
                     _cartItemRepository.Update(existingItem);
                 }
                 else
                 {
+                    // Check cart items limit (max products in cart)
+                    var currentItemCount = cart.CartItems?.Count ?? 0;
+                    if (currentItemCount >= CartConstants.MaxProductsInCart)
+                    {
+                        await transaction.RollbackAsync();
+                        return result.BuildFail($"Cart cannot contain more than {CartConstants.MaxProductsInCart} different products");
+                    }
+                    
                     // Add new item
                     var cartItem = new CartItem
                     {

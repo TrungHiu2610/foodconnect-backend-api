@@ -1,4 +1,5 @@
 using FluentValidation;
+using FoodConnect.Backend.Application.Commons.Constants;
 
 namespace FoodConnect.Backend.Application.Features.Cart.Commands
 {
@@ -11,7 +12,8 @@ namespace FoodConnect.Backend.Application.Features.Cart.Commands
 
             RuleFor(x => x.Quantity)
                 .GreaterThan(0).WithMessage("Quantity must be greater than 0.")
-                .LessThanOrEqualTo(100).WithMessage("Quantity must not exceed 100.");
+                .LessThanOrEqualTo(CartConstants.MaxQuantityPerProduct)
+                .WithMessage($"Quantity must not exceed {CartConstants.MaxQuantityPerProduct}.");
         }
     }
 }
