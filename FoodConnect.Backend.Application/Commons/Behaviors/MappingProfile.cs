@@ -39,7 +39,9 @@ namespace FoodConnect.Backend.Application.Commons.Behaviors
                 .ForMember(dest => dest.CategoryName,
                            opt => opt.MapFrom(src => src.Category.Name))
                 .ForMember(dest => dest.Status,
-                           opt => opt.MapFrom(src => nameof(src.Status)))
+                           opt => opt.MapFrom(src => src.Status.ToString()))
+                .ForMember(dest => dest.DeliveryType,
+                           opt => opt.MapFrom(src => src.Category.DeliveryType.ToString()))
                 .ForMember(dest => dest.ProductAssets,
                            opt => opt.MapFrom(src => src.ProductAssets));
 
@@ -48,14 +50,20 @@ namespace FoodConnect.Backend.Application.Commons.Behaviors
                 opt => opt.MapFrom(src => (src.ProductAssets != null && src.ProductAssets.Any())
                            ? src.ProductAssets.FirstOrDefault(a => a.IsThumbnail).AssetUrl ?? src.ProductAssets.FirstOrDefault().AssetUrl
                            : null
-                ));
+                ))
+                .ForMember(dest => dest.Status,
+                           opt => opt.MapFrom(src => src.Status.ToString()));
 
             // update product
             CreateMap<UpdateProductCommand, Product>()
                 .ForMember(dest => dest.Id, opt => opt.Ignore())
+                .ForMember(dest => dest.CategoryId, opt => opt.Ignore())
                 .ForMember(dest => dest.Category, opt => opt.Ignore())
+                .ForMember(dest => dest.ShopId, opt => opt.Ignore())
                 .ForMember(dest => dest.Shop, opt => opt.Ignore())
                 .ForMember(dest => dest.ProductAssets, opt => opt.Ignore())
+                .ForMember(dest => dest.IsAvailable, opt => opt.Ignore())
+                .ForMember(dest => dest.StockQuantity, opt => opt.Ignore())
                 .ForMember(dest => dest.Status,
                     opt => opt.ConvertUsing(new StringToEnumConverter<ProductStatusEnum>(), src => src.Status))
                 .ForMember(dest => dest.CreatedAtUtc, opt => opt.Ignore())

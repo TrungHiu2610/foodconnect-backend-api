@@ -88,6 +88,11 @@ namespace FoodConnect.Backend.Application.Features.Product.Commands
                 // update some fields of product
                 _mapper.Map(request, product);
 
+                if (request.CategoryId.HasValue && request.CategoryId.Value != Guid.Empty)
+                {
+                    product.CategoryId = request.CategoryId.Value;
+                }
+
                 // delete product assets
                 var productAssetsToDelete = new List<ProductAsset>();
                 var urlsToDeleteFromS3 = new List<string>();
@@ -138,7 +143,6 @@ namespace FoodConnect.Backend.Application.Features.Product.Commands
                         return result.BuildFail("At least one thumbnail is required.");
                     }
 
-                    // Update asset metadata (description only)
                     var updatedAssetsDict = request.UpdateProductAssets.ToDictionary(a => a.Id);
                     var newThumbnailId = request.UpdateProductAssets.FirstOrDefault(a => a.IsThumbnail == true)?.Id;
                     
@@ -190,7 +194,7 @@ namespace FoodConnect.Backend.Application.Features.Product.Commands
                     }
                 }
 
-                var categoryId = request.CategoryId ?? product.CategoryId;
+                var categoryId = request.CategoryId ?? product.Category.Id;
                 var category = await _categoryRepository.GetByIdAsync(categoryId);
                 
                 if (category != null)
