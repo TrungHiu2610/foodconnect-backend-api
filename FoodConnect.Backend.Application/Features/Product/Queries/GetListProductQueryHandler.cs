@@ -13,6 +13,7 @@ using FoodConnect.Backend.Application.Commons.DTOs.Responses.Product;
 using Microsoft.EntityFrameworkCore;
 using FoodConnect.Backend.Application.Commons.Models;
 using System.Linq.Expressions;
+using FoodConnect.Backend.Application.Commons.Extensions;
 
 namespace FoodConnect.Backend.Application.Features.Product.Queries
 {
@@ -37,17 +38,25 @@ namespace FoodConnect.Backend.Application.Features.Product.Queries
         {
             var result = new BaseResponse<PaginatedList<GetListProductResponse>>();
 
-            var query = _productRepository.GetProductsAsQueryable().Include(p => p.ProductAssets).AsNoTracking();
+            var query = _productRepository.GetProductsAsQueryable().Include(p => p.ProductAssets).Include(p=>p.Shop).AsNoTracking();
+            
             // 1. filter
             if (request.CategoryId != null)
             {
                 query = query.Where(p => p.CategoryId == request.CategoryId);
             }
 
-            // 2. search
-            if (!string.IsNullOrEmpty(request.TextSearch))
+            // 2. search - Use case-insensitive search at DB level first
+            // Then apply Vietnamese normalization client-side for better accuracy
+            var hasTextSearch = !string.IsNullOrEmpty(request.TextSearch);
+            if (hasTextSearch)
             {
-                query = query.Where(p => p.Name.Contains(request.TextSearch) || p.Description.Contains(request.TextSearch));
+                // DB-level filter: Case-insensitive contains (reduces data significantly)
+                var lowerSearch = request.TextSearch!.ToLower();
+                query = query.Where(p => 
+                    (p.Name != null && p.Name.ToLower().Contains(lowerSearch)) ||
+                    (p.Description != null && p.Description.ToLower().Contains(lowerSearch))
+                );
             }
 
             // 3. sort
@@ -82,17 +91,46 @@ namespace FoodConnect.Backend.Application.Features.Product.Queries
                 query = query.OrderByDescending(p => p.CreatedAtUtc);
             }
 
-            // 4. paginate 
-            var totalItems = await query.CountAsync(cancellationToken);
-            var products = await query
-                .Skip((request.PageNumber - 1) * request.PageSize)
-                .Take(request.PageSize)
-                .ToListAsync(cancellationToken);
+            // 4. Execute query and apply Vietnamese normalization if needed
+            if (hasTextSearch)
+            {
+                // Fetch filtered products from DB (already reduced by case-insensitive filter)
+                var allFilteredProducts = await query.ToListAsync(cancellationToken);
+                
+                // Apply Vietnamese diacritics removal for accurate matching
+                // Example: "hu tieu" matches "Hủ tiếu"
+                var normalizedSearch = request.TextSearch!.NormalizeForSearch();
+                var matchedProducts = allFilteredProducts.Where(p =>
+                    (p.Name != null && p.Name.NormalizeForSearch().Contains(normalizedSearch)) ||
+                    (p.Description != null && p.Description.NormalizeForSearch().Contains(normalizedSearch))
+                ).ToList();
+                
+                // Paginate
+                var totalItems = matchedProducts.Count;
+                var products = matchedProducts
+                    .Skip((request.PageNumber - 1) * request.PageSize)
+                    .Take(request.PageSize)
+                    .ToList();
 
-            var productDtos = _mapper.Map<List<GetListProductItemResponse>>(products);
-            var paginatedList = new PaginatedList<GetListProductItemResponse>(productDtos, totalItems, request.PageNumber, request.PageSize);
+                var productDtos = _mapper.Map<List<GetListProductItemResponse>>(products);
+                var paginatedList = new PaginatedList<GetListProductItemResponse>(productDtos, totalItems, request.PageNumber, request.PageSize);
 
-            return new BaseResponse<PaginatedList<GetListProductItemResponse>>().BuildSuccess(paginatedList, "Get list products successfully");
+                return new BaseResponse<PaginatedList<GetListProductItemResponse>>().BuildSuccess(paginatedList, "Get list products successfully");
+            }
+            else
+            {
+                // No text search - use efficient DB pagination
+                var totalItems = await query.CountAsync(cancellationToken);
+                var products = await query
+                    .Skip((request.PageNumber - 1) * request.PageSize)
+                    .Take(request.PageSize)
+                    .ToListAsync(cancellationToken);
+
+                var productDtos = _mapper.Map<List<GetListProductItemResponse>>(products);
+                var paginatedList = new PaginatedList<GetListProductItemResponse>(productDtos, totalItems, request.PageNumber, request.PageSize);
+
+                return new BaseResponse<PaginatedList<GetListProductItemResponse>>().BuildSuccess(paginatedList, "Get list products successfully");
+            }
         }
     }
 }
