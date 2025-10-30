@@ -19,6 +19,7 @@ namespace FoodConnect.Backend.Infrastructure.Repositories
             return await _context.Products
                 .Include(p=>p.ProductAssets)
                 .Include(p => p.Category)
+                .Include(p => p.Shop)
                 .FirstOrDefaultAsync(p=>p.Id == id);
         }
         public IQueryable<Product> GetProductsAsQueryable()

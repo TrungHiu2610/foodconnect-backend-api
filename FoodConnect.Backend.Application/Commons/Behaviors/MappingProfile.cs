@@ -43,7 +43,10 @@ namespace FoodConnect.Backend.Application.Commons.Behaviors
                 .ForMember(dest => dest.DeliveryType,
                            opt => opt.MapFrom(src => src.Category.DeliveryType.ToString()))
                 .ForMember(dest => dest.ProductAssets,
-                           opt => opt.MapFrom(src => src.ProductAssets));
+                           opt => opt.MapFrom(src => src.ProductAssets))
+                .ForMember(dest => dest.ShopName,
+                           opt => opt.MapFrom(src => src.Shop.ShopName));
+
 
             CreateMap<Product, GetListProductItemResponse>()
                 .ForMember(dest => dest.ThumbnailUrl, 
@@ -52,7 +55,9 @@ namespace FoodConnect.Backend.Application.Commons.Behaviors
                            : null
                 ))
                 .ForMember(dest => dest.Status,
-                           opt => opt.MapFrom(src => src.Status.ToString()));
+                           opt => opt.MapFrom(src => src.Status.ToString()))
+                .ForMember(dest => dest.ShopName,
+                           opt => opt.MapFrom(src => src.Shop.ShopName));
 
             // update product
             CreateMap<UpdateProductCommand, Product>()

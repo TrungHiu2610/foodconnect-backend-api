@@ -4,6 +4,7 @@ using FoodConnect.Backend.Application.Commons.DTOs.Responses.Category;
 using FoodConnect.Backend.Application.Interfaces.IRepositories;
 using FoodConnect.Backend.Domain.Enums;
 using MediatR;
+using FoodConnect.Backend.Application.Commons.Extensions;
 
 namespace FoodConnect.Backend.Application.Features.Category.Queries
 {
@@ -32,11 +33,12 @@ namespace FoodConnect.Backend.Application.Features.Category.Queries
 
             if (!string.IsNullOrWhiteSpace(request.SearchTerm))
             {
-                var search = request.SearchTerm.ToLower();
+                var normalizedSearch = request.SearchTerm.NormalizeForSearch();
                 filteredCategories = filteredCategories.Where(c =>
-                    c.Name.ToLower().Contains(search) ||
-                    (c.Description != null && c.Description.ToLower().Contains(search)) ||
-                    (c.Parent != null && c.Parent.Name.ToLower().Contains(search))
+                    // Vietnamese diacritics insensitive search
+                    (c.Name != null && c.Name.NormalizeForSearch().Contains(normalizedSearch)) ||
+                    (c.Description != null && c.Description.NormalizeForSearch().Contains(normalizedSearch)) ||
+                    (c.Parent != null && c.Parent.Name != null && c.Parent.Name.NormalizeForSearch().Contains(normalizedSearch))
                 ).ToList();
             }
 

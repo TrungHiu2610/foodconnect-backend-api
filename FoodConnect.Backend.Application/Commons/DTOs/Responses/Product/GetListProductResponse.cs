@@ -24,7 +24,7 @@ namespace FoodConnect.Backend.Application.Commons.DTOs.Responses.Product
         public bool IsAvailable { get; set; }
         public int? StockQuantity { get; set; } 
         
-        //public string ShopName { get; set; }
+        public string ShopName { get; set; }
         //public decimal? Rating { get; set; }
     }
 }
