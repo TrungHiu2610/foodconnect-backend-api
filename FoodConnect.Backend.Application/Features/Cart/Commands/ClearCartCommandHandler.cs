@@ -66,7 +66,7 @@ namespace FoodConnect.Backend.Application.Features.Cart.Commands
                     Id = cart.Id,
                     UserId = cart.UserId != Guid.Empty ? cart.UserId : null,
                     SessionId = cart.SessionId,
-                    Items = new List<CartItemResponse>(),
+                    ShopGroups = new List<ShopCartGroup>(),
                     TotalItems = 0,
                     TotalAmount = 0,
                     CreatedAtUtc = cart.CreatedAtUtc,

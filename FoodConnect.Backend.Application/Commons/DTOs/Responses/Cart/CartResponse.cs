@@ -5,11 +5,20 @@ namespace FoodConnect.Backend.Application.Commons.DTOs.Responses.Cart
         public Guid Id { get; set; }
         public Guid? UserId { get; set; }
         public string? SessionId { get; set; }
-        public List<CartItemResponse> Items { get; set; } = new List<CartItemResponse>();
+        public List<ShopCartGroup> ShopGroups { get; set; } = new List<ShopCartGroup>();
         public int TotalItems { get; set; }
         public decimal TotalAmount { get; set; }
         public DateTime CreatedAtUtc { get; set; }
         public DateTime? UpdatedAtUtc { get; set; }
+    }
+
+    public class ShopCartGroup
+    {
+        public Guid ShopId { get; set; }
+        public string ShopName { get; set; } = string.Empty;
+        public string ShopStatus { get; set; } = string.Empty;
+        public List<CartItemResponse> Items { get; set; } = new List<CartItemResponse>();
+        public decimal ShopSubtotal { get; set; }
     }
 
     public class CartItemResponse
@@ -22,7 +31,7 @@ namespace FoodConnect.Backend.Application.Commons.DTOs.Responses.Cart
         public string ProductUnit { get; set; } = string.Empty;
         public int Quantity { get; set; }
         public decimal Subtotal { get; set; }
-        public Guid ShopId { get; set; }
-        public string ShopName { get; set; } = string.Empty;
+        public int AvailableStock { get; set; }
+        public bool IsAvailable { get; set; }
     }
 }

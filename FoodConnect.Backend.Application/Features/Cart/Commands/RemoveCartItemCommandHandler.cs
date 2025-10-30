@@ -31,27 +31,41 @@ namespace FoodConnect.Backend.Application.Features.Cart.Commands
         {
             var result = new BaseResponse<CartResponse>();
 
-            var cartItem = await _cartItemRepository.GetByIdAsync(request.CartItemId, ci => ci.Cart);
-            if (cartItem == null)
+            if (request.CartItemIds == null || !request.CartItemIds.Any())
             {
-                return result.BuildFail("Cart item not found");
+                return result.BuildFail("No cart items to remove");
+            }
+
+            var cartItems = new List<Domain.Entities.CartItem>();
+            foreach (var itemId in request.CartItemIds)
+            {
+                var cartItem = await _cartItemRepository.GetByIdAsync(itemId, ci => ci.Cart);
+                if (cartItem != null)
+                {
+                    cartItems.Add(cartItem);
+                }
+            }
+
+            if (!cartItems.Any())
+            {
+                return result.BuildFail("Cart items not found");
             }
 
             var userId = _currentUserService.UserId;
+            var firstCart = cartItems.First().Cart;
 
-            // Verify ownership
             if (userId.HasValue)
             {
-                if (cartItem.Cart.UserId != userId.Value)
+                if (cartItems.Any(ci => ci.Cart.UserId != userId.Value))
                 {
-                    return result.BuildFail("Unauthorized access to cart item");
+                    return result.BuildFail("Unauthorized access to cart items");
                 }
             }
             else if (!string.IsNullOrEmpty(request.SessionId))
             {
-                if (cartItem.Cart.SessionId != request.SessionId)
+                if (cartItems.Any(ci => ci.Cart.SessionId != request.SessionId))
                 {
-                    return result.BuildFail("Unauthorized access to cart item");
+                    return result.BuildFail("Unauthorized access to cart items");
                 }
             }
             else
@@ -63,11 +77,14 @@ namespace FoodConnect.Backend.Application.Features.Cart.Commands
 
             try
             {
-                _cartItemRepository.Remove(cartItem);
+                foreach (var cartItem in cartItems)
+                {
+                    _cartItemRepository.Remove(cartItem);
+                }
+                
                 await _unitOfWork.SaveChangesAsync(cancellationToken);
                 await _unitOfWork.CommitTransactionAsync(transaction);
 
-                // Get updated cart
                 var getCartQuery = new GetCartQuery { SessionId = request.SessionId };
                 var cartResponse = await _mediator.Send(getCartQuery, cancellationToken);
 
@@ -76,7 +93,7 @@ namespace FoodConnect.Backend.Application.Features.Cart.Commands
             catch (Exception ex)
             {
                 await transaction.RollbackAsync();
-                return result.BuildFail($"Remove cart item failed: {ex.Message}");
+                return result.BuildFail($"Remove cart items failed: {ex.Message}");
             }
         }
     }

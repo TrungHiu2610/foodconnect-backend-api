@@ -9,10 +9,6 @@ namespace FoodConnect.Backend.API.Controllers
     [ApiController]
     public class CartController : ApiBaseController
     {
-        /// <summary>
-        /// Get cart for current user or guest (with session ID in header)
-        /// Header: X-Session-Id
-        /// </summary>
         [HttpGet]
         public async Task<IActionResult> GetCart()
         {
@@ -22,10 +18,6 @@ namespace FoodConnect.Backend.API.Controllers
             return result != null ? (result.Success ? Ok(result) : BadRequest(result)) : BadRequest();
         }
 
-        /// <summary>
-        /// Add product to cart
-        /// Header: X-Session-Id (for guest users)
-        /// </summary>
         [HttpPost]
         public async Task<IActionResult> AddToCart([FromBody] AddToCartCommand command)
         {
@@ -35,10 +27,6 @@ namespace FoodConnect.Backend.API.Controllers
             return result != null ? (result.Success ? Ok(result) : BadRequest(result)) : BadRequest();
         }
 
-        /// <summary>
-        /// Update cart item quantity
-        /// Header: X-Session-Id (for guest users)
-        /// </summary>
         [HttpPut]
         public async Task<IActionResult> UpdateCartItem([FromBody] UpdateCartItemCommand command)
         {
@@ -48,10 +36,6 @@ namespace FoodConnect.Backend.API.Controllers
             return result != null ? (result.Success ? Ok(result) : BadRequest(result)) : BadRequest();
         }
 
-        /// <summary>
-        /// Remove item from cart
-        /// Header: X-Session-Id (for guest users)
-        /// </summary>
         [HttpDelete]
         public async Task<IActionResult> RemoveCartItem([FromBody] RemoveCartItemCommand command)
         {
@@ -61,10 +45,6 @@ namespace FoodConnect.Backend.API.Controllers
             return result != null ? (result.Success ? Ok(result) : BadRequest(result)) : BadRequest();
         }
 
-        /// <summary>
-        /// Clear all items from cart
-        /// Header: X-Session-Id (for guest users)
-        /// </summary>
         [HttpPost]
         public async Task<IActionResult> ClearCart()
         {
@@ -72,6 +52,28 @@ namespace FoodConnect.Backend.API.Controllers
             var command = new ClearCartCommand { SessionId = sessionId };
             var result = await Mediator.Send(command);
             return result != null ? (result.Success ? Ok(result) : BadRequest(result)) : BadRequest();
+        }
+
+        /// <summary>
+        /// Get cart item count for header badge (lightweight)
+        /// Header: X-Session-Id (for guest users)
+        /// </summary>
+        [HttpGet]
+        public async Task<IActionResult> GetCartCount()
+        {
+            var sessionId = Request.Headers["X-Session-Id"].ToString();
+            var query = new GetCartCountQuery { SessionId = sessionId };
+            var result = await Mediator.Send(query);
+            return StatusCode(result.StatusCode, result);
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> ValidateCart([FromBody] ValidateCartQuery query)
+        {
+            var sessionId = Request.Headers["X-Session-Id"].ToString();
+            query.SessionId = sessionId;
+            var result = await Mediator.Send(query);
+            return StatusCode(result.StatusCode, result);
         }
     }
 }
