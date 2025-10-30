@@ -32,6 +32,9 @@ namespace FoodConnect.Backend.Infrastructure.Repositories
                 .Include(c => c.CartItems)
                     .ThenInclude(ci => ci.Product!)
                         .ThenInclude(p => p.Shop)
+                .Include(c => c.CartItems)
+                    .ThenInclude(ci => ci.Product!)
+                        .ThenInclude(p => p.Category)
                 .AsQueryable();
 
             if (userId.HasValue && userId.Value != Guid.Empty)

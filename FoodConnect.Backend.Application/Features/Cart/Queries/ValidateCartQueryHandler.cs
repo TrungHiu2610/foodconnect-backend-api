@@ -92,6 +92,19 @@ namespace FoodConnect.Backend.Application.Features.Cart.Queries
                     validationResult.IsValid = false;
                 }
 
+                // Validate product availability (manual or stock-based)
+                if (!product.IsAvailable)
+                {
+                    validationResult.Errors.Add(new CartValidationError
+                    {
+                        CartItemId = cartItem.Id,
+                        ProductName = product.Name,
+                        ErrorType = "ProductUnavailable",
+                        Message = $"Product '{product.Name}' is currently unavailable"
+                    });
+                    validationResult.IsValid = false;
+                }
+
                 // Validate shop exists and is active
                 if (shop == null)
                 {
@@ -119,45 +132,47 @@ namespace FoodConnect.Backend.Application.Features.Cart.Queries
                     validationResult.IsValid = false;
                 }
 
-                // Validate stock availability
-                var todayAvailability = product.ProductDailyAvailabilities?
-                    .FirstOrDefault(a => a.Date.Date == DateTime.UtcNow.Date);
+                // Validate stock availability (only for Standard delivery products with stock tracking)
+                // Skip stock validation for Express delivery products
+                var category = product.Category;
+                if (product.StockQuantity.HasValue && category?.DeliveryType != DeliveryTypeEnum.Express)
+                {
+                    var availableStock = product.StockQuantity.Value;
 
-                var availableStock = todayAvailability?.Quantity ?? 0;
-
-                if (availableStock == 0)
-                {
-                    validationResult.Errors.Add(new CartValidationError
+                    if (availableStock == 0)
                     {
-                        CartItemId = cartItem.Id,
-                        ProductName = product.Name,
-                        ErrorType = "OutOfStock",
-                        Message = $"Product '{product.Name}' is out of stock today",
-                        Details = new { AvailableStock = 0, RequestedQuantity = cartItem.Quantity }
-                    });
-                    validationResult.IsValid = false;
-                }
-                else if (availableStock < cartItem.Quantity)
-                {
-                    validationResult.Errors.Add(new CartValidationError
+                        validationResult.Errors.Add(new CartValidationError
+                        {
+                            CartItemId = cartItem.Id,
+                            ProductName = product.Name,
+                            ErrorType = "OutOfStock",
+                            Message = $"Product '{product.Name}' is out of stock",
+                            Details = new { AvailableStock = 0, RequestedQuantity = cartItem.Quantity }
+                        });
+                        validationResult.IsValid = false;
+                    }
+                    else if (availableStock < cartItem.Quantity)
                     {
-                        CartItemId = cartItem.Id,
-                        ProductName = product.Name,
-                        ErrorType = "InsufficientStock",
-                        Message = $"Only {availableStock} {product.Unit} available for '{product.Name}'",
-                        Details = new { AvailableStock = availableStock, RequestedQuantity = cartItem.Quantity }
-                    });
-                    validationResult.IsValid = false;
-                }
-                else if (availableStock < cartItem.Quantity * 1.5) // Low stock warning
-                {
-                    validationResult.Warnings.Add(new CartValidationWarning
+                        validationResult.Errors.Add(new CartValidationError
+                        {
+                            CartItemId = cartItem.Id,
+                            ProductName = product.Name,
+                            ErrorType = "InsufficientStock",
+                            Message = $"Only {availableStock} {product.Unit} available for '{product.Name}'",
+                            Details = new { AvailableStock = availableStock, RequestedQuantity = cartItem.Quantity }
+                        });
+                        validationResult.IsValid = false;
+                    }
+                    else if (availableStock < cartItem.Quantity * 1.5) // Low stock warning
                     {
-                        CartItemId = cartItem.Id,
-                        ProductName = product.Name,
-                        WarningType = "LowStock",
-                        Message = $"Only {availableStock} {product.Unit} left for '{product.Name}'"
-                    });
+                        validationResult.Warnings.Add(new CartValidationWarning
+                        {
+                            CartItemId = cartItem.Id,
+                            ProductName = product.Name,
+                            WarningType = "LowStock",
+                            Message = $"Only {availableStock} {product.Unit} left for '{product.Name}'"
+                        });
+                    }
                 }
 
                 // Note: Price validation would require storing original price in CartItem

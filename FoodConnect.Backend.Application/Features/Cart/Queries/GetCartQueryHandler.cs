@@ -95,8 +95,6 @@ namespace FoodConnect.Backend.Application.Features.Cart.Queries
                     foreach (var item in shopGroup)
                     {
                         var product = item.Product;
-                        var todayAvailability = product?.ProductDailyAvailabilities?
-                            .FirstOrDefault(a => a.Date.Date == DateTime.UtcNow.Date);
 
                         var cartItem = new CartItemResponse
                         {
@@ -108,8 +106,8 @@ namespace FoodConnect.Backend.Application.Features.Cart.Queries
                             ProductUnit = product?.Unit ?? string.Empty,
                             Quantity = item.Quantity,
                             Subtotal = (product?.Price ?? 0) * item.Quantity,
-                            AvailableStock = todayAvailability?.Quantity ?? 0,
-                            IsAvailable = product?.Status == Domain.Enums.ProductStatusEnum.Active
+                            AvailableStock = product?.StockQuantity ?? 0,
+                            IsAvailable = product?.IsAvailable ?? false && product?.Status == Domain.Enums.ProductStatusEnum.Active
                         };
 
                         shopCartGroup.Items.Add(cartItem);
