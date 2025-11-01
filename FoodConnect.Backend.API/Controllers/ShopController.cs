@@ -79,5 +79,52 @@ namespace FoodConnect.Backend.API.Controllers
             var result = await Mediator.Send(query);
             return result != null ? (result.Success ? Ok(result) : BadRequest(result)) : BadRequest();
         }
+
+        // ============ Buyer APIs ============
+
+        /// <summary>
+        /// Get list of shops with filters for buyer view
+        /// POST /api/Shop/GetListShopsForBuyer
+        /// </summary>
+        [HttpPost]
+        public async Task<IActionResult> GetListShopsForBuyer([FromBody] GetListShopsForBuyerQuery query)
+        {
+            var result = await Mediator.Send(query);
+            return result != null ? (result.Success ? Ok(result) : BadRequest(result)) : BadRequest();
+        }
+
+        /// <summary>
+        /// Get featured shops for buyer view
+        /// GET /api/Shop/GetFeaturedShops?limit=10&userLatitude=10.762622&userLongitude=106.660172
+        /// </summary>
+        [HttpGet]
+        public async Task<IActionResult> GetFeaturedShops([FromQuery] int limit = 10, [FromQuery] double? userLatitude = null, [FromQuery] double? userLongitude = null)
+        {
+            var query = new GetFeaturedShopsQuery
+            {
+                Limit = limit,
+                UserLatitude = userLatitude,
+                UserLongitude = userLongitude
+            };
+            var result = await Mediator.Send(query);
+            return result != null ? (result.Success ? Ok(result) : BadRequest(result)) : BadRequest();
+        }
+
+        /// <summary>
+        /// Get shop detail for buyer view
+        /// GET /api/Shop/GetShopDetailForBuyer/{shopId}?userLatitude=10.762622&userLongitude=106.660172
+        /// </summary>
+        [HttpGet("{shopId}")]
+        public async Task<IActionResult> GetShopDetailForBuyer([FromRoute] Guid shopId, [FromQuery] double? userLatitude = null, [FromQuery] double? userLongitude = null)
+        {
+            var query = new GetShopDetailForBuyerQuery
+            {
+                ShopId = shopId,
+                UserLatitude = userLatitude,
+                UserLongitude = userLongitude
+            };
+            var result = await Mediator.Send(query);
+            return result != null ? (result.Success ? Ok(result) : BadRequest(result)) : BadRequest();
+        }
     }
 }

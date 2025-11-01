@@ -62,5 +62,14 @@ namespace FoodConnect.Backend.Infrastructure.Repositories
 
             return (items, totalCount);
         }
+
+        public IQueryable<Shop> GetShopsAsQueryable()
+        {
+            return _context.Shops
+                .Include(s => s.ShopCategories)
+                    .ThenInclude(sc => sc.Category)
+                .Include(s => s.OperatingHours)
+                .AsQueryable();
+        }
     }
 }

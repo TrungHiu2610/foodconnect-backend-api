@@ -16,5 +16,6 @@ namespace FoodConnect.Backend.Application.Interfaces.IRepositories
             int pageSize, 
             Domain.Enums.ShopStatusEnum? status = null,
             string? searchTerm = null);
+        IQueryable<Shop> GetShopsAsQueryable();
     }
 }
