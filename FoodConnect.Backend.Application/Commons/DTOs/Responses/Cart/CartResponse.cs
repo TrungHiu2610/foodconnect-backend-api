@@ -28,7 +28,6 @@ namespace FoodConnect.Backend.Application.Commons.DTOs.Responses.Cart
         public string ProductName { get; set; } = string.Empty;
         public string? ProductThumbnail { get; set; }
         public decimal ProductPrice { get; set; }
-        public string ProductUnit { get; set; } = string.Empty;
         public int Quantity { get; set; }
         public decimal Subtotal { get; set; }
         public int AvailableStock { get; set; }

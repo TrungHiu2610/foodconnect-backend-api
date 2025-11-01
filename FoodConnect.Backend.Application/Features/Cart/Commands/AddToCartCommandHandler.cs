@@ -177,7 +177,6 @@ namespace FoodConnect.Backend.Application.Features.Cart.Commands
                             ProductName = product?.Name ?? string.Empty,
                             ProductThumbnail = product?.ProductAssets?.FirstOrDefault(a => a.IsThumbnail)?.AssetUrl,
                             ProductPrice = product?.Price ?? 0,
-                            ProductUnit = product?.Unit ?? string.Empty,
                             Quantity = item.Quantity,
                             Subtotal = (product?.Price ?? 0) * item.Quantity,
                             AvailableStock = product?.StockQuantity ?? 0,
