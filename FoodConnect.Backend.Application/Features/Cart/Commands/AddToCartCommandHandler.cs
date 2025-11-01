@@ -44,19 +44,21 @@ namespace FoodConnect.Backend.Application.Features.Cart.Commands
 
             var userId = _currentUserService.UserId;
 
+            // Validate SessionId
+            if (string.IsNullOrWhiteSpace(request.SessionId) && !userId.HasValue)
+            {
+                return result.BuildFail("Either user must be logged in or a valid session ID must be provided");
+            }
+
             // Get or create cart
             Domain.Entities.Cart? cart;
             if (userId.HasValue)
             {
                 cart = await _cartRepository.GetCartWithItemsAsync(userId, null);
             }
-            else if (!string.IsNullOrEmpty(request.SessionId))
-            {
-                cart = await _cartRepository.GetCartWithItemsAsync(null, request.SessionId);
-            }
             else
             {
-                return result.BuildFail("Either user must be logged in or session ID must be provided");
+                cart = await _cartRepository.GetCartWithItemsAsync(null, request.SessionId);
             }
 
             await using var transaction = await _unitOfWork.BeginTransactionAsync();
@@ -69,8 +71,8 @@ namespace FoodConnect.Backend.Application.Features.Cart.Commands
                     cart = new Domain.Entities.Cart
                     {
                         Id = Guid.NewGuid(),
-                        UserId = userId ?? Guid.Empty,
-                        SessionId = request.SessionId ?? string.Empty,
+                        UserId = userId, // Set to null for guest users
+                        SessionId = request.SessionId!,
                         CartItems = new List<CartItem>()
                     };
                     await _cartRepository.AddAsync(cart);
