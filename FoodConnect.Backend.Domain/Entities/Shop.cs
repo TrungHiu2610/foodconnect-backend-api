@@ -14,6 +14,12 @@ namespace FoodConnect.Backend.Domain.Entities
         public string? LogoUrl { get; set; }
         public string? CoverImageUrl { get; set; }
         public decimal? Rating { get; set; }
+        public int ReviewCount { get; set; } = 0;
+        public int TotalOrders { get; set; } = 0;
+        public bool IsFeatured { get; set; } = false;
+        public bool IsPromoted { get; set; } = false;
+        public DateTime? LastOrderAt { get; set; }
+        public bool IsVerified { get; set; } = false;
         public ShopStatusEnum Status { get; set; }
         
         public string SellerFullName { get; set; } = string.Empty;
@@ -42,5 +48,29 @@ namespace FoodConnect.Backend.Domain.Entities
         public virtual ICollection<ShopOperatingHour> OperatingHours { get; set; } = new List<ShopOperatingHour>();
         public virtual ICollection<ShopAsset> Assets { get; set; } = new List<ShopAsset>();
         public virtual ICollection<ShopCategory> ShopCategories { get; set; } = new List<ShopCategory>();
+
+        // Calculated fields (not mapped to database)
+        public double? CalculatedDistance { get; set; }
+
+        // Helper methods
+        public string GetFullAddress()
+        {
+            return string.Join(", ", new[] { Street, Ward, District, City, Country }
+                .Where(s => !string.IsNullOrWhiteSpace(s)));
+        }
+
+        public bool IsOpenNow()
+        {
+            if (!OperatingHours.Any()) return true; // If no hours set, assume always open
+
+            var now = DateTime.Now;
+            var dayOfWeek = now.DayOfWeek;
+            var currentTime = TimeOnly.FromDateTime(now);
+
+            var todayHours = OperatingHours.FirstOrDefault(h => h.DayOfWeek == dayOfWeek);
+            if (todayHours == null) return false;
+
+            return currentTime >= todayHours.OpenTime && currentTime <= todayHours.CloseTime;
+        }
     }
 }

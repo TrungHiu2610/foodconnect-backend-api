@@ -45,7 +45,9 @@ namespace FoodConnect.Backend.Application.Commons.Behaviors
                 .ForMember(dest => dest.ProductAssets,
                            opt => opt.MapFrom(src => src.ProductAssets))
                 .ForMember(dest => dest.ShopName,
-                           opt => opt.MapFrom(src => src.Shop.ShopName));
+                           opt => opt.MapFrom(src => src.Shop.ShopName))
+                .ForMember(dest => dest.ShopId,
+                           opt => opt.MapFrom(src => src.Shop.Id));
 
 
             CreateMap<Product, GetListProductItemResponse>()
