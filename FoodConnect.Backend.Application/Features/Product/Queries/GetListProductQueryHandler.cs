@@ -46,6 +46,24 @@ namespace FoodConnect.Backend.Application.Features.Product.Queries
                 query = query.Where(p => p.CategoryId == request.CategoryId);
             }
 
+            if (request.ShopId != null)
+            {
+                query = query.Where(p => p.ShopId == request.ShopId);
+            }
+
+            if (request.IsAvailable.HasValue)
+            {
+                query = query.Where(p => p.IsAvailable == request.IsAvailable.Value);
+            }
+
+            if (!string.IsNullOrWhiteSpace(request.Status))
+            {
+                if (Enum.TryParse<Domain.Enums.ProductStatusEnum>(request.Status, true, out var statusEnum))
+                {
+                    query = query.Where(p => p.Status == statusEnum);
+                }
+            }
+
             // 2. search - Use case-insensitive search at DB level first
             // Then apply Vietnamese normalization client-side for better accuracy
             var hasTextSearch = !string.IsNullOrEmpty(request.TextSearch);
@@ -63,6 +81,13 @@ namespace FoodConnect.Backend.Application.Features.Product.Queries
             if (request.SortInfos != null && request.SortInfos.Any())
             {
                 IOrderedQueryable<Domain.Entities.Product>? orderedQuery = null;
+                
+                // If shop management view: Sort out-of-stock products last
+                if (request.SortOutOfStockLast)
+                {
+                    orderedQuery = query.OrderByDescending(p => p.IsAvailable);
+                }
+
                 foreach (var sortInfo in request.SortInfos)
                 {
                     if (!_sortableColumns.TryGetValue(sortInfo.PropertyName, out var keySelector))
@@ -88,7 +113,17 @@ namespace FoodConnect.Backend.Application.Features.Product.Queries
             else
             {
                 // Default sort
-                query = query.OrderByDescending(p => p.CreatedAtUtc);
+                if (request.SortOutOfStockLast)
+                {
+                    // Shop management: Available products first, then sort by date
+                    query = query.OrderByDescending(p => p.IsAvailable)
+                                 .ThenByDescending(p => p.CreatedAtUtc);
+                }
+                else
+                {
+                    // Buyer view: Just sort by date
+                    query = query.OrderByDescending(p => p.CreatedAtUtc);
+                }
             }
 
             // 4. Execute query and apply Vietnamese normalization if needed
