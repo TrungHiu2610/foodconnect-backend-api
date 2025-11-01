@@ -12,7 +12,7 @@ namespace FoodConnect.Backend.Application.Features.Category.Queries
         // Filters
         public bool? IsActive { get; set; }  // null = all, true = active only, false = inactive only
         public Guid? ParentId { get; set; }  // Filter by parent category
-        public string? DeliveryType { get; set; }  // "Standard", "FastDelivery", "Pickup"
+        public string? DeliveryType { get; set; }  // "Standard", "Express"
         
         // Date range filter
         public DateTime? CreatedFrom { get; set; }

@@ -83,6 +83,8 @@ namespace FoodConnect.Backend.Application.Commons.Behaviors
             CreateMap<Category, GetListCategoryItem>()
                 .ForMember(dest => dest.ParentName,
                     opt => opt.MapFrom(src => src.Parent.Name))
+                .ForMember(dest => dest.DeliveryType,
+                    opt => opt.MapFrom(src => src.DeliveryType.ToString()))
                 .ForMember(dest => dest.ProductCount,
                     opt => opt.MapFrom(src => src.Products.Count()));
 
