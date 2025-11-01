@@ -158,7 +158,7 @@ namespace FoodConnect.Backend.Application.Features.Cart.Queries
                             CartItemId = cartItem.Id,
                             ProductName = product.Name,
                             ErrorType = "InsufficientStock",
-                            Message = $"Only {availableStock} {product.Unit} available for '{product.Name}'",
+                            Message = $"Only {availableStock} items available for '{product.Name}'",
                             Details = new { AvailableStock = availableStock, RequestedQuantity = cartItem.Quantity }
                         });
                         validationResult.IsValid = false;
@@ -170,7 +170,7 @@ namespace FoodConnect.Backend.Application.Features.Cart.Queries
                             CartItemId = cartItem.Id,
                             ProductName = product.Name,
                             WarningType = "LowStock",
-                            Message = $"Only {availableStock} {product.Unit} left for '{product.Name}'"
+                            Message = $"Only {availableStock} items left for '{product.Name}'"
                         });
                     }
                 }

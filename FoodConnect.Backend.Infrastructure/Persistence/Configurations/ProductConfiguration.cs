@@ -22,9 +22,6 @@ namespace FoodConnect.Backend.Infrastructure.Persistence.Configurations
             builder.Property(p => p.Price)
                 .IsRequired()
                 .HasColumnType("decimal(18,2)");
-            builder.Property(p => p.Unit)
-                .IsRequired()
-                .HasMaxLength(50);
             builder.Property(p=> p.Status)
                 .IsRequired()
                 .HasDefaultValue(ProductStatusEnum.Draft); 

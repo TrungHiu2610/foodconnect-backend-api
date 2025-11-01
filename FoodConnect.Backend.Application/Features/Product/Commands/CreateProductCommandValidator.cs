@@ -25,9 +25,6 @@ namespace FoodConnect.Backend.Application.Features.Product.Commands
             RuleFor(x => x.Price)
                 .GreaterThan(0).WithMessage("Price must be greater than 0.");
 
-            RuleFor(x => x.Unit)
-                .NotEmpty().WithMessage("Unit is required.");
-
             RuleFor(x => x.CategoryId)
                 .NotEmpty().WithMessage("CategoryId is required.");
 
@@ -52,6 +49,21 @@ namespace FoodConnect.Backend.Application.Features.Product.Commands
                 .GreaterThanOrEqualTo(0)
                 .When(x => x.StockQuantity.HasValue)
                 .WithMessage("Stock Quantity must be greater than or equal to 0.");
+
+            RuleFor(x => x.ExpiryDate)
+                .MaximumLength(50)
+                .When(x => !string.IsNullOrWhiteSpace(x.ExpiryDate))
+                .WithMessage("Expiry Date must not exceed 50 characters.");
+
+            RuleFor(x => x.StorageInstructions)
+                .MaximumLength(500)
+                .When(x => !string.IsNullOrWhiteSpace(x.StorageInstructions))
+                .WithMessage("Storage Instructions must not exceed 500 characters.");
+
+            RuleFor(x => x.UsageInstructions)
+                .MaximumLength(1000)
+                .When(x => !string.IsNullOrWhiteSpace(x.UsageInstructions))
+                .WithMessage("Usage Instructions must not exceed 1000 characters.");
 
             When(x => x.ProductAssets != null && x.ProductAssets.Any(), () =>
             {
