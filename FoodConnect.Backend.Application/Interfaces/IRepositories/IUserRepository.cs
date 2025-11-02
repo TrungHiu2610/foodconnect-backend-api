@@ -9,7 +9,9 @@ namespace FoodConnect.Backend.Application.Interfaces.IRepositories
 {
     public interface IUserRepository : IBaseRepository<User>
     {
+        Task<User?> GetByIdAsync(Guid id);
         Task<User?> GetByEmailAsync(string email);
+        Task<User?> GetUserWithRolesAsync(Guid id);
         Task<bool> IsEmailUniqueAsync(string email);
     }
 }
