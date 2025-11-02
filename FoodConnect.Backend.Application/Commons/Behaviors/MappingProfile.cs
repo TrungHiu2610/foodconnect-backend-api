@@ -47,7 +47,9 @@ namespace FoodConnect.Backend.Application.Commons.Behaviors
                 .ForMember(dest => dest.ProductAssets,
                            opt => opt.MapFrom(src => src.ProductAssets))
                 .ForMember(dest => dest.ShopName,
-                           opt => opt.MapFrom(src => src.Shop.ShopName));
+                           opt => opt.MapFrom(src => src.Shop.ShopName))
+                .ForMember(dest => dest.ShopId,
+                           opt => opt.MapFrom(src => src.Shop.Id));
 
 
             CreateMap<Product, GetListProductItemResponse>()
@@ -168,6 +170,19 @@ namespace FoodConnect.Backend.Application.Commons.Behaviors
                 .ForMember(dest => dest.CreatedBy, opt => opt.Ignore())
                 .ForMember(dest => dest.PayoutMethod, opt => opt.MapFrom((src, dest) => 
                     src.PayoutMethod.HasValue ? (PaymentMethodEnum)src.PayoutMethod.Value : dest.PayoutMethod))
+                .ForAllMembers(opts => opts.Condition((src, dest, srcMember) => srcMember != null));
+            #endregion
+
+            #region address mappings
+            // update address - only map non-null properties
+            CreateMap<Application.Features.Address.Commands.UpdateAddressCommand, Domain.Entities.Address>()
+                .ForMember(dest => dest.Id, opt => opt.Ignore())
+                .ForMember(dest => dest.UserId, opt => opt.Ignore())
+                .ForMember(dest => dest.User, opt => opt.Ignore())
+                .ForMember(dest => dest.CreatedAtUtc, opt => opt.Ignore())
+                .ForMember(dest => dest.CreatedBy, opt => opt.Ignore())
+                .ForMember(dest => dest.AddressType, opt => opt.MapFrom((src, dest) => 
+                    src.AddressType.HasValue ? (AddressTypeEnum)src.AddressType.Value : dest.AddressType))
                 .ForAllMembers(opts => opts.Condition((src, dest, srcMember) => srcMember != null));
             #endregion
         }

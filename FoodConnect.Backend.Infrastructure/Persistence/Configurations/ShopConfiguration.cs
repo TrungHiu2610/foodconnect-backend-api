@@ -70,6 +70,9 @@ namespace FoodConnect.Backend.Infrastructure.Persistence.Configurations
             builder.Property(s => s.Country)
                 .HasMaxLength(100);
 
+            // Ignore calculated fields (not mapped to database)
+            builder.Ignore(s => s.CalculatedDistance);
+
             builder.HasOne(s => s.User)
                 .WithOne() 
                 .HasForeignKey<Shop>(s => s.UserId)
