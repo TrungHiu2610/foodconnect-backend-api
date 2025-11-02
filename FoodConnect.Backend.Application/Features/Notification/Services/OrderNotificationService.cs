@@ -95,13 +95,13 @@ namespace FoodConnect.Backend.Application.Features.Notification.Services
                 UserId = order.BuyerId,
                 Type = NotificationTypeEnum.OrderRejected,
                 Title = "Đơn hàng bị từ chối",
-                Message = $"Shop {order.Shop?.ShopName} đã từ chối đơn hàng #{order.OrderCode}. Lý do: {order.RejectionReason}",
+                Message = $"Shop {order.Shop?.ShopName} đã từ chối đơn hàng #{order.OrderCode}. Lý do: {order.CancelReason}",
                 OrderId = order.Id,
                 ShopId = order.ShopId,
                 MetadataJson = JsonSerializer.Serialize(new
                 {
                     ShopName = order.Shop?.ShopName,
-                    RejectionReason = order.RejectionReason,
+                    RejectionReason = order.CancelReason,
                     CancelledAt = order.CancelledAt
                 })
             };
@@ -111,7 +111,7 @@ namespace FoodConnect.Backend.Application.Features.Notification.Services
 
             var dto = MapToDto(notification, order);
             await _notificationService.SendToUserAsync(order.BuyerId, dto);
-            await _notificationService.SendOrderStatusUpdateAsync(order.BuyerId, order.Id, "Rejected", order.RejectionReason ?? "");
+            await _notificationService.SendOrderStatusUpdateAsync(order.BuyerId, order.Id, "Rejected", order.CancelReason ?? "");
 
             var unreadCount = await _notificationRepository.GetUnreadCountAsync(order.BuyerId);
             await _notificationService.UpdateUnreadCountAsync(order.BuyerId, unreadCount);
