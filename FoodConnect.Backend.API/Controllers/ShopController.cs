@@ -71,11 +71,11 @@ namespace FoodConnect.Backend.API.Controllers
             return result != null ? (result.Success ? Ok(result) : BadRequest(result)) : BadRequest();
         }
 
-        [HttpGet]
+        [HttpGet("{id}")]
         [Authorize(Roles = "Admin")]
-        public async Task<IActionResult> GetShopDetail([FromRoute] Guid shopId)
+        public async Task<IActionResult> GetShopDetail(Guid id, [FromQuery]GetShopDetailQuery query)
         {
-            var query = new GetShopDetailQuery { ShopId = shopId };
+            query.ShopId = id;
             var result = await Mediator.Send(query);
             return result != null ? (result.Success ? Ok(result) : BadRequest(result)) : BadRequest();
         }

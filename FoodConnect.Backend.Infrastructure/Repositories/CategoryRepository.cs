@@ -46,5 +46,32 @@ namespace FoodConnect.Backend.Infrastructure.Repositories
                 .OrderByDescending(c => c.CreatedAtUtc)
                 .ToListAsync();
         }
+
+        public async Task<bool> HasChildrenAsync(Guid categoryId)
+        {
+            return await _context.Categories
+                .AsNoTracking()
+                .AnyAsync(c => c.ParentId == categoryId);
+        }
+
+        public async Task<IEnumerable<Category>> GetChildrenByParentIdAsync(Guid parentId)
+        {
+            return await _context.Categories
+                .AsNoTracking()
+                .Where(c => c.IsActive && c.ParentId == parentId)
+                .Include(c => c.Parent)
+                .OrderBy(c => c.Name)
+                .ToListAsync();
+        }
+
+        public async Task<IEnumerable<Category>> GetCategoriesByIdsAsync(List<Guid> categoryIds)
+        {
+            return await _context.Categories
+                .AsNoTracking()
+                .Where(c => categoryIds.Contains(c.Id) && c.IsActive)
+                .Include(c => c.Parent)
+                .OrderBy(c => c.Name)
+                .ToListAsync();
+        }
     }
 }
