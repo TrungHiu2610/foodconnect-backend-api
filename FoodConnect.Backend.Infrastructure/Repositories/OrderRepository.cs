@@ -98,5 +98,12 @@ namespace FoodConnect.Backend.Infrastructure.Repositories
                 .Distinct()
                 .ToListAsync();
         }
+        
+        public async Task<int> CountOrdersByDateRangeAsync(DateTime startDate, DateTime endDate)
+        {
+            return await _context.Orders
+                .Where(o => o.CreatedAtUtc >= startDate && o.CreatedAtUtc < endDate)
+                .CountAsync();
+        }
     }
 }

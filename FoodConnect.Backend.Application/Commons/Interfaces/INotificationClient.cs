@@ -2,10 +2,6 @@ using FoodConnect.Backend.Application.Commons.DTOs.Notifications;
 
 namespace FoodConnect.Backend.Application.Commons.Interfaces
 {
-    /// <summary>
-    /// Defines methods that can be called by server on SignalR clients
-    /// Client must implement these methods to receive notifications
-    /// </summary>
     public interface INotificationClient
     {
         // Order notifications
@@ -20,5 +16,7 @@ namespace FoodConnect.Backend.Application.Commons.Interfaces
         
         // Badge count update
         Task UpdateUnreadCount(int count);
+        
+        Task StopSoundAlert(string notificationId);
     }
 }
