@@ -32,7 +32,7 @@ namespace FoodConnect.Backend.Application.Features.Auth.Commands.Register
 
             var passwordHash = BCrypt.Net.BCrypt.HashPassword(request.Password);
 
-            var user = new User
+            var user = new Domain.Entities.User
             {
                 FullName = request.FullName,
                 Email = request.Email,

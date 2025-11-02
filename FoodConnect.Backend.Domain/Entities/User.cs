@@ -14,9 +14,12 @@ namespace FoodConnect.Backend.Domain.Entities
         public string? PhoneNumber { get; set; }
         public string PasswordHash { get; set; }
         public string? AvatarUrl { get; set; }
+        public DateTime? DateOfBirth { get; set; }
+        public string? Gender { get; set; } // "Male", "Female", "Other"
         public UserStatusEnum Status { get; set; } = UserStatusEnum.Pending;
 
         public virtual ICollection<UserRole> UserRoles { get; set; } = new List<UserRole>();
         public virtual ICollection<RefreshToken> RefreshTokens { get; set; } = new List<RefreshToken>();
+        public virtual ICollection<Address> Addresses { get; set; } = new List<Address>();
     }
 }
