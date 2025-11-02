@@ -103,6 +103,13 @@ namespace FoodConnect.Backend.Infrastructure.Repositories
             }
 
             return allCategoryIds.ToList();
+        public IQueryable<Shop> GetShopsAsQueryable()
+        {
+            return _context.Shops
+                .Include(s => s.ShopCategories)
+                    .ThenInclude(sc => sc.Category)
+                .Include(s => s.OperatingHours)
+                .AsQueryable();
         }
         public IQueryable<Shop> GetShopsAsQueryable()
         {

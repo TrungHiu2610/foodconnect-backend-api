@@ -17,5 +17,6 @@ namespace FoodConnect.Backend.Application.Interfaces.IRepositories
             Domain.Enums.ShopStatusEnum? status = null,
             string? searchTerm = null);
         Task<List<Guid>> GetAllCategoryIdsForShopAsync(Guid shopId);
+        IQueryable<Shop> GetShopsAsQueryable();
     }
 }
