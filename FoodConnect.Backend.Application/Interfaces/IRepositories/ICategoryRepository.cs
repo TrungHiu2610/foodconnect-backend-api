@@ -13,5 +13,8 @@ namespace FoodConnect.Backend.Application.Interfaces.IRepositories
         Task<IEnumerable<Category>> GetActiveCategoriesAsync();
         Task<IEnumerable<Category>> GetParentCategoriesAsync();
         Task<IEnumerable<Category>> GetAllCategoriesWithDetailsAsync();
+        Task<bool> HasChildrenAsync(Guid categoryId);
+        Task<IEnumerable<Category>> GetChildrenByParentIdAsync(Guid parentId);
+        Task<IEnumerable<Category>> GetCategoriesByIdsAsync(List<Guid> categoryIds);
     }
 }

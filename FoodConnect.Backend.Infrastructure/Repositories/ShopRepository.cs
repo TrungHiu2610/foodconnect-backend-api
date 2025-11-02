@@ -37,6 +37,7 @@ namespace FoodConnect.Backend.Infrastructure.Repositories
                 .Include(s => s.User)
                 .AsQueryable();
 
+            query = query.Where(s=>s.Status != Domain.Enums.ShopStatusEnum.Draft); 
             // Filter by status
             if (status.HasValue)
             {
@@ -63,6 +64,45 @@ namespace FoodConnect.Backend.Infrastructure.Repositories
             return (items, totalCount);
         }
 
+        public async Task<List<Guid>> GetAllCategoryIdsForShopAsync(Guid shopId)
+        {
+            // Get direct categories that shop registered
+            var directCategoryIds = await _context.ShopCategories
+                .AsNoTracking()
+                .Where(sc => sc.ShopId == shopId)
+                .Select(sc => sc.CategoryId)
+                .ToListAsync();
+
+            if (!directCategoryIds.Any())
+            {
+                return new List<Guid>();
+            }
+
+            // Get all parent category IDs recursively
+            var allCategoryIds = new HashSet<Guid>(directCategoryIds);
+            var categoriesToCheck = new Queue<Guid>(directCategoryIds);
+
+            while (categoriesToCheck.Any())
+            {
+                var currentCategoryId = categoriesToCheck.Dequeue();
+                
+                // Get all children of current category
+                var children = await _context.Categories
+                    .AsNoTracking()
+                    .Where(c => c.ParentId == currentCategoryId)
+                    .Select(c => c.Id)
+                    .ToListAsync();
+
+                foreach (var childId in children)
+                {
+                    if (allCategoryIds.Add(childId)) // Add returns false if already exists
+                    {
+                        categoriesToCheck.Enqueue(childId);
+                    }
+                }
+            }
+
+            return allCategoryIds.ToList();
         public IQueryable<Shop> GetShopsAsQueryable()
         {
             return _context.Shops

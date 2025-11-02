@@ -64,20 +64,7 @@ namespace FoodConnect.Backend.Application.Features.Product.Queries
                 }
             }
 
-            // 2. search - Use case-insensitive search at DB level first
-            // Then apply Vietnamese normalization client-side for better accuracy
-            var hasTextSearch = !string.IsNullOrEmpty(request.TextSearch);
-            if (hasTextSearch)
-            {
-                // DB-level filter: Case-insensitive contains (reduces data significantly)
-                var lowerSearch = request.TextSearch!.ToLower();
-                query = query.Where(p => 
-                    (p.Name != null && p.Name.ToLower().Contains(lowerSearch)) ||
-                    (p.Description != null && p.Description.ToLower().Contains(lowerSearch))
-                );
-            }
-
-            // 3. sort
+            // 2. sort
             if (request.SortInfos != null && request.SortInfos.Any())
             {
                 IOrderedQueryable<Domain.Entities.Product>? orderedQuery = null;
@@ -126,14 +113,13 @@ namespace FoodConnect.Backend.Application.Features.Product.Queries
                 }
             }
 
-            // 4. Execute query and apply Vietnamese normalization if needed
+            // 3. search
+            var hasTextSearch = !string.IsNullOrEmpty(request.TextSearch);
+
             if (hasTextSearch)
             {
-                // Fetch filtered products from DB (already reduced by case-insensitive filter)
                 var allFilteredProducts = await query.ToListAsync(cancellationToken);
                 
-                // Apply Vietnamese diacritics removal for accurate matching
-                // Example: "hu tieu" matches "Hủ tiếu"
                 var normalizedSearch = request.TextSearch!.NormalizeForSearch();
                 var matchedProducts = allFilteredProducts.Where(p =>
                     (p.Name != null && p.Name.NormalizeForSearch().Contains(normalizedSearch)) ||
@@ -154,7 +140,6 @@ namespace FoodConnect.Backend.Application.Features.Product.Queries
             }
             else
             {
-                // No text search - use efficient DB pagination
                 var totalItems = await query.CountAsync(cancellationToken);
                 var products = await query
                     .Skip((request.PageNumber - 1) * request.PageSize)
