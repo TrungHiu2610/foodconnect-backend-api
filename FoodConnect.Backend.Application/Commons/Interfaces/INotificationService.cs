@@ -2,9 +2,6 @@ using FoodConnect.Backend.Application.Commons.DTOs.Notifications;
 
 namespace FoodConnect.Backend.Application.Commons.Interfaces
 {
-    /// <summary>
-    /// Service for sending real-time notifications via SignalR
-    /// </summary>
     public interface INotificationService
     {
         // Send to specific user
@@ -22,5 +19,8 @@ namespace FoodConnect.Backend.Application.Commons.Interfaces
         
         // Broadcast to all connected users
         Task BroadcastAsync(NotificationDto notification);
+        
+        // Stop sound alert for specific notification
+        Task StopSoundAlertAsync(Guid userId, Guid notificationId);
     }
 }

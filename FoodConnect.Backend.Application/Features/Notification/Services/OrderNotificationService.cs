@@ -46,8 +46,13 @@ namespace FoodConnect.Backend.Application.Features.Notification.Services
             await _notificationRepository.AddAsync(notification);
             await _unitOfWork.SaveChangesAsync(cancellationToken);
 
-            // Send real-time notification
+            // Send real-time notification with sound alert
             var dto = MapToDto(notification, order);
+            
+            dto.RequiresSound = true;
+            dto.SoundRepeatIntervalSeconds = 15; 
+            dto.RequiresAction = true; 
+            
             await _notificationService.SendNewOrderAlertAsync(order.Shop.UserId, dto);
 
             // Update unread count

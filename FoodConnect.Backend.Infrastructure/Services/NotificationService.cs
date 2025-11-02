@@ -108,5 +108,21 @@ namespace FoodConnect.Backend.Infrastructure.Services
                 Console.WriteLine($"[NotificationService] Error broadcasting: {ex.Message}");
             }
         }
+
+        public async Task StopSoundAlertAsync(Guid userId, Guid notificationId)
+        {
+            try
+            {
+                await _hubContext.Clients
+                    .Group($"user_{userId}")
+                    .StopSoundAlert(notificationId.ToString());
+
+                Console.WriteLine($"[NotificationService] Sent stop sound alert to user {userId} for notification {notificationId}");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[NotificationService] Error stopping sound alert: {ex.Message}");
+            }
+        }
     }
 }

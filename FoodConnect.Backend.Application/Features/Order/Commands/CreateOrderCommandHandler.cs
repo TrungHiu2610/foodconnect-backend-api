@@ -92,7 +92,7 @@ namespace FoodConnect.Backend.Application.Features.Order.Commands
                     double total = subTotal + shippingFee - discount;
 
                     // Generate order code
-                    var orderCode = GenerateOrderCode();
+                    var orderCode = await GenerateOrderCode();
 
                     // Create order
                     var order = new Domain.Entities.Order
@@ -164,13 +164,16 @@ namespace FoodConnect.Backend.Application.Features.Order.Commands
             }
         }
 
-        private string GenerateOrderCode()
+        private async Task<string> GenerateOrderCode()
         {
-            // Format: ORD-YYYYMMDD-XXXXXX (random 6 digits)
             var datePart = DateTime.UtcNow.ToString("yyyyMMdd");
-            var random = new Random();
-            var randomPart = random.Next(100000, 999999);
-            return $"ORD-{datePart}-{randomPart}";
+            var today = DateTime.UtcNow.Date;
+            var tomorrow = today.AddDays(1);
+
+            var ordersToday = await _orderRepository.CountOrdersByDateRangeAsync(today, tomorrow);
+            var sequentialNumber = (ordersToday + 1).ToString("D5");
+
+            return $"ORD-{datePart}-{sequentialNumber}";
         }
     }
 }
