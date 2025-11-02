@@ -85,7 +85,7 @@ namespace FoodConnect.Backend.Infrastructure.Repositories
             while (categoriesToCheck.Any())
             {
                 var currentCategoryId = categoriesToCheck.Dequeue();
-                
+
                 // Get all children of current category
                 var children = await _context.Categories
                     .AsNoTracking()
@@ -103,6 +103,7 @@ namespace FoodConnect.Backend.Infrastructure.Repositories
             }
 
             return allCategoryIds.ToList();
+        }
         public IQueryable<Shop> GetShopsAsQueryable()
         {
             return _context.Shops
