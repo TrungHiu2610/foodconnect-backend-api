@@ -51,10 +51,9 @@ namespace FoodConnect.Backend.Infrastructure.Repositories
 
         public async Task<List<Guid>> GetBuyersWithProductInCartAsync(Guid productId)
         {
-            // Return all user IDs who have the product in their cart
             return await _context.Carts
-                .Where(c => c.CartItems.Any(ci => ci.ProductId == productId))
-                .Select(c => c.UserId)
+                .Where(c => c.CartItems.Any(ci => ci.ProductId == productId) && c.UserId.HasValue)
+                .Select(c => c.UserId!.Value)
                 .Distinct()
                 .ToListAsync();
         }

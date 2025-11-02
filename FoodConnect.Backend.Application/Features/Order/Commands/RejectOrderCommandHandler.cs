@@ -73,7 +73,7 @@ namespace FoodConnect.Backend.Application.Features.Order.Commands
 
             // Update order status
             order.Status = OrderStatusEnum.Cancelled;
-            order.RejectionReason = request.RejectionReason;
+            order.CancelReason = request.RejectionReason;
             order.CancelledAt = DateTime.UtcNow;
 
             _orderRepository.Update(order);

@@ -19,7 +19,6 @@ namespace FoodConnect.Backend.Domain.Entities
         public string ShippingAddressJson { get; set; } = string.Empty;
         public string? Notes { get; set; }
         public string? CancelReason { get; set; }
-        public string? RejectionReason { get; set; }
         public DateTime? AcceptedAt { get; set; }
         public DateTime? PreparedAt { get; set; }
         public DateTime? DeliveredAt { get; set; }
