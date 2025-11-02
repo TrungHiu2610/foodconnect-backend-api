@@ -14,5 +14,6 @@ namespace FoodConnect.Backend.Application.Interfaces.IRepositories
         Task MarkAllAsReadAsync(Guid userId);
         Task<List<Notification>> GetNotificationsByTypeAsync(Guid userId, NotificationTypeEnum type);
         Task DeleteOldNotificationsAsync(DateTime olderThan);
+        Task<Notification?> GetNotificationByOrderIdAsync(Guid orderId, Guid userId, NotificationTypeEnum type);
     }
 }

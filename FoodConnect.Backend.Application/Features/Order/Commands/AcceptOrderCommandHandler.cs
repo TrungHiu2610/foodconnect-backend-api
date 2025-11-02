@@ -16,17 +16,23 @@ namespace FoodConnect.Backend.Application.Features.Order.Commands
         private readonly IUnitOfWork _unitOfWork;
         private readonly ICurrentUserService _currentUserService;
         private readonly OrderNotificationService _orderNotificationService;
+        private readonly INotificationRepository _notificationRepository;
+        private readonly INotificationService _notificationService;
 
         public AcceptOrderCommandHandler(
             IOrderRepository orderRepository,
             IUnitOfWork unitOfWork,
             ICurrentUserService currentUserService,
-            OrderNotificationService orderNotificationService)
+            OrderNotificationService orderNotificationService,
+            INotificationRepository notificationRepository,
+            INotificationService notificationService)
         {
             _orderRepository = orderRepository;
             _unitOfWork = unitOfWork;
             _currentUserService = currentUserService;
             _orderNotificationService = orderNotificationService;
+            _notificationRepository = notificationRepository;
+            _notificationService = notificationService;
         }
 
         public async Task<BaseResponse<OrderDetailDto>> Handle(AcceptOrderCommand request, CancellationToken cancellationToken)
@@ -72,6 +78,14 @@ namespace FoodConnect.Backend.Application.Features.Order.Commands
 
             // Send notification to buyer
             await _orderNotificationService.NotifyOrderAcceptedAsync(order!, cancellationToken);
+            
+            var newOrderNotification = await _notificationRepository
+                .GetNotificationByOrderIdAsync(order!.Id, order.Shop!.UserId, Domain.Enums.NotificationTypeEnum.NewOrder);
+            
+            if (newOrderNotification != null)
+            {
+                await _notificationService.StopSoundAlertAsync(order.Shop.UserId, newOrderNotification.Id);
+            }
 
             return result.BuildSuccess(orderDto, "Order accepted successfully");
         }

@@ -104,5 +104,13 @@ namespace FoodConnect.Backend.Infrastructure.Repositories
 
             _context.Notifications.RemoveRange(oldNotifications);
         }
+
+        public async Task<Notification?> GetNotificationByOrderIdAsync(Guid orderId, Guid userId, NotificationTypeEnum type)
+        {
+            return await _context.Notifications
+                .Where(n => n.OrderId == orderId && n.UserId == userId && n.Type == type)
+                .OrderByDescending(n => n.CreatedAtUtc)
+                .FirstOrDefaultAsync();
+        }
     }
 }

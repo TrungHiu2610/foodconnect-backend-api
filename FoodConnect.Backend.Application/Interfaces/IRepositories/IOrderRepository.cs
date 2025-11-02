@@ -12,10 +12,7 @@ namespace FoodConnect.Backend.Application.Interfaces.IRepositories
         Task<bool> CanCancelOrderAsync(Guid orderId, Guid buyerId);
         Task<bool> IsOrderOwnedByBuyerAsync(Guid orderId, Guid buyerId);
         Task<bool> IsOrderOwnedByShopAsync(Guid orderId, Guid shopId);
-
-        /// <summary>
-        /// Returns a list of buyer IDs who have pending orders containing the specified product
-        /// </summary>
         Task<List<Guid>> GetBuyersWithPendingOrdersContainingProductAsync(Guid productId);
+        Task<int> CountOrdersByDateRangeAsync(DateTime startDate, DateTime endDate);
     }
 }

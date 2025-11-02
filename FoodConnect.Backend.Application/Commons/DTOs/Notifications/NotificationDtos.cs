@@ -18,6 +18,9 @@ namespace FoodConnect.Backend.Application.Commons.DTOs.Notifications
         public Guid? ShopId { get; set; }
         public string? ShopName { get; set; }
         public string? MetadataJson { get; set; }
+        public bool RequiresSound { get; set; }
+        public int? SoundRepeatIntervalSeconds { get; set; }
+        public bool RequiresAction { get; set; }
     }
     
     public class CreateNotificationDto
