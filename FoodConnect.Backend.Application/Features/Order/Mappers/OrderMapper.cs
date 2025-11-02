@@ -19,7 +19,6 @@ namespace FoodConnect.Backend.Application.Features.Order.Mappers
                 ShippingAddressJson = order.ShippingAddressJson,
                 Notes = order.Notes,
                 CancelReason = order.CancelReason,
-                RejectionReason = order.CancelReason,
                 CreatedAt = order.CreatedAtUtc,
                 AcceptedAt = order.AcceptedAt,
                 PreparedAt = order.PreparedAt,
