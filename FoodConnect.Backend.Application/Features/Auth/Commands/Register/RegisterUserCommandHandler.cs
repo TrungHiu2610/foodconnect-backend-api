@@ -42,7 +42,6 @@ namespace FoodConnect.Backend.Application.Features.Auth.Commands.Register
             var roles = new List<UserRole>()
             {
                 new UserRole { RoleId = RoleEnum.Buyer, 
-                    //UserId = user.Id
                 }
             };
             var roleNames = roles.Select(ur => ur.RoleId.ToString()).ToList();
@@ -50,12 +49,12 @@ namespace FoodConnect.Backend.Application.Features.Auth.Commands.Register
 
             await _userRepository.AddAsync(user);
 
-            (string accessToken, Domain.Entities.RefreshToken refreshToken) = _jwtTokenGenerator.GenerateTokens(user, roleNames);
+            (string accessToken, Domain.Entities.RefreshToken refreshToken) = await _jwtTokenGenerator.GenerateTokens(user, roleNames);
 
             await _refreshTokenRepository.AddAsync(refreshToken);
             await _unitOfWork.SaveChangesAsync(cancellationToken);
 
-            var authResult = new AuthResponse(user.Id, user.Email, user.FullName, roleNames, accessToken, refreshToken.Token, refreshToken.ExpiresAtUtc);
+            var authResult = new AuthResponse(user.Id, user.Email, user.FullName, roleNames, accessToken, refreshToken.Token, refreshToken.ExpiresAtUtc, null);
             return result.BuildSuccess(authResult, "Register success");
         }
     }
