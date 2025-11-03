@@ -9,6 +9,6 @@ namespace FoodConnect.Backend.Application.Interfaces
 {
     public interface IJwtTokenGenerator
     {
-        public (string accessToken, RefreshToken refreshToken) GenerateTokens(User user, List<string> roleNames);
+        public Task<(string accessToken, RefreshToken refreshToken)> GenerateTokens(User user, List<string> roleNames);
     }
 }

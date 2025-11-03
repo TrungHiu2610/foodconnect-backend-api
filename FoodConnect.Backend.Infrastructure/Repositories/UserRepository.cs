@@ -22,6 +22,16 @@ namespace FoodConnect.Backend.Infrastructure.Repositories
                 .FirstOrDefaultAsync(u => u.Email == email);
         }
 
+        public async Task<Guid?> GetShopIdByUserIdAsync(Guid userId)
+        {
+            var shop = await _context.Shops
+                .Where(s => s.UserId == userId)
+                .Select(s => s.Id)
+                .FirstOrDefaultAsync();
+
+            return shop;
+        }
+
         public async Task<User?> GetUserWithRolesAsync(Guid id)
         {
             return await _context.Users

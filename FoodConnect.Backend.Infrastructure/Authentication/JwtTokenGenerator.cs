@@ -1,24 +1,30 @@
 ﻿using FoodConnect.Backend.Application.Interfaces;
+using FoodConnect.Backend.Application.Interfaces.IRepositories;
 using FoodConnect.Backend.Domain.Entities;
+using FoodConnect.Backend.Infrastructure.Repositories;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.JsonWebTokens;
 using Microsoft.IdentityModel.Tokens;
+using System.Data;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace FoodConnect.Backend.Infrastructure.Authentication
 {
     public class JwtTokenGenerator : IJwtTokenGenerator
     {
         private readonly IConfiguration _configuration;
+        private readonly IUserRepository _userRepository;
 
-        public JwtTokenGenerator(IConfiguration configuration)
+        public JwtTokenGenerator(IConfiguration configuration, IUserRepository userRepository)
         {
             _configuration = configuration;
+            _userRepository = userRepository;
         }
-        public (string accessToken, RefreshToken refreshToken) GenerateTokens(User user, List<string> roleNames)
+        public async Task<(string accessToken, RefreshToken refreshToken)> GenerateTokens(User user, List<string> roleNames)
         {
             var jwtSettings = _configuration.GetSection("JwtSettings");
             var key = Encoding.ASCII.GetBytes(jwtSettings["Secret"]);
@@ -33,6 +39,15 @@ namespace FoodConnect.Backend.Infrastructure.Authentication
             foreach (var role in roleNames)
             {
                 claims.Add(new Claim(ClaimTypes.Role, role));
+            }
+
+            if (roleNames.Contains("Seller"))
+            {
+                var shopId = await _userRepository.GetShopIdByUserIdAsync(user.Id);
+                if (shopId.HasValue)
+                {
+                    claims.Add(new Claim("shopId", shopId.Value.ToString()));
+                }
             }
 
             var tokenDescriptor = new SecurityTokenDescriptor
