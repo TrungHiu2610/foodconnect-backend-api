@@ -58,6 +58,7 @@ namespace FoodConnect.Backend.API.Controllers
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             var email = User.FindFirstValue(ClaimTypes.Email);
             var fullName = User.FindFirstValue(ClaimTypes.Name);
+            var shopId = User.FindFirstValue("shopId"); 
             
             // Get all roles from claims
             var roles = User.Claims
@@ -70,7 +71,8 @@ namespace FoodConnect.Backend.API.Controllers
                 Id = userId,
                 Email = email,
                 FullName = fullName,
-                Roles = roles
+                Roles = roles,
+                ShopId = !string.IsNullOrEmpty(shopId) ? Guid.Parse(shopId) : (Guid?)null 
             };
             return Ok(response);
         }

@@ -71,17 +71,17 @@ namespace FoodConnect.Backend.Application.Features.Auth.Commands.RefreshToken
                         .Where(c => c.Type == ClaimTypes.Role)
                         .Select(c => c.Value)
                         .ToList();
-
-            var (newAccessToken, newRefreshToken) = await _jwtTokenGenerator.GenerateTokens(user, roleNames);
-
-            await _refreshTokenRepository.AddAsync(newRefreshToken);
-            await _unitOfWork.SaveChangesAsync(cancellationToken);
-
+            
             Guid? shopId = null;
             if (roleNames.Contains("Seller"))
             {
                 shopId = await _userRepository.GetShopIdByUserIdAsync(user.Id);
             }
+
+            var (newAccessToken, newRefreshToken) = await _jwtTokenGenerator.GenerateTokens(user, roleNames, shopId);
+
+            await _refreshTokenRepository.AddAsync(newRefreshToken);
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
 
             var authResult = new AuthResponse(user.Id, user.Email, user.FullName, roleNames, newAccessToken, newRefreshToken.Token, newRefreshToken.ExpiresAtUtc, shopId);
             return result.BuildSuccess(authResult,"Renew token success");

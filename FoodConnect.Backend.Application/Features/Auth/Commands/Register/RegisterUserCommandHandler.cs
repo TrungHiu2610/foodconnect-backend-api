@@ -49,7 +49,7 @@ namespace FoodConnect.Backend.Application.Features.Auth.Commands.Register
 
             await _userRepository.AddAsync(user);
 
-            (string accessToken, Domain.Entities.RefreshToken refreshToken) = await _jwtTokenGenerator.GenerateTokens(user, roleNames);
+            (string accessToken, Domain.Entities.RefreshToken refreshToken) = await _jwtTokenGenerator.GenerateTokens(user, roleNames, null);
 
             await _refreshTokenRepository.AddAsync(refreshToken);
             await _unitOfWork.SaveChangesAsync(cancellationToken);
