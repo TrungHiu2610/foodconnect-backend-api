@@ -17,14 +17,12 @@ namespace FoodConnect.Backend.Infrastructure.Authentication
     public class JwtTokenGenerator : IJwtTokenGenerator
     {
         private readonly IConfiguration _configuration;
-        private readonly IUserRepository _userRepository;
 
-        public JwtTokenGenerator(IConfiguration configuration, IUserRepository userRepository)
+        public JwtTokenGenerator(IConfiguration configuration)
         {
             _configuration = configuration;
-            _userRepository = userRepository;
         }
-        public async Task<(string accessToken, RefreshToken refreshToken)> GenerateTokens(User user, List<string> roleNames)
+        public async Task<(string accessToken, RefreshToken refreshToken)> GenerateTokens(User user, List<string> roleNames, Guid? shopId)
         {
             var jwtSettings = _configuration.GetSection("JwtSettings");
             var key = Encoding.ASCII.GetBytes(jwtSettings["Secret"]);
@@ -43,7 +41,6 @@ namespace FoodConnect.Backend.Infrastructure.Authentication
 
             if (roleNames.Contains("Seller"))
             {
-                var shopId = await _userRepository.GetShopIdByUserIdAsync(user.Id);
                 if (shopId.HasValue)
                 {
                     claims.Add(new Claim("shopId", shopId.Value.ToString()));

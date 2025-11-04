@@ -38,16 +38,17 @@ namespace FoodConnect.Backend.Application.Features.Auth.Queries.Login
             }
 
             var roleNames = user.UserRoles.Select(ur => ur.Role.Name).ToList();
-            (string accessToken, RefreshToken refreshToken) = await _jwtTokenGenerator.GenerateTokens(user, roleNames);
-
-            await _refreshTokenRepository.AddAsync(refreshToken);
-            await _unitOfWork.SaveChangesAsync(cancellationToken);
 
             Guid? shopId = null;
             if (roleNames.Contains("Seller"))
             {
                 shopId = await _userRepository.GetShopIdByUserIdAsync(user.Id);
             }
+
+            (string accessToken, RefreshToken refreshToken) = await _jwtTokenGenerator.GenerateTokens(user, roleNames, shopId);
+
+            await _refreshTokenRepository.AddAsync(refreshToken);
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
 
             var authResult = new AuthResponse(user.Id, user.Email, user.FullName, roleNames, accessToken, refreshToken.Token, refreshToken.ExpiresAtUtc, shopId);
             return result.BuildSuccess(authResult, "Login success");
