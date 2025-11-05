@@ -32,7 +32,7 @@ namespace FoodConnect.Backend.Application.Features.Shop.Commands
         public IFormFile? IdCardFront { get; set; }
         public IFormFile? IdCardBack { get; set; }
         public IFormFile? PortraitPhoto { get; set; }
-        public IFormFile FoodSafetyCertificate { get; set; } = null!; // Bắt buộc
+        public List<IFormFile> FoodSafetyCertificates { get; set; } = new List<IFormFile>(); // Bắt buộc
         
         public string? OperatingHoursJson { get; set; }
     }
