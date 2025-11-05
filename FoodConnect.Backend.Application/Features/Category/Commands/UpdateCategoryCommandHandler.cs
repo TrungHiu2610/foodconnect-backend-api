@@ -47,7 +47,7 @@ namespace FoodConnect.Backend.Application.Features.Category.Commands
                     return result.BuildFail("Parent category not found");
                 }
                 
-                if (!string.IsNullOrEmpty(request.DeliveryType) && request.DeliveryType != Domain.Enums.DeliveryTypeEnum.Standard.ToString())
+                if (!string.IsNullOrEmpty(request.DeliveryType))
                 {
                     return result.BuildFail("Child category cannot have a custom delivery type. It will inherit from parent category.");
                 }
