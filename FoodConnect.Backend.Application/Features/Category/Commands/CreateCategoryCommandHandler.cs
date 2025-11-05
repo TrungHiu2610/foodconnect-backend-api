@@ -35,23 +35,35 @@ namespace FoodConnect.Backend.Application.Features.Category.Commands
             var response = new CreateCategoryResponse();
 
             // Validate ParentId
+            Domain.Entities.Category? parentCategory = null;
             if (request.ParentId != null)
             {
-                var parentCategory = _categoryRepository.GetByIdAsync((Guid)request.ParentId).Result;
+                parentCategory = _categoryRepository.GetByIdAsync((Guid)request.ParentId).Result;
                 if (parentCategory == null)
                 {
                     return result.BuildFail("Parent category not found");
+                }
+                
+                if (!string.IsNullOrEmpty(request.DeliveryType) && request.DeliveryType != DeliveryTypeEnum.Standard.ToString())
+                {
+                    return result.BuildFail("Child category cannot have a custom delivery type. It will inherit from parent category.");
                 }
             }
 
             await using var transaction = await _unitOfWork.BeginTransactionAsync();
             // for rollback to delete uploaded image if any error occurs
-            string uploadFile = null;
+            string? uploadFile = null;
             try
             {
                 // map to entity
                 var category = _mapper.Map<Domain.Entities.Category>(request);
                 category.Id = Guid.NewGuid();
+                
+                // If this is a child category, inherit DeliveryType from parent
+                if (parentCategory != null)
+                {
+                    category.DeliveryType = parentCategory.DeliveryType;
+                }
 
                 // save file
                 if (request.File != null)
