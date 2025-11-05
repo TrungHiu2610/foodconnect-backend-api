@@ -35,18 +35,18 @@ namespace FoodConnect.Backend.Application.Features.Category.Commands
             var response = new CreateCategoryResponse();
 
             // Validate ParentId
-            Domain.Entities.Category? parentCategory = null;
+            var parentCategory = null as Domain.Entities.Category;
             if (request.ParentId != null)
             {
-                parentCategory = _categoryRepository.GetByIdAsync((Guid)request.ParentId).Result;
+                parentCategory = await _categoryRepository.GetByIdAsync((Guid)request.ParentId);
                 if (parentCategory == null)
                 {
                     return result.BuildFail("Parent category not found");
                 }
                 
-                if (!string.IsNullOrEmpty(request.DeliveryType) && request.DeliveryType != DeliveryTypeEnum.Standard.ToString())
+                if (!string.IsNullOrEmpty(request.DeliveryType))
                 {
-                    return result.BuildFail("Child category cannot have a custom delivery type. It will inherit from parent category.");
+                    return result.BuildFail("Child category cannot have its own delivery type. It will inherit from parent category.");
                 }
             }
 
