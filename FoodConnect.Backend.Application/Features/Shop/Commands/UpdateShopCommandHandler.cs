@@ -171,40 +171,21 @@ namespace FoodConnect.Backend.Application.Features.Shop.Commands
                     });
                 }
 
-                if (request.KitchenPhotos != null && request.KitchenPhotos.Any())
+                // Add new food safety certificates (old ones are kept unless deleted via AssetIdsToDelete)
+                if (request.FoodSafetyCertificates != null && request.FoodSafetyCertificates.Any())
                 {
-                    foreach (var kitchenPhoto in request.KitchenPhotos)
+                    foreach (var certificate in request.FoodSafetyCertificates)
                     {
-                        var url = await _fileStorageService.UploadFileAsync(kitchenPhoto, prefix);
+                        var url = await _fileStorageService.UploadFileAsync(certificate, prefix);
                         uploadedFiles.Add(url);
                         
                         shop.Assets.Add(new Domain.Entities.ShopAsset
                         {
                             ShopId = shop.Id,
                             AssetUrl = url,
-                            AssetType = ShopAssetTypeEnum.KitchenPhoto
+                            AssetType = ShopAssetTypeEnum.FoodSafetyCertificate
                         });
                     }
-                }
-
-                if (request.FoodSafetyCertificate != null)
-                {
-                    var oldCertificate = shop.Assets.FirstOrDefault(a => a.AssetType == ShopAssetTypeEnum.FoodSafetyCertificate);
-                    if (oldCertificate != null)
-                    {
-                        shop.Assets.Remove(oldCertificate); // Hard delete
-                        filesToDelete.Add(oldCertificate.AssetUrl);
-                    }
-                    
-                    var url = await _fileStorageService.UploadFileAsync(request.FoodSafetyCertificate, prefix);
-                    uploadedFiles.Add(url);
-                    
-                    shop.Assets.Add(new Domain.Entities.ShopAsset
-                    {
-                        ShopId = shop.Id,
-                        AssetUrl = url,
-                        AssetType = ShopAssetTypeEnum.FoodSafetyCertificate
-                    });
                 }
 
                 if (request.Logo != null)

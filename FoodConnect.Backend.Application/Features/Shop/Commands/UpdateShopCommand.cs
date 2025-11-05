@@ -36,8 +36,7 @@ namespace FoodConnect.Backend.Application.Features.Shop.Commands
         public IFormFile? IdCardFront { get; set; }
         public IFormFile? IdCardBack { get; set; }
         public IFormFile? PortraitPhoto { get; set; }
-        public List<IFormFile>? KitchenPhotos { get; set; }
-        public IFormFile? FoodSafetyCertificate { get; set; }
+        public List<IFormFile>? FoodSafetyCertificates { get; set; }
         public IFormFile? Logo { get; set; }
         public IFormFile? CoverImage { get; set; }
         

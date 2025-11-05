@@ -53,8 +53,10 @@ namespace FoodConnect.Backend.Application.Features.Shop.Commands
             RuleFor(x => x.PortraitPhoto)
                 .NotNull().WithMessage("Portrait photo is required");
 
-            RuleFor(x => x.FoodSafetyCertificate)
-                .NotNull().WithMessage("Food safety certificate is required");
+            RuleFor(x => x.FoodSafetyCertificates)
+                .NotNull().WithMessage("Food safety certificates are required")
+                .Must(x => x != null && x.Count > 0)
+                .WithMessage("At least one food safety certificate is required");
 
             // File size validations
             When(x => x.IdCardFront != null, () =>
@@ -78,11 +80,11 @@ namespace FoodConnect.Backend.Application.Features.Shop.Commands
                     .WithMessage("Portrait photo must not exceed 10MB");
             });
 
-            When(x => x.FoodSafetyCertificate != null, () =>
+            When(x => x.FoodSafetyCertificates != null && x.FoodSafetyCertificates.Any(), () =>
             {
-                RuleFor(x => x.FoodSafetyCertificate!.Length)
-                    .LessThanOrEqualTo(10 * 1024 * 1024)
-                    .WithMessage("Food safety certificate must not exceed 10MB");
+                RuleFor(x => x.FoodSafetyCertificates!)
+                    .Must(certificates => certificates.All(c => c.Length <= 10 * 1024 * 1024))
+                    .WithMessage("Each food safety certificate must not exceed 10MB");
             });
         }
     }
