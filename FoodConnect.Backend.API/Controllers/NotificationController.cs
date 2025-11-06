@@ -6,14 +6,11 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace FoodConnect.Backend.API.Controllers
 {
-    [Route("api/notifications")]
+    [Route("api/[controller]/[action]")]
     [ApiController]
     [Authorize]
     public class NotificationController : ApiBaseController
     {
-        /// <summary>
-        /// Get user's notifications with pagination
-        /// </summary>
         [HttpGet]
         public async Task<IActionResult> GetNotifications([FromQuery] int limit = 20, [FromQuery] int offset = 0)
         {
@@ -22,10 +19,7 @@ namespace FoodConnect.Backend.API.Controllers
             return result != null ? (result.Success ? Ok(result) : BadRequest(result)) : BadRequest();
         }
 
-        /// <summary>
-        /// Get unread notifications only
-        /// </summary>
-        [HttpGet("unread")]
+        [HttpGet]
         public async Task<IActionResult> GetUnreadNotifications()
         {
             var query = new GetUnreadNotificationsQuery();
@@ -33,10 +27,7 @@ namespace FoodConnect.Backend.API.Controllers
             return result != null ? (result.Success ? Ok(result) : BadRequest(result)) : BadRequest();
         }
 
-        /// <summary>
-        /// Get notification summary (unread count + recent)
-        /// </summary>
-        [HttpGet("summary")]
+        [HttpGet]
         public async Task<IActionResult> GetSummary()
         {
             var query = new GetNotificationSummaryQuery();
@@ -44,31 +35,22 @@ namespace FoodConnect.Backend.API.Controllers
             return result != null ? (result.Success ? Ok(result) : BadRequest(result)) : BadRequest();
         }
 
-        /// <summary>
-        /// Mark single notification as read
-        /// </summary>
-        [HttpPut("{notificationId}/read")]
-        public async Task<IActionResult> MarkAsRead(Guid notificationId)
+        [HttpPut]
+        public async Task<IActionResult> MarkAsRead([FromQuery] Guid notificationId)
         {
             var command = new MarkNotificationAsReadCommand { NotificationId = notificationId };
             var result = await Mediator.Send(command);
             return result != null ? (result.Success ? Ok(result) : BadRequest(result)) : BadRequest();
         }
 
-        /// <summary>
-        /// Mark multiple notifications as read
-        /// </summary>
-        [HttpPut("read-multiple")]
+        [HttpPut]
         public async Task<IActionResult> MarkMultipleAsRead([FromBody] MarkMultipleNotificationsAsReadCommand command)
         {
             var result = await Mediator.Send(command);
             return result != null ? (result.Success ? Ok(result) : BadRequest(result)) : BadRequest();
         }
 
-        /// <summary>
-        /// Mark all notifications as read
-        /// </summary>
-        [HttpPut("read-all")]
+        [HttpPut]
         public async Task<IActionResult> MarkAllAsRead()
         {
             var command = new MarkAllNotificationsAsReadCommand();

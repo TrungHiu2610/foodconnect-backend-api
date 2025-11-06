@@ -13,6 +13,7 @@ namespace FoodConnect.Backend.Application.Features.Order.Commands
     public class AcceptOrderCommandHandler : IRequestHandler<AcceptOrderCommand, BaseResponse<OrderDetailDto>>
     {
         private readonly IOrderRepository _orderRepository;
+        private readonly IProductRepository _productRepository;
         private readonly IUnitOfWork _unitOfWork;
         private readonly ICurrentUserService _currentUserService;
         private readonly OrderNotificationService _orderNotificationService;
@@ -21,6 +22,7 @@ namespace FoodConnect.Backend.Application.Features.Order.Commands
 
         public AcceptOrderCommandHandler(
             IOrderRepository orderRepository,
+            IProductRepository productRepository,
             IUnitOfWork unitOfWork,
             ICurrentUserService currentUserService,
             OrderNotificationService orderNotificationService,
@@ -28,6 +30,7 @@ namespace FoodConnect.Backend.Application.Features.Order.Commands
             INotificationService notificationService)
         {
             _orderRepository = orderRepository;
+            _productRepository = productRepository;
             _unitOfWork = unitOfWork;
             _currentUserService = currentUserService;
             _orderNotificationService = orderNotificationService;
@@ -63,6 +66,36 @@ namespace FoodConnect.Backend.Application.Features.Order.Commands
             if (order.Status != OrderStatusEnum.Pending)
             {
                 return result.BuildFail("Only pending orders can be accepted");
+            }
+
+            // Check stock availability and reserve stock
+            foreach (var orderItem in order.OrderItems)
+            {
+                var product = await _productRepository.GetByIdAsync(orderItem.ProductId);
+                if (product == null)
+                {
+                    return result.BuildFail($"Product {orderItem.ProductId} not found");
+                }
+
+                // Check if product has stock management
+                if (product.StockQuantity.HasValue)
+                {
+                    if (product.StockQuantity.Value < orderItem.Quantity)
+                    {
+                        return result.BuildFail($"Insufficient stock for product: {product.Name}. Available: {product.StockQuantity}, Required: {orderItem.Quantity}");
+                    }
+
+                    // Deduct stock
+                    product.StockQuantity -= orderItem.Quantity;
+                    
+                    // Mark as unavailable if out of stock
+                    if (product.StockQuantity <= 0)
+                    {
+                        product.IsAvailable = false;
+                    }
+
+                    _productRepository.Update(product);
+                }
             }
 
             // Update order status

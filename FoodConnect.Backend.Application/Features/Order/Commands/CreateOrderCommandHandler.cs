@@ -69,6 +69,28 @@ namespace FoodConnect.Backend.Application.Features.Order.Commands
                 return result.BuildFail("No valid cart items found");
             }
 
+            // Validate stock availability before creating orders
+            foreach (var cartItem in selectedCartItems)
+            {
+                var product = await _productRepository.GetByIdAsync(cartItem.ProductId);
+                if (product == null)
+                {
+                    return result.BuildFail($"Product not found");
+                }
+
+                // Check if product is available
+                if (!product.IsAvailable)
+                {
+                    return result.BuildFail($"Product '{product.Name}' is currently unavailable");
+                }
+
+                // Check stock if managed
+                if (product.StockQuantity.HasValue && product.StockQuantity.Value < cartItem.Quantity)
+                {
+                    return result.BuildFail($"Insufficient stock for '{product.Name}'. Available: {product.StockQuantity}, Required: {cartItem.Quantity}");
+                }
+            }
+
             // Group cart items by shop
             var itemsByShop = selectedCartItems
                 .GroupBy(ci => ci.Product!.ShopId)

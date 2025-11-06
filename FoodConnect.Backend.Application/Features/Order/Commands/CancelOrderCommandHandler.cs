@@ -13,17 +13,20 @@ namespace FoodConnect.Backend.Application.Features.Order.Commands
     public class CancelOrderCommandHandler : IRequestHandler<CancelOrderCommand, BaseResponse<OrderDetailDto>>
     {
         private readonly IOrderRepository _orderRepository;
+        private readonly IProductRepository _productRepository;
         private readonly IUnitOfWork _unitOfWork;
         private readonly ICurrentUserService _currentUserService;
         private readonly OrderNotificationService _orderNotificationService;
 
         public CancelOrderCommandHandler(
             IOrderRepository orderRepository,
+            IProductRepository productRepository,
             IUnitOfWork unitOfWork,
             ICurrentUserService currentUserService,
             OrderNotificationService orderNotificationService)
         {
             _orderRepository = orderRepository;
+            _productRepository = productRepository;
             _unitOfWork = unitOfWork;
             _currentUserService = currentUserService;
             _orderNotificationService = orderNotificationService;
@@ -63,6 +66,9 @@ namespace FoodConnect.Backend.Application.Features.Order.Commands
             order.Status = OrderStatusEnum.Cancelled;
             order.CancelReason = request.CancelReason;
             order.CancelledAt = DateTime.UtcNow;
+
+            // Note: No need to restore stock because stock is only deducted when order is accepted (Preparing status)
+            // Since we only allow cancelling Pending orders, stock hasn't been deducted yet
 
             _orderRepository.Update(order);
             await _unitOfWork.SaveChangesAsync(cancellationToken);
