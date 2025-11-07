@@ -11,7 +11,11 @@ namespace FoodConnect.Backend.Application.Features.Shop.Commands
         // Basic info - All nullable for partial update
         public string? ShopName { get; set; }
         public string? Description { get; set; }
-        
+
+        public string? SellerFullName { get; set; } 
+        public string? SellerEmail { get; set; } 
+        public string? SellerPhone { get; set; }
+
         // Address
         public string? Street { get; set; }
         public string? Ward { get; set; }
