@@ -26,9 +26,9 @@ namespace FoodConnect.Backend.Application.Features.Shop.Commands
                 .MaximumLength(15).WithMessage("Seller phone must not exceed 15 characters");
 
             RuleFor(x => x.PayoutMethod)
-                .NotEmpty().WithMessage("Payout method is required")
-                .Must(x => x == 0 || x == 1)  // Bank = 0, MoMo = 1
-                .WithMessage("Payout method must be 0 (Bank) or 1 (MoMo)");
+                .Must(x => x == (int)Domain.Enums.PaymentMethodEnum.MOMO ||
+                            x == (int)Domain.Enums.PaymentMethodEnum.VNPay)
+                .WithMessage("Payment method must be MOMO or VNPay");
 
             RuleFor(x => x.PayoutAccountInfo)
                 .NotEmpty().WithMessage("Payout account info is required")
