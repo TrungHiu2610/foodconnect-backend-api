@@ -11,11 +11,11 @@ namespace FoodConnect.Backend.Application.Features.Product.Commands
         public string Name { get; set; }
         public string? Description { get; set; }
         public decimal Price { get; set; }
-        public string? Ingredients { get; set; }
-        public string? Weight { get; set; }
-        public string? ExpiryDate { get; set; }
-        public string? StorageInstructions { get; set; }
-        public string? UsageInstructions { get; set; }
+        public string Ingredients { get; set; }
+        public string Weight { get; set; }
+        public string ExpiryDate { get; set; }
+        public string StorageInstructions { get; set; }
+        public string UsageInstructions { get; set; }
         public string Status { get; set; } = nameof(ProductStatusEnum.Draft);
         public Guid CategoryId { get; set; }
 
