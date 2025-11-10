@@ -130,9 +130,6 @@ services.AddScoped<ICurrentUserService, CurrentUserService>();
 services.AddSingleton<FoodConnect.Backend.Application.Commons.Services.DistanceCalculator>();
 services.AddSingleton<FoodConnect.Backend.Application.Commons.Services.ShippingFeeCalculator>();
 
-// Business Logic Services (deprecated - not actively used)
-services.AddSingleton<IShippingFeeCalculatorService, ShippingFeeCalculatorService>();
-
 // SignalR & Notification Services
 services.AddSignalR();
 services.AddScoped<INotificationService, NotificationService>();
