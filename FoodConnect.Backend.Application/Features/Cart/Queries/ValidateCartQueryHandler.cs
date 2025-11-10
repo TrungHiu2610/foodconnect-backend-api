@@ -1,6 +1,7 @@
 using FoodConnect.Backend.Application.Commons.DTOs.Responses;
 using FoodConnect.Backend.Application.Commons.DTOs.Responses.Cart;
 using FoodConnect.Backend.Application.Commons.Interfaces;
+using FoodConnect.Backend.Application.Commons.Services;
 using FoodConnect.Backend.Application.Interfaces.IRepositories;
 using FoodConnect.Backend.Domain.Enums;
 using MediatR;
@@ -11,13 +12,18 @@ namespace FoodConnect.Backend.Application.Features.Cart.Queries
     {
         private readonly ICartRepository _cartRepository;
         private readonly ICurrentUserService _currentUserService;
+        private readonly DistanceCalculator _distanceCalculator;
+
+        private const double EXPRESS_MAX_DISTANCE = 10.0; // km
 
         public ValidateCartQueryHandler(
             ICartRepository cartRepository,
-            ICurrentUserService currentUserService)
+            ICurrentUserService currentUserService,
+            DistanceCalculator distanceCalculator)
         {
             _cartRepository = cartRepository;
             _currentUserService = currentUserService;
+            _distanceCalculator = distanceCalculator;
         }
 
         public async Task<BaseResponse<CartValidationResponse>> Handle(ValidateCartQuery request, CancellationToken cancellationToken)
@@ -177,6 +183,59 @@ namespace FoodConnect.Backend.Application.Features.Cart.Queries
 
                 // Note: Price validation would require storing original price in CartItem
                 // For now, we assume current price is correct
+
+                // ===== LOCATION-BASED VALIDATION FOR EXPRESS DELIVERY =====
+                // Check if product requires Express delivery and validate distance
+                if (category != null && category.DeliveryType == DeliveryTypeEnum.Express)
+                {
+                    // Check if buyer has provided location
+                    bool buyerHasLocation = request.BuyerLatitude.HasValue && request.BuyerLongitude.HasValue;
+
+                    if (!buyerHasLocation)
+                    {
+                        // Buyer hasn't enabled location for Express product
+                        validationResult.Warnings.Add(new CartValidationWarning
+                        {
+                            CartItemId = cartItem.Id,
+                            ProductName = product.Name,
+                            WarningType = "LocationRequired",
+                            Message = $"Bạn cần bật vị trí để đặt món Express: '{product.Name}'"
+                        });
+                    }
+                    else if (shop.Latitude.HasValue && shop.Longitude.HasValue)
+                    {
+                        // Calculate distance between buyer and shop
+                        double distance = _distanceCalculator.CalculateDistance(
+                            request.BuyerLatitude.Value,
+                            request.BuyerLongitude.Value,
+                            shop.Latitude.Value,
+                            shop.Longitude.Value
+                        );
+
+                        if (distance > EXPRESS_MAX_DISTANCE)
+                        {
+                            // Product is outside Express delivery range
+                            validationResult.Warnings.Add(new CartValidationWarning
+                            {
+                                CartItemId = cartItem.Id,
+                                ProductName = product.Name,
+                                WarningType = "OutsideDeliveryRange",
+                                Message = $"Sản phẩm '{product.Name}' nằm ngoài phạm vi giao hàng Express ({distance:F2}km > {EXPRESS_MAX_DISTANCE}km)"
+                            });
+                        }
+                    }
+                    else
+                    {
+                        // Shop has no coordinates, cannot deliver Express
+                        validationResult.Warnings.Add(new CartValidationWarning
+                        {
+                            CartItemId = cartItem.Id,
+                            ProductName = product.Name,
+                            WarningType = "ShopLocationUnavailable",
+                            Message = $"Cửa hàng của sản phẩm '{product.Name}' chưa cập nhật vị trí, không thể giao Express"
+                        });
+                    }
+                }
             }
 
             return result.BuildSuccess(validationResult, 

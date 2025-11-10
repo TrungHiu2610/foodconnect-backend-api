@@ -163,14 +163,16 @@ namespace FoodConnect.Backend.Application.Features.Cart.Commands
                         ShopId = shopGroup.Key.ShopId,
                         ShopName = shopGroup.Key.ShopName,
                         ShopStatus = shopGroup.Key.ShopStatus.ToString(),
-                        Items = new List<CartItemResponse>()
+                        OrderPreviewGroups = new List<OrderPreviewGroup>()
                     };
 
+                    var allItems = new List<CartItemResponse>();
+                    
                     foreach (var item in shopGroup)
                     {
                         var product = item.Product;
 
-                        shopCartGroup.Items.Add(new CartItemResponse
+                        allItems.Add(new CartItemResponse
                         {
                             Id = item.Id,
                             ProductId = item.ProductId,
@@ -184,13 +186,31 @@ namespace FoodConnect.Backend.Application.Features.Cart.Commands
                         });
                     }
 
-                    shopCartGroup.ShopSubtotal = shopCartGroup.Items.Sum(i => i.Subtotal);
+                    // For AddToCart response, keep it simple - no delivery grouping or shipping calculation
+                    // Full details with shipping will be in GetCart query
+                    shopCartGroup.OrderPreviewGroups.Add(new OrderPreviewGroup
+                    {
+                        Items = allItems,
+                        DeliveryType = "Mixed" // Will be calculated in GetCart
+                    });
+                    
+                    shopCartGroup.ShopSubtotal = allItems.Sum(i => i.Subtotal);
                     response.ShopGroups.Add(shopCartGroup);
                 }
             }
 
-            response.TotalItems = response.ShopGroups.SelectMany(g => g.Items).Sum(i => i.Quantity);
-            response.TotalAmount = response.ShopGroups.Sum(g => g.ShopSubtotal);
+            var totalItems = response.ShopGroups
+                .SelectMany(g => g.OrderPreviewGroups)
+                .SelectMany(p => p.Items)
+                .Sum(i => i.Quantity);
+            var totalAmount = response.ShopGroups.Sum(g => g.ShopSubtotal);
+            
+            response.Summary = new CartSummary
+            {
+                TotalItems = totalItems,
+                TotalAmount = totalAmount,
+                GrandTotal = totalAmount // No shipping in AddToCart response
+            };
 
             return response;
         }

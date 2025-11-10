@@ -43,6 +43,14 @@ namespace FoodConnect.Backend.Application.Features.Shop.Commands
                 .Must(x => x != null && x.Count > 0)
                 .WithMessage("At least one category is required");
 
+            RuleFor(x => x.Latitude)
+                .NotNull().WithMessage("Latitude is required for shop location")
+                .InclusiveBetween(-90, 90).WithMessage("Latitude must be between -90 and 90");
+
+            RuleFor(x => x.Longitude)
+                .NotNull().WithMessage("Longitude is required for shop location")
+                .InclusiveBetween(-180, 180).WithMessage("Longitude must be between -180 and 180");
+
             // File validations
             RuleFor(x => x.IdCardFront)
                 .NotNull().WithMessage("ID card front is required");

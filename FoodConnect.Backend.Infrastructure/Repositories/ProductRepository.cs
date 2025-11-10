@@ -78,5 +78,16 @@ namespace FoodConnect.Backend.Infrastructure.Repositories
 
             return (items, totalCount);
         }
+        public async Task<IEnumerable<Product>> GetAllProductsWithDetailsAsync()
+        {
+            return await _context.Products
+                .AsNoTracking()
+                .Include(p => p.Shop)
+                .Include(p => p.Category)
+                .Include(p => p.ProductAssets)
+                .Where(p => p.Status == ProductStatusEnum.Active && p.IsAvailable)
+                .OrderBy(p => p.Name)
+                .ToListAsync();
+        }
     }
 }

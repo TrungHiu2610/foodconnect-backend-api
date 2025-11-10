@@ -35,6 +35,8 @@ namespace FoodConnect.Backend.Application.Commons.DTOs.Responses.Shop
         public List<ShopOperatingHourResponse> OperatingHours { get; set; } = new List<ShopOperatingHourResponse>();
         public DateTime CreatedAt { get; set; }
         public DateTime? UpdatedAt { get; set; }
+        
+        public double? CalculatedDistance { get; set; }  // Distance in kilometers from buyer
     }
 
     public class ShopAssetResponse

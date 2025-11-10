@@ -1,5 +1,7 @@
+using FoodConnect.Backend.Application.Commons.Constants;
 using FoodConnect.Backend.Application.Commons.DTOs.Responses;
 using FoodConnect.Backend.Application.Commons.Interfaces;
+using FoodConnect.Backend.Application.Commons.Services;
 using FoodConnect.Backend.Application.Features.Notification.Services;
 using FoodConnect.Backend.Application.Features.Order.DTOs;
 using FoodConnect.Backend.Application.Features.Order.Mappers;
@@ -8,6 +10,7 @@ using FoodConnect.Backend.Application.Interfaces.IRepositories;
 using FoodConnect.Backend.Domain.Entities;
 using FoodConnect.Backend.Domain.Enums;
 using MediatR;
+using System.Text.Json;
 
 namespace FoodConnect.Backend.Application.Features.Order.Commands
 {
@@ -17,27 +20,35 @@ namespace FoodConnect.Backend.Application.Features.Order.Commands
         private readonly ICartRepository _cartRepository;
         private readonly ICartItemRepository _cartItemRepository;
         private readonly IProductRepository _productRepository;
+        private readonly IShopRepository _shopRepository;
         private readonly IUnitOfWork _unitOfWork;
         private readonly ICurrentUserService _currentUserService;
         private readonly OrderNotificationService _orderNotificationService;
-        private const double DEFAULT_SHIPPING_FEE = 15000; // 15,000 VND per order
+        private readonly DistanceCalculator _distanceCalculator;
+        private readonly ShippingFeeCalculator _shippingFeeCalculator;
 
         public CreateOrderCommandHandler(
             IOrderRepository orderRepository,
             ICartRepository cartRepository,
             ICartItemRepository cartItemRepository,
             IProductRepository productRepository,
+            IShopRepository shopRepository,
             IUnitOfWork unitOfWork,
             ICurrentUserService currentUserService,
-            OrderNotificationService orderNotificationService)
+            OrderNotificationService orderNotificationService,
+            DistanceCalculator distanceCalculator,
+            ShippingFeeCalculator shippingFeeCalculator)
         {
             _orderRepository = orderRepository;
             _cartRepository = cartRepository;
             _cartItemRepository = cartItemRepository;
             _productRepository = productRepository;
+            _shopRepository = shopRepository;
             _unitOfWork = unitOfWork;
             _currentUserService = currentUserService;
             _orderNotificationService = orderNotificationService;
+            _distanceCalculator = distanceCalculator;
+            _shippingFeeCalculator = shippingFeeCalculator;
         }
 
         public async Task<BaseResponse<List<OrderDetailDto>>> Handle(CreateOrderCommand request, CancellationToken cancellationToken)
@@ -91,10 +102,59 @@ namespace FoodConnect.Backend.Application.Features.Order.Commands
                 }
             }
 
-            // Group cart items by shop
-            var itemsByShop = selectedCartItems
-                .GroupBy(ci => ci.Product!.ShopId)
+            // Group cart items by shop AND delivery type
+            // This will create separate orders for Express and Standard items from same shop
+            var orderGroups = selectedCartItems
+                .GroupBy(ci => new
+                {
+                    ShopId = ci.Product!.ShopId,
+                    DeliveryType = ci.Product.Category?.DeliveryType ?? DeliveryTypeEnum.Standard
+                })
                 .ToList();
+
+            // Parse shipping address to get coordinates
+            ShippingAddressDto? shippingAddress = null;
+            try
+            {
+                shippingAddress = JsonSerializer.Deserialize<ShippingAddressDto>(request.ShippingAddressJson);
+                if (shippingAddress == null)
+                {
+                    return result.BuildFail("Invalid shipping address format");
+                }
+            }
+            catch (JsonException)
+            {
+                return result.BuildFail("Failed to parse shipping address");
+            }
+
+            // Validate shipping address has coordinates
+            if (!shippingAddress.Latitude.HasValue || !shippingAddress.Longitude.HasValue)
+            {
+                return result.BuildFail("Shipping address must include location coordinates (Latitude and Longitude)");
+            }
+
+            // Pre-validate all Express delivery groups BEFORE creating ANY orders
+            // This ensures we fail fast if any Express item is out of range
+            foreach (var orderGroup in orderGroups.Where(g => g.Key.DeliveryType == DeliveryTypeEnum.Express))
+            {
+                var shop = await _shopRepository.GetByIdAsync(orderGroup.Key.ShopId);
+                if (shop == null || !shop.Latitude.HasValue || !shop.Longitude.HasValue)
+                {
+                    return result.BuildFail($"Shop location not configured");
+                }
+
+                double distanceKm = _distanceCalculator.CalculateDistance(
+                    shippingAddress.Latitude.Value,
+                    shippingAddress.Longitude.Value,
+                    shop.Latitude.Value,
+                    shop.Longitude.Value
+                );
+
+                if (distanceKm > ShippingFeeConstant.EXPRESS_MAX_DISTANCE)
+                {
+                    return result.BuildFail($"Express delivery to '{shop.ShopName}' is unavailable. Distance ({distanceKm:F1}km) exceeds maximum ({ShippingFeeConstant.EXPRESS_MAX_DISTANCE}km). Please remove Express items or change delivery address.");
+                }
+            }
 
             var createdOrders = new List<Domain.Entities.Order>();
 
@@ -102,14 +162,47 @@ namespace FoodConnect.Backend.Application.Features.Order.Commands
 
             try
             {
-                foreach (var shopGroup in itemsByShop)
+                foreach (var orderGroup in orderGroups)
                 {
-                    var shopId = shopGroup.Key;
-                    var shopItems = shopGroup.ToList();
+                    var shopId = orderGroup.Key.ShopId;
+                    var deliveryType = orderGroup.Key.DeliveryType;
+                    var groupItems = orderGroup.ToList();
+
+                    // Get shop details for distance calculation
+                    var shop = await _shopRepository.GetByIdAsync(shopId);
+                    if (shop == null)
+                    {
+                        await transaction.RollbackAsync();
+                        return result.BuildFail($"Shop not found");
+                    }
+
+                    // Validate shop has coordinates
+                    if (!shop.Latitude.HasValue || !shop.Longitude.HasValue)
+                    {
+                        await transaction.RollbackAsync();
+                        return result.BuildFail($"Shop '{shop.ShopName}' does not have location coordinates configured");
+                    }
+
+                    // Calculate distance
+                    double distanceKm = _distanceCalculator.CalculateDistance(
+                        shippingAddress.Latitude.Value,
+                        shippingAddress.Longitude.Value,
+                        shop.Latitude.Value,
+                        shop.Longitude.Value
+                    );
+
+                    // Calculate shipping fee based on delivery type
+                    // Express: Tiered based on distance
+                    // Standard: Distance-based with cap
+                    double shippingFee = _shippingFeeCalculator.CalculateShippingFee(
+                        deliveryType, 
+                        distanceKm,
+                        shippingAddress.Province,
+                        shop.City // Using City as Province
+                    );
 
                     // Calculate order totals
-                    double subTotal = (double)shopItems.Sum(ci => (ci.Product?.Price ?? 0) * ci.Quantity);
-                    double shippingFee = DEFAULT_SHIPPING_FEE;
+                    double subTotal = (double)groupItems.Sum(ci => (ci.Product?.Price ?? 0) * ci.Quantity);
                     double discount = 0; // TODO: Apply discounts in future
                     double total = subTotal + shippingFee - discount;
 
@@ -127,6 +220,8 @@ namespace FoodConnect.Backend.Application.Features.Order.Commands
                         Total = total,
                         Status = OrderStatusEnum.Pending,
                         PaymentMethod = request.PaymentMethod,
+                        DeliveryType = deliveryType, // Auto-determined from Product.Category
+                        DistanceKm = Math.Round(distanceKm, 2),
                         ShippingAddressJson = request.ShippingAddressJson,
                         Notes = request.Notes,
                         BuyerId = buyerId,
@@ -136,7 +231,7 @@ namespace FoodConnect.Backend.Application.Features.Order.Commands
                     await _orderRepository.AddAsync(order);
 
                     // Create order items
-                    foreach (var cartItem in shopItems)
+                    foreach (var cartItem in groupItems)
                     {
                         var orderItem = new OrderItem
                         {
@@ -154,7 +249,7 @@ namespace FoodConnect.Backend.Application.Features.Order.Commands
                     createdOrders.Add(order);
 
                     // Remove cart items
-                    foreach (var cartItem in shopItems)
+                    foreach (var cartItem in groupItems)
                     {
                         _cartItemRepository.Remove(cartItem);
                     }
@@ -177,7 +272,14 @@ namespace FoodConnect.Backend.Application.Features.Order.Commands
                     }
                 }
 
-                return result.BuildSuccess(orderDetails, "Orders created successfully");
+                // Build summary message
+                var expressCount = createdOrders.Count(o => o.DeliveryType == DeliveryTypeEnum.Express);
+                var standardCount = createdOrders.Count(o => o.DeliveryType == DeliveryTypeEnum.Standard);
+                var orderSummary = createdOrders.Count == 1 
+                    ? "1 order created successfully" 
+                    : $"{createdOrders.Count} orders created successfully ({expressCount} Express, {standardCount} Standard)";
+
+                return result.BuildSuccess(orderDetails, orderSummary);
             }
             catch (Exception ex)
             {
