@@ -17,7 +17,8 @@ namespace FoodConnect.Backend.Infrastructure.Persistence.Configurations
             builder.Property(c => c.DeliveryType).IsRequired().HasDefaultValue(DeliveryTypeEnum.Standard);
             builder.HasOne(c => c.Parent)
                    .WithMany()
-                   .HasForeignKey(c => c.ParentId);
+                   .HasForeignKey(c => c.ParentId)
+                   .OnDelete(DeleteBehavior.Cascade);
             builder.HasMany(c => c.Products)
                      .WithOne(p => p.Category)
                      .HasForeignKey(p => p.CategoryId)

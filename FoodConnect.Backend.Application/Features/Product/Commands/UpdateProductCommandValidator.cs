@@ -55,6 +55,16 @@ namespace FoodConnect.Backend.Application.Features.Product.Commands
                 .When(x => x.StockQuantity.HasValue)
                 .WithMessage("Stock Quantity must be greater than or equal to 0.");
 
+            RuleFor(x => x.Ingredients)
+                .MaximumLength(1000)
+                .When(x => !string.IsNullOrWhiteSpace(x.Ingredients))
+                .WithMessage("Ingredients must not exceed 1000 characters.");
+
+            RuleFor(x => x.Weight)
+                .MaximumLength(100)
+                .When(x => !string.IsNullOrWhiteSpace(x.Weight))
+                .WithMessage("Weight must not exceed 100 characters.");
+
             RuleFor(x => x.ExpiryDate)
                 .MaximumLength(50)
                 .When(x => !string.IsNullOrWhiteSpace(x.ExpiryDate))

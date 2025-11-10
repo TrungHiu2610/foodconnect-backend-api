@@ -60,7 +60,8 @@ namespace FoodConnect.Backend.Application.Features.Shop.Commands
 
                 // Add Seller role to user
                 var user = shop.User;
-                if (!user.UserRoles.Any(ur => ur.RoleId == RoleEnum.Seller))
+                var userWithRoles = await _userRepository.GetUserWithRolesAsync(user.Id);
+                if (userWithRoles != null && !userWithRoles.UserRoles.Any(ur => ur.RoleId == RoleEnum.Seller))
                 {
                     user.UserRoles.Add(new Domain.Entities.UserRole
                     {
