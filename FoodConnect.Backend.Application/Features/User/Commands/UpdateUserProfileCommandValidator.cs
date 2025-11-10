@@ -26,9 +26,8 @@ namespace FoodConnect.Backend.Application.Features.User.Commands
             RuleFor(x => x.Avatar)
                 .Must(file => file == null || file.Length <= 5 * 1024 * 1024)
                 .WithMessage("Avatar file size must not exceed 5MB")
-                .Must(file => file == null || new[] { ".jpg", ".jpeg", ".png", ".gif" }
-                    .Contains(Path.GetExtension(file.FileName).ToLower()))
-                .WithMessage("Avatar must be an image file (jpg, jpeg, png, gif)");
+                .Must(file => file == null || file.ContentType.ToLower().StartsWith("image"))
+                .WithMessage("Avatar file must be an image");
         }
     }
 }
