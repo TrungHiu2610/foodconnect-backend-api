@@ -20,6 +20,7 @@ namespace FoodConnect.Backend.Application.Features.Product.Queries
     public class GetListProductQueryHandler : IRequestHandler<GetListProductQuery, BaseResponse<PaginatedList<GetListProductItemResponse>>>
     {
         private readonly IProductRepository _productRepository;
+        private readonly ICategoryRepository _categoryRepository;
         private readonly IMapper _mapper;
         private static readonly Dictionary<string, Expression<Func<Domain.Entities.Product, object>>> _sortableColumns =
             new Dictionary<string, Expression<Func<Domain.Entities.Product, object>>>(StringComparer.OrdinalIgnoreCase)
@@ -29,9 +30,10 @@ namespace FoodConnect.Backend.Application.Features.Product.Queries
                 { "createdAt", p => p.CreatedAtUtc }
             };
 
-        public GetListProductQueryHandler(IProductRepository productRepository, IMapper mapper)
+        public GetListProductQueryHandler(IProductRepository productRepository, ICategoryRepository categoryRepository, IMapper mapper)
         {
             _productRepository = productRepository;
+            _categoryRepository = categoryRepository;
             _mapper = mapper;
         }
         public async Task<BaseResponse<PaginatedList<GetListProductItemResponse>>> Handle(GetListProductQuery request, CancellationToken cancellationToken)
@@ -43,7 +45,17 @@ namespace FoodConnect.Backend.Application.Features.Product.Queries
             // 1. filter
             if (request.CategoryId != null)
             {
-                query = query.Where(p => p.CategoryId == request.CategoryId);
+                var category = await _categoryRepository.GetByIdAsync(request.CategoryId.Value, c => c.Parent);
+                if(category != null && category.Parent == null)
+                {
+                    var childrenCategory = await _categoryRepository.GetChildrenByParentIdAsync(category.Id);
+                    var childCategoryIds = childrenCategory.Select(c => c.Id).ToList();
+                    query = query.Where(p => childCategoryIds.Contains(p.CategoryId));
+                }
+                else
+                {
+                    query = query.Where(p => p.CategoryId == request.CategoryId);
+                }
             }
 
             if (request.ShopId != null)
