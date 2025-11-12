@@ -1,3 +1,4 @@
+using FoodConnect.Backend.Application.Commons.Constants;
 using FoodConnect.Backend.Application.Commons.DTOs.Responses;
 using FoodConnect.Backend.Application.Commons.Interfaces;
 using FoodConnect.Backend.Application.Interfaces;
@@ -13,6 +14,7 @@ namespace FoodConnect.Backend.Application.Features.Product.Commands
         private readonly IOrderRepository _orderRepository;
         private readonly IProductRepository _productRepository;
         private readonly IBaseRepository<ProductReview> _reviewRepository;
+        private readonly IBaseRepository<ProductReviewAsset> _reviewAssetRepository;
         private readonly IUnitOfWork _unitOfWork;
         private readonly ICurrentUserService _currentUserService;
         private readonly IFileStorageService _fileStorageService;
@@ -21,6 +23,7 @@ namespace FoodConnect.Backend.Application.Features.Product.Commands
             IOrderRepository orderRepository,
             IProductRepository productRepository,
             IBaseRepository<ProductReview> reviewRepository,
+            IBaseRepository<ProductReviewAsset> reviewAssetRepository,
             IUnitOfWork unitOfWork,
             ICurrentUserService currentUserService,
             IFileStorageService fileStorageService)
@@ -28,6 +31,7 @@ namespace FoodConnect.Backend.Application.Features.Product.Commands
             _orderRepository = orderRepository;
             _productRepository = productRepository;
             _reviewRepository = reviewRepository;
+            _reviewAssetRepository = reviewAssetRepository;
             _unitOfWork = unitOfWork;
             _currentUserService = currentUserService;
             _fileStorageService = fileStorageService;
@@ -36,7 +40,7 @@ namespace FoodConnect.Backend.Application.Features.Product.Commands
         public async Task<BaseResponse<CreateOrUpdateResponse>> Handle(CreateProductReviewCommand request, CancellationToken cancellationToken)
         {
             var result = new BaseResponse<CreateOrUpdateResponse>();
-            string? uploadedImageUrl = null;
+            var uploadedAssetUrls = new List<string>();
 
             await using var transaction = await _unitOfWork.BeginTransactionAsync();
             try
@@ -83,15 +87,6 @@ namespace FoodConnect.Backend.Application.Features.Product.Commands
                     return result.BuildConflict("You have already reviewed this product");
                 }
 
-                // Upload review image if provided
-                if (request.ReviewImage != null)
-                {
-                    uploadedImageUrl = await _fileStorageService.UploadFileAsync(
-                        request.ReviewImage,
-                        $"Reviews/Products/{request.ProductId}"
-                    );
-                }
-
                 // Create review
                 var review = new ProductReview
                 {
@@ -99,12 +94,50 @@ namespace FoodConnect.Backend.Application.Features.Product.Commands
                     ProductId = request.ProductId,
                     BuyerId = userId.Value,
                     Rating = request.Rating,
-                    Comment = request.Comment,
-                    ReviewImageUrl = uploadedImageUrl
+                    Comment = request.Comment
                 };
 
                 await _reviewRepository.AddAsync(review);
-                await _unitOfWork.SaveChangesAsync();
+                await _unitOfWork.SaveChangesAsync(); // Save to get review.Id
+
+                // Upload review assets (images/videos) if provided
+                if (request.ReviewAssets != null && request.ReviewAssets.Any())
+                {
+                    for (int i = 0; i < request.ReviewAssets.Count; i++)
+                    {
+                        var file = request.ReviewAssets[i];
+                        
+                        // Determine asset type and S3 directory
+                        var assetType = file.ContentType.StartsWith("image/") 
+                            ? ProductAssetTypeEnum.Image 
+                            : ProductAssetTypeEnum.Video;
+                        
+                        var prefix = assetType == ProductAssetTypeEnum.Image 
+                            ? AWSDirectoryConstant.IMAGE_REVIEW 
+                            : AWSDirectoryConstant.VIDEO_REVIEW;
+
+                        // Upload file to S3
+                        var assetUrl = await _fileStorageService.UploadFileAsync(
+                            file,
+                            $"{prefix}/{request.ProductId}"
+                        );
+                        uploadedAssetUrls.Add(assetUrl);
+
+                        // Create ProductReviewAsset record
+                        var reviewAsset = new ProductReviewAsset
+                        {
+                            ProductReviewId = review.Id,
+                            AssetUrl = assetUrl,
+                            AssetType = assetType,
+                            DisplayOrder = i // 0-based index for ordering
+                        };
+
+                        await _reviewAssetRepository.AddAsync(reviewAsset);
+                    }
+
+                    await _unitOfWork.SaveChangesAsync();
+                }
+
                 await _unitOfWork.CommitTransactionAsync(transaction);
 
                 return result.BuildSuccess(
@@ -116,10 +149,17 @@ namespace FoodConnect.Backend.Application.Features.Product.Commands
             {
                 await transaction.RollbackAsync();
 
-                // Delete uploaded image if transaction fails
-                if (!string.IsNullOrEmpty(uploadedImageUrl))
+                // Delete all uploaded assets if transaction fails
+                foreach (var assetUrl in uploadedAssetUrls)
                 {
-                    await _fileStorageService.DeleteFileAsync(uploadedImageUrl);
+                    try
+                    {
+                        await _fileStorageService.DeleteFileAsync(assetUrl);
+                    }
+                    catch
+                    {
+                        // Log but don't fail if cleanup fails
+                    }
                 }
 
                 return result.BuildFail($"Failed to submit review: {ex.Message}");

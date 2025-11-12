@@ -15,7 +15,7 @@ namespace FoodConnect.Backend.Application.Features.Order.Queries
 
     public class CalculateShippingFeeResponse
     {
-        public double ShippingFee { get; set; }
+        public decimal ShippingFee { get; set; }
         public double DistanceKm { get; set; }
         public DeliveryTypeEnum DeliveryType { get; set; }
         public string Message { get; set; } = string.Empty;

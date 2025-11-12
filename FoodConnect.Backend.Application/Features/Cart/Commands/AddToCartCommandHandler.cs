@@ -147,14 +147,24 @@ namespace FoodConnect.Backend.Application.Features.Cart.Commands
 
             if (cart.CartItems != null && cart.CartItems.Any())
             {
-                var groupedByShop = cart.CartItems
+                // Sort cart items by CreatedAtUtc to maintain order (consistent with GetCart)
+                var sortedCartItems = cart.CartItems
                     .Where(item => item.Product != null && item.Product.Shop != null)
+                    .OrderBy(item => item.CreatedAtUtc)
+                    .ToList();
+
+                var groupedByShop = sortedCartItems
                     .GroupBy(item => new
                     {
                         ShopId = item.Product!.ShopId,
                         ShopName = item.Product.Shop!.ShopName,
-                        ShopStatus = item.Product.Shop.Status
-                    });
+                        ShopStatus = item.Product.Shop.Status,
+                        // Track earliest item for shop ordering
+                        FirstItemCreatedAt = sortedCartItems
+                            .Where(ci => ci.Product!.ShopId == item.Product!.ShopId)
+                            .Min(ci => ci.CreatedAtUtc)
+                    })
+                    .OrderBy(g => g.Key.FirstItemCreatedAt);
 
                 foreach (var shopGroup in groupedByShop)
                 {
@@ -163,16 +173,17 @@ namespace FoodConnect.Backend.Application.Features.Cart.Commands
                         ShopId = shopGroup.Key.ShopId,
                         ShopName = shopGroup.Key.ShopName,
                         ShopStatus = shopGroup.Key.ShopStatus.ToString(),
-                        OrderPreviewGroups = new List<OrderPreviewGroup>()
+                        Items = new List<CartItemResponse>() // Changed from OrderPreviewGroups
                     };
-
-                    var allItems = new List<CartItemResponse>();
                     
-                    foreach (var item in shopGroup)
+                    // Maintain creation order within shop
+                    var sortedShopItems = shopGroup.OrderBy(item => item.CreatedAtUtc);
+                    
+                    foreach (var item in sortedShopItems)
                     {
                         var product = item.Product;
 
-                        allItems.Add(new CartItemResponse
+                        shopCartGroup.Items.Add(new CartItemResponse
                         {
                             Id = item.Id,
                             ProductId = item.ProductId,
@@ -186,30 +197,17 @@ namespace FoodConnect.Backend.Application.Features.Cart.Commands
                         });
                     }
 
-                    // For AddToCart response, keep it simple - no delivery grouping or shipping calculation
-                    // Full details with shipping will be in GetCart query
-                    shopCartGroup.OrderPreviewGroups.Add(new OrderPreviewGroup
-                    {
-                        Items = allItems,
-                        DeliveryType = "Mixed" // Will be calculated in GetCart
-                    });
-                    
-                    shopCartGroup.ShopSubtotal = allItems.Sum(i => i.Subtotal);
+                    shopCartGroup.ShopSubtotal = shopCartGroup.Items.Sum(i => i.Subtotal);
                     response.ShopGroups.Add(shopCartGroup);
                 }
             }
 
-            var totalItems = response.ShopGroups
-                .SelectMany(g => g.OrderPreviewGroups)
-                .SelectMany(p => p.Items)
-                .Sum(i => i.Quantity);
-            var totalAmount = response.ShopGroups.Sum(g => g.ShopSubtotal);
+            var allItems = response.ShopGroups.SelectMany(s => s.Items).ToList();
             
             response.Summary = new CartSummary
             {
-                TotalItems = totalItems,
-                TotalAmount = totalAmount,
-                GrandTotal = totalAmount // No shipping in AddToCart response
+                TotalItems = allItems.Count,
+                TotalAmount = allItems.Sum(i => i.Subtotal)
             };
 
             return response;

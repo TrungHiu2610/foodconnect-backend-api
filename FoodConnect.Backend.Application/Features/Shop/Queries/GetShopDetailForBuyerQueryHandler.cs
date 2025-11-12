@@ -141,7 +141,7 @@ namespace FoodConnect.Backend.Application.Features.Shop.Queries
                         // Check if Express product is outside delivery range
                         if (p.Category?.DeliveryType == DeliveryTypeEnum.Express)
                         {
-                            if (distance.HasValue && distance.Value > ShippingFeeConstant.EXPRESS_MAX_DISTANCE)
+                            if (distance.HasValue && distance.Value > (double)ShippingFeeConstant.EXPRESS_MAX_DISTANCE)
                             {
                                 dto.IsDeliverable = false;
                                 dto.DeliverabilityMessage = $"Giao hàng Express chỉ khả dụng trong bán kính {ShippingFeeConstant.EXPRESS_MAX_DISTANCE}km";

@@ -22,5 +22,6 @@ namespace FoodConnect.Backend.Domain.Entities
         public virtual Shop Shop { get; set; }
         public ICollection<ProductAsset> ProductAssets { get; set; } = new List<ProductAsset>();
         public ICollection<ProductReview> ProductReviews { get; set; } = new List<ProductReview>();
+        public double? CalculatedDistance { get; set; }
     }
 }

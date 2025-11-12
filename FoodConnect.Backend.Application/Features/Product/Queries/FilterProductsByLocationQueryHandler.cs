@@ -2,6 +2,7 @@ using AutoMapper;
 using FoodConnect.Backend.Application.Commons.Constants;
 using FoodConnect.Backend.Application.Commons.DTOs.Responses;
 using FoodConnect.Backend.Application.Commons.DTOs.Responses.Product;
+using FoodConnect.Backend.Application.Commons.Interfaces;
 using FoodConnect.Backend.Application.Commons.Services;
 using FoodConnect.Backend.Application.Interfaces.IRepositories;
 using FoodConnect.Backend.Domain.Enums;
@@ -12,21 +13,24 @@ namespace FoodConnect.Backend.Application.Features.Product.Queries
     public class FilterProductsByLocationQueryHandler : IRequestHandler<FilterProductsByLocationQuery, BaseResponse<List<GetListProductItemResponse>>>
     {
         private readonly IProductRepository _productRepository;
-        private readonly IShopRepository _shopRepository;
         private readonly ICategoryRepository _categoryRepository;
-        private readonly DistanceCalculator _distanceCalculator;
+        private readonly IUserRepository _userRepository;
+        private readonly ICurrentUserService _currentUserService;
+        private readonly IDistanceCalculatorService _distanceCalculator;
         private readonly IMapper _mapper;
 
         public FilterProductsByLocationQueryHandler(
             IProductRepository productRepository,
-            IShopRepository shopRepository,
             ICategoryRepository categoryRepository,
-            DistanceCalculator distanceCalculator,
+            IUserRepository userRepository,
+            ICurrentUserService currentUserService,
+            IDistanceCalculatorService distanceCalculator,
             IMapper mapper)
         {
             _productRepository = productRepository;
-            _shopRepository = shopRepository;
             _categoryRepository = categoryRepository;
+            _userRepository = userRepository;
+            _currentUserService = currentUserService;
             _distanceCalculator = distanceCalculator;
             _mapper = mapper;
         }
@@ -44,6 +48,21 @@ namespace FoodConnect.Backend.Application.Features.Product.Queries
 
             // Step 2: Check if buyer has valid coordinates
             bool buyerHasLocation = request.BuyerLatitude.HasValue && request.BuyerLongitude.HasValue;
+            if (!buyerHasLocation)
+            {
+                var userId = _currentUserService.UserId;
+                var userDefaultAddress = null as Domain.Entities.Address;
+                if (userId != null)
+                {
+                    userDefaultAddress = await _userRepository.GetDefaultAddressByIdAsync(userId.Value);
+                    if (userDefaultAddress != null || userDefaultAddress.Latitude.HasValue || userDefaultAddress.Longitude.HasValue)
+                    {
+                        request.BuyerLatitude = userDefaultAddress.Latitude;
+                        request.BuyerLongitude = userDefaultAddress.Longitude;
+                        buyerHasLocation = true;
+                    }
+                }
+            }
 
             var filteredProducts = new List<Domain.Entities.Product>();
 
@@ -55,7 +74,7 @@ namespace FoodConnect.Backend.Application.Features.Product.Queries
 
                 var deliveryType = category.DeliveryType;
 
-                // Step 3: If buyer has NO location
+                // Step 3: If buyer has no location GPS
                 if (!buyerHasLocation)
                 {
                     // Only show Standard products
@@ -66,7 +85,7 @@ namespace FoodConnect.Backend.Application.Features.Product.Queries
                     continue;
                 }
 
-                // Step 4: Buyer HAS location → calculate distance to shop
+                // Step 4: Buyer has location => calculate distance to shop
                 var shop = product.Shop;
                 if (shop == null) continue;
 
@@ -83,7 +102,7 @@ namespace FoodConnect.Backend.Application.Features.Product.Queries
                         );
 
                         // Only include if within express delivery range
-                        if (distance <= ShippingFeeConstant.EXPRESS_MAX_DISTANCE)
+                        if (distance <= (double)ShippingFeeConstant.EXPRESS_MAX_DISTANCE)
                         {
                             filteredProducts.Add(product);
                         }

@@ -15,11 +15,11 @@ namespace FoodConnect.Backend.Application.Commons.DTOs.Responses.Cart
     {
         public int TotalItems { get; set; }
         public decimal TotalAmount { get; set; }
-        public int TotalOrdersWillBeCreated { get; set; }
-        public decimal TotalShippingFee { get; set; }
-        public decimal GrandTotal { get; set; }
     }
 
+    /// <summary>
+    /// Shop group for Cart Page - simple list of items (no delivery type grouping)
+    /// </summary>
     public class ShopCartGroup
     {
         public Guid ShopId { get; set; }
@@ -27,10 +27,9 @@ namespace FoodConnect.Backend.Application.Commons.DTOs.Responses.Cart
         public string ShopStatus { get; set; } = string.Empty;
         
         /// <summary>
-        /// Items grouped by DeliveryType (Express/Standard)
-        /// Each group represents one order that will be created
+        /// All items in this shop (not grouped by delivery type)
         /// </summary>
-        public List<OrderPreviewGroup> OrderPreviewGroups { get; set; } = new List<OrderPreviewGroup>();
+        public List<CartItemResponse> Items { get; set; } = new List<CartItemResponse>();
         
         public decimal ShopSubtotal { get; set; }
     }

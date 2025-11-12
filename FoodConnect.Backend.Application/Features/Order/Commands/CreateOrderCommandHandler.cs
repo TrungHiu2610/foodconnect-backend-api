@@ -24,8 +24,8 @@ namespace FoodConnect.Backend.Application.Features.Order.Commands
         private readonly IUnitOfWork _unitOfWork;
         private readonly ICurrentUserService _currentUserService;
         private readonly OrderNotificationService _orderNotificationService;
-        private readonly DistanceCalculator _distanceCalculator;
-        private readonly ShippingFeeCalculator _shippingFeeCalculator;
+        private readonly IDistanceCalculatorService _distanceCalculator;
+        private readonly IShippingFeeCalculatorService _shippingFeeCalculator;
 
         public CreateOrderCommandHandler(
             IOrderRepository orderRepository,
@@ -36,8 +36,8 @@ namespace FoodConnect.Backend.Application.Features.Order.Commands
             IUnitOfWork unitOfWork,
             ICurrentUserService currentUserService,
             OrderNotificationService orderNotificationService,
-            DistanceCalculator distanceCalculator,
-            ShippingFeeCalculator shippingFeeCalculator)
+            IDistanceCalculatorService distanceCalculator,
+            IShippingFeeCalculatorService shippingFeeCalculator)
         {
             _orderRepository = orderRepository;
             _cartRepository = cartRepository;
@@ -150,7 +150,7 @@ namespace FoodConnect.Backend.Application.Features.Order.Commands
                     shop.Longitude.Value
                 );
 
-                if (distanceKm > ShippingFeeConstant.EXPRESS_MAX_DISTANCE)
+                if (distanceKm > (double)ShippingFeeConstant.EXPRESS_MAX_DISTANCE)
                 {
                     return result.BuildFail($"Express delivery to '{shop.ShopName}' is unavailable. Distance ({distanceKm:F1}km) exceeds maximum ({ShippingFeeConstant.EXPRESS_MAX_DISTANCE}km). Please remove Express items or change delivery address.");
                 }
@@ -194,7 +194,7 @@ namespace FoodConnect.Backend.Application.Features.Order.Commands
                     // Calculate shipping fee based on delivery type
                     // Express: Tiered based on distance
                     // Standard: Distance-based with cap
-                    double shippingFee = _shippingFeeCalculator.CalculateShippingFee(
+                    decimal shippingFee = _shippingFeeCalculator.CalculateShippingFee(
                         deliveryType, 
                         distanceKm,
                         shippingAddress.Province,
@@ -204,7 +204,7 @@ namespace FoodConnect.Backend.Application.Features.Order.Commands
                     // Calculate order totals
                     double subTotal = (double)groupItems.Sum(ci => (ci.Product?.Price ?? 0) * ci.Quantity);
                     double discount = 0; // TODO: Apply discounts in future
-                    double total = subTotal + shippingFee - discount;
+                    double total = subTotal + ((double)shippingFee) - discount;
 
                     // Generate order code
                     var orderCode = await GenerateOrderCode();
@@ -215,7 +215,7 @@ namespace FoodConnect.Backend.Application.Features.Order.Commands
                         Id = Guid.NewGuid(),
                         OrderCode = orderCode,
                         SubTotal = subTotal,
-                        ShippingFee = shippingFee,
+                        ShippingFee = (double)shippingFee,
                         Discount = discount,
                         Total = total,
                         Status = OrderStatusEnum.Pending,

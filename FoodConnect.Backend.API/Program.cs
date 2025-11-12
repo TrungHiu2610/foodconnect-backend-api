@@ -24,6 +24,7 @@ using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
 using FoodConnect.Backend.Infrastructure.Hubs;
 using FoodConnect.Backend.Application.Features.Notification.Services;
+using FoodConnect.Backend.Application.Commons.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -113,6 +114,7 @@ services.AddScoped<IUserRepository, UserRepository>();
 services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
 services.AddScoped<IProductRepository, ProductRepository>();
 services.AddScoped<IProductAssetRepository, ProductAssetRepository>();
+services.AddScoped<IProductReviewRepository, ProductReviewRepository>();
 services.AddScoped<IShopRepository, ShopRepository>();
 services.AddScoped<ICategoryRepository, CategoryRepository>();
 services.AddScoped<ICartRepository, CartRepository>();
@@ -127,8 +129,8 @@ services.AddScoped<IUnitOfWork, UnitOfWork>();
 services.AddSingleton<IJwtTokenGenerator, JwtTokenGenerator>();
 services.AddHttpContextAccessor();
 services.AddScoped<ICurrentUserService, CurrentUserService>();
-services.AddSingleton<FoodConnect.Backend.Application.Commons.Services.DistanceCalculator>();
-services.AddSingleton<FoodConnect.Backend.Application.Commons.Services.ShippingFeeCalculator>();
+services.AddScoped<IDistanceCalculatorService, DistanceCalculatorService>();
+services.AddScoped<IShippingFeeCalculatorService, ShippingFeeCalculatorService>();
 
 // SignalR & Notification Services
 services.AddSignalR();

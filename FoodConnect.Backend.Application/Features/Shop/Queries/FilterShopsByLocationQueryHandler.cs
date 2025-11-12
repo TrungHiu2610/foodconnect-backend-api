@@ -2,6 +2,7 @@ using AutoMapper;
 using FoodConnect.Backend.Application.Commons.Constants;
 using FoodConnect.Backend.Application.Commons.DTOs.Responses;
 using FoodConnect.Backend.Application.Commons.DTOs.Responses.Shop;
+using FoodConnect.Backend.Application.Commons.Interfaces;
 using FoodConnect.Backend.Application.Commons.Services;
 using FoodConnect.Backend.Application.Interfaces.IRepositories;
 using FoodConnect.Backend.Domain.Enums;
@@ -13,13 +14,13 @@ namespace FoodConnect.Backend.Application.Features.Shop.Queries
     {
         private readonly IShopRepository _shopRepository;
         private readonly ICategoryRepository _categoryRepository;
-        private readonly DistanceCalculator _distanceCalculator;
+        private readonly IDistanceCalculatorService _distanceCalculator;
         private readonly IMapper _mapper;
 
         public FilterShopsByLocationQueryHandler(
             IShopRepository shopRepository,
             ICategoryRepository categoryRepository,
-            DistanceCalculator distanceCalculator,
+            IDistanceCalculatorService distanceCalculator,
             IMapper mapper)
         {
             _shopRepository = shopRepository;
@@ -90,7 +91,7 @@ namespace FoodConnect.Backend.Application.Features.Shop.Queries
                     if (request.DeliveryType == DeliveryTypeEnum.Express)
                     {
                         // Express: only if shop has Express AND within max distance
-                        if (hasExpress && distance.HasValue && distance.Value <= ShippingFeeConstant.EXPRESS_MAX_DISTANCE)
+                        if (hasExpress && distance.HasValue && distance.Value <= (double)ShippingFeeConstant.EXPRESS_MAX_DISTANCE)
                         {
                             shouldInclude = true;
                         }
@@ -107,7 +108,7 @@ namespace FoodConnect.Backend.Application.Features.Shop.Queries
                 else // No filter → show both
                 {
                     // Express shops: only if within distance
-                    if (hasExpress && distance.HasValue && distance.Value <= ShippingFeeConstant.EXPRESS_MAX_DISTANCE)
+                    if (hasExpress && distance.HasValue && distance.Value <= (double)ShippingFeeConstant.EXPRESS_MAX_DISTANCE)
                     {
                         shouldInclude = true;
                     }

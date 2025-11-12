@@ -1,3 +1,4 @@
+using FoodConnect.Backend.Application.Commons.Constants;
 using FoodConnect.Backend.Application.Commons.DTOs.Responses;
 using FoodConnect.Backend.Application.Commons.DTOs.Responses.Cart;
 using FoodConnect.Backend.Application.Commons.Interfaces;
@@ -12,14 +13,12 @@ namespace FoodConnect.Backend.Application.Features.Cart.Queries
     {
         private readonly ICartRepository _cartRepository;
         private readonly ICurrentUserService _currentUserService;
-        private readonly DistanceCalculator _distanceCalculator;
-
-        private const double EXPRESS_MAX_DISTANCE = 10.0; // km
+        private readonly IDistanceCalculatorService _distanceCalculator;
 
         public ValidateCartQueryHandler(
             ICartRepository cartRepository,
             ICurrentUserService currentUserService,
-            DistanceCalculator distanceCalculator)
+            IDistanceCalculatorService distanceCalculator)
         {
             _cartRepository = cartRepository;
             _currentUserService = currentUserService;
@@ -212,7 +211,7 @@ namespace FoodConnect.Backend.Application.Features.Cart.Queries
                             shop.Longitude.Value
                         );
 
-                        if (distance > EXPRESS_MAX_DISTANCE)
+                        if (distance > (double)ShippingFeeConstant.EXPRESS_MAX_DISTANCE)
                         {
                             // Product is outside Express delivery range
                             validationResult.Warnings.Add(new CartValidationWarning
@@ -220,7 +219,7 @@ namespace FoodConnect.Backend.Application.Features.Cart.Queries
                                 CartItemId = cartItem.Id,
                                 ProductName = product.Name,
                                 WarningType = "OutsideDeliveryRange",
-                                Message = $"Sản phẩm '{product.Name}' nằm ngoài phạm vi giao hàng Express ({distance:F2}km > {EXPRESS_MAX_DISTANCE}km)"
+                                Message = $"Sản phẩm '{product.Name}' nằm ngoài phạm vi giao hàng Express ({distance:F2}km > {ShippingFeeConstant.EXPRESS_MAX_DISTANCE}km)"
                             });
                         }
                     }

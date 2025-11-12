@@ -33,6 +33,7 @@ namespace FoodConnect.Backend.Infrastructure.Persistence
         public DbSet<OrderItem> OrderItems { get; set; }
         public DbSet<Notification> Notifications { get; set; }
         public DbSet<ProductReview> ProductReviews { get; set; }
+        public DbSet<ProductReviewAsset> ProductReviewAssets { get; set; }
 
         #endregion
 

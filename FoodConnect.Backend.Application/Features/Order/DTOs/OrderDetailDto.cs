@@ -39,5 +39,10 @@ namespace FoodConnect.Backend.Application.Features.Order.DTOs
         
         // Order items
         public List<OrderItemDto> OrderItems { get; set; } = new List<OrderItemDto>();
+        
+        /// <summary>
+        /// Review status for completed orders (only applicable when Status = Completed)
+        /// </summary>
+        public OrderReviewStatusEnum? ReviewStatus { get; set; }
     }
 }

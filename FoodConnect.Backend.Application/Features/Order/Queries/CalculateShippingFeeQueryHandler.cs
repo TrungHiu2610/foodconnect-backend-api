@@ -1,4 +1,6 @@
+using FoodConnect.Backend.Application.Commons.Constants;
 using FoodConnect.Backend.Application.Commons.DTOs.Responses;
+using FoodConnect.Backend.Application.Commons.Interfaces;
 using FoodConnect.Backend.Application.Commons.Services;
 using FoodConnect.Backend.Application.Interfaces.IRepositories;
 using FoodConnect.Backend.Domain.Enums;
@@ -9,13 +11,13 @@ namespace FoodConnect.Backend.Application.Features.Order.Queries
     public class CalculateShippingFeeQueryHandler : IRequestHandler<CalculateShippingFeeQuery, BaseResponse<CalculateShippingFeeResponse>>
     {
         private readonly IShopRepository _shopRepository;
-        private readonly DistanceCalculator _distanceCalculator;
-        private readonly ShippingFeeCalculator _shippingFeeCalculator;
+        private readonly IDistanceCalculatorService _distanceCalculator;
+        private readonly IShippingFeeCalculatorService _shippingFeeCalculator;
 
         public CalculateShippingFeeQueryHandler(
             IShopRepository shopRepository,
-            DistanceCalculator distanceCalculator,
-            ShippingFeeCalculator shippingFeeCalculator)
+            IDistanceCalculatorService distanceCalculator,
+            IShippingFeeCalculatorService shippingFeeCalculator)
         {
             _shopRepository = shopRepository;
             _distanceCalculator = distanceCalculator;
@@ -52,13 +54,12 @@ namespace FoodConnect.Backend.Application.Features.Order.Queries
             {
                 if (!_shippingFeeCalculator.ValidateExpressDeliveryDistance(distanceKm))
                 {
-                    var maxDistance = _shippingFeeCalculator.GetMaxExpressDistance();
-                    return result.BuildFail($"Express delivery is only available for distances up to {maxDistance}km. Distance to this shop is {distanceKm:F2}km. Please choose Standard delivery.");
+                    return result.BuildFail($"Express delivery is only available for distances up to {ShippingFeeConstant.EXPRESS_MAX_DISTANCE}km. Distance to this shop is {distanceKm:F2}km. Please choose Standard delivery.");
                 }
             }
 
             // Calculate shipping fee
-            double shippingFee = _shippingFeeCalculator.CalculateShippingFee(
+            decimal shippingFee = _shippingFeeCalculator.CalculateShippingFee(
                 request.DeliveryType,
                 distanceKm,
                 request.BuyerProvince,
@@ -71,7 +72,7 @@ namespace FoodConnect.Backend.Application.Features.Order.Queries
                 DistanceKm = Math.Round(distanceKm, 2),
                 DeliveryType = request.DeliveryType,
                 Message = request.DeliveryType == DeliveryTypeEnum.Express
-                    ? $"Express delivery (≤{_shippingFeeCalculator.GetMaxExpressDistance()}km): First 2km = 5,000 VND, then 5,000 VND/km"
+                    ? $"Express delivery (≤{ShippingFeeConstant.EXPRESS_MAX_DISTANCE}km): First 2km = 5,000 VND, then 5,000 VND/km"
                     : $"Standard delivery: Same province = 20,000 VND, Different province = 30,000 VND"
             };
 

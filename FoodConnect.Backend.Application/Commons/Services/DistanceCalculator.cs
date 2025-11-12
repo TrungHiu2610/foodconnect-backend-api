@@ -1,6 +1,8 @@
+using FoodConnect.Backend.Application.Commons.Interfaces;
+
 namespace FoodConnect.Backend.Application.Commons.Services
 {
-    public class DistanceCalculator
+    public class DistanceCalculatorService : IDistanceCalculatorService
     {
         private const double EARTH_RADIUS_KM = 6371.0;
 

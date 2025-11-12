@@ -3,6 +3,7 @@ using FoodConnect.Backend.Application.Commons.Interfaces;
 using FoodConnect.Backend.Application.Features.Order.DTOs;
 using FoodConnect.Backend.Application.Features.Order.Mappers;
 using FoodConnect.Backend.Application.Interfaces.IRepositories;
+using FoodConnect.Backend.Domain.Enums;
 using MediatR;
 
 namespace FoodConnect.Backend.Application.Features.Order.Queries
@@ -10,13 +11,16 @@ namespace FoodConnect.Backend.Application.Features.Order.Queries
     public class GetOrderDetailQueryHandler : IRequestHandler<GetOrderDetailQuery, BaseResponse<OrderDetailDto>>
     {
         private readonly IOrderRepository _orderRepository;
+        private readonly IProductReviewRepository _reviewRepository;
         private readonly ICurrentUserService _currentUserService;
 
         public GetOrderDetailQueryHandler(
-            IOrderRepository _orderRepository,
+            IOrderRepository orderRepository,
+            IProductReviewRepository reviewRepository,
             ICurrentUserService currentUserService)
         {
-            this._orderRepository = _orderRepository;
+            _orderRepository = orderRepository;
+            _reviewRepository = reviewRepository;
             _currentUserService = currentUserService;
         }
 
@@ -46,6 +50,30 @@ namespace FoodConnect.Backend.Application.Features.Order.Queries
             }
 
             var orderDto = OrderMapper.MapToDetailDto(order);
+            
+            // Calculate review status and mark reviewed items (only for buyers and completed orders)
+            if (isBuyer && order.Status == OrderStatusEnum.Completed)
+            {
+                var reviews = await _reviewRepository.GetAllAsync();
+                var orderReviews = reviews
+                    .Where(r => r.OrderId == request.OrderId && r.BuyerId == userId)
+                    .ToList();
+                
+                // Mark which items have been reviewed
+                foreach (var item in orderDto.OrderItems)
+                {
+                    item.IsReviewed = orderReviews.Any(r => r.ProductId == item.ProductId);
+                }
+                
+                // Calculate overall review status
+                var totalItems = orderDto.OrderItems.Count;
+                var reviewedItems = orderDto.OrderItems.Count(i => i.IsReviewed);
+                
+                orderDto.ReviewStatus = reviewedItems >= totalItems 
+                    ? OrderReviewStatusEnum.FullyReviewed 
+                    : OrderReviewStatusEnum.NotReviewed;
+            }
+
             return result.BuildSuccess(orderDto, "Order retrieved successfully");
         }
     }
