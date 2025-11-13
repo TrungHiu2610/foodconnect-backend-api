@@ -75,5 +75,19 @@ namespace FoodConnect.Backend.API.Controllers
             var result = await Mediator.Send(query);
             return StatusCode(result.StatusCode, result);
         }
+
+        /// <summary>
+        /// Get checkout preview - shows how cart will be split into orders with shipping fees
+        /// Used for Checkout Page (not Cart Page)
+        /// Header: X-Session-Id (for guest users)
+        /// </summary>
+        [HttpPost]
+        public async Task<IActionResult> GetCheckoutPreview([FromBody] GetCheckoutPreviewQuery query)
+        {
+            var sessionId = Request.Headers["X-Session-Id"].ToString();
+            query.SessionId = sessionId;
+            var result = await Mediator.Send(query);
+            return result != null ? (result.Success ? Ok(result) : BadRequest(result)) : BadRequest();
+        }
     }
 }

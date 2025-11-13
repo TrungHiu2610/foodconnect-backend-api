@@ -126,5 +126,21 @@ namespace FoodConnect.Backend.API.Controllers
             var result = await Mediator.Send(query);
             return result != null ? (result.Success ? Ok(result) : BadRequest(result)) : BadRequest();
         }
+
+        [HttpGet]
+        public async Task<IActionResult> FilterByLocation(
+            [FromQuery] int? deliveryType, 
+            [FromQuery] double? buyerLatitude, 
+            [FromQuery] double? buyerLongitude)
+        {
+            var query = new FilterShopsByLocationQuery
+            {
+                DeliveryType = deliveryType.HasValue ? (DeliveryTypeEnum)deliveryType.Value : null,
+                BuyerLatitude = buyerLatitude,
+                BuyerLongitude = buyerLongitude
+            };
+            var result = await Mediator.Send(query);
+            return result != null ? (result.Success ? Ok(result) : BadRequest(result)) : BadRequest();
+        }
     }
 }

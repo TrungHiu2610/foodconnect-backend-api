@@ -29,6 +29,11 @@ namespace FoodConnect.Backend.Infrastructure.Persistence
         public DbSet<Cart> Carts { get; set; }
         public DbSet<CartItem> CartItems { get; set; }
         public DbSet<Address> Addresses { get; set; }
+        public DbSet<Order> Orders { get; set; }
+        public DbSet<OrderItem> OrderItems { get; set; }
+        public DbSet<Notification> Notifications { get; set; }
+        public DbSet<ProductReview> ProductReviews { get; set; }
+        public DbSet<ProductReviewAsset> ProductReviewAssets { get; set; }
 
         #endregion
 

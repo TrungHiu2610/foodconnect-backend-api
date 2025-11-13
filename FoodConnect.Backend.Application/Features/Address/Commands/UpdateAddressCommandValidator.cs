@@ -39,6 +39,20 @@ namespace FoodConnect.Backend.Application.Features.Address.Commands
                 .MaximumLength(200).WithMessage("City must not exceed 200 characters")
                 .When(x => x.City != null);
 
+            When(x => x.Latitude != null, () =>
+            {
+                RuleFor(x => x.Latitude!.Value)
+                    .InclusiveBetween(-90, 90)
+                    .WithMessage("Latitude must be between -90 and 90");
+            });
+
+            When(x => x.Longitude != null, () =>
+            {
+                RuleFor(x => x.Longitude!.Value)
+                    .InclusiveBetween(-180, 180)
+                    .WithMessage("Longitude must be between -180 and 180");
+            });
+
             RuleFor(x => x.Note)
                 .MaximumLength(500).WithMessage("Note must not exceed 500 characters")
                 .When(x => !string.IsNullOrEmpty(x.Note));

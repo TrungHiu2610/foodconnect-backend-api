@@ -7,7 +7,6 @@ namespace FoodConnect.Backend.Application.Interfaces.IRepositories
     public interface IProductRepository : IBaseRepository<Product>
     {
         Task<Product?> GetByIdAsync(Guid id);
-        Task<IEnumerable<Product>> GetByIdsAsync(IEnumerable<Guid> ids);
         IQueryable<Product> GetProductsAsQueryable();
         Task<Product?> GetProductWithAssetsAsync(Guid id, bool tracking = true);
         Task<(IEnumerable<Product> Items, int TotalCount)> GetPagedByShopIdAsync(
@@ -16,5 +15,6 @@ namespace FoodConnect.Backend.Application.Interfaces.IRepositories
             int pageSize,
             ProductStatusEnum? status = null,
             string? searchTerm = null);
+        Task<IEnumerable<Product>> GetAllProductsWithDetailsAsync();
     }
 }

@@ -12,8 +12,8 @@ namespace FoodConnect.Backend.Application.Features.Address.Commands
         public string Ward { get; set; } = string.Empty;
         public string District { get; set; } = string.Empty;
         public string City { get; set; } = string.Empty;
-        public double? Latitude { get; set; }
-        public double? Longitude { get; set; }
+        public double Latitude { get; set; }
+        public double Longitude { get; set; }
         public bool IsDefault { get; set; } = false;
         public string? Note { get; set; }
         public int AddressType { get; set; } = (int)AddressTypeEnum.Home;

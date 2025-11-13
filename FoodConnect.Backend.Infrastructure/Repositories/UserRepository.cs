@@ -40,6 +40,12 @@ namespace FoodConnect.Backend.Infrastructure.Repositories
                 .FirstOrDefaultAsync(u => u.Id == id);
         }
 
+        public async Task<Address?> GetDefaultAddressByIdAsync(Guid id)
+        {
+            return await _context.Addresses
+                .FirstOrDefaultAsync(a => a.UserId == id && a.IsDefault);
+        }
+
         public async Task<bool> IsEmailUniqueAsync(string email)
         {
             return !await _context.Users.AnyAsync(u => u.Email == email);

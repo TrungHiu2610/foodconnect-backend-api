@@ -45,6 +45,20 @@ namespace FoodConnect.Backend.Application.Features.Shop.Commands
                     .WithMessage("At least one category is required");
             });
 
+            When(x => x.Latitude != null, () =>
+            {
+                RuleFor(x => x.Latitude!.Value)
+                    .InclusiveBetween(-90, 90)
+                    .WithMessage("Latitude must be between -90 and 90");
+            });
+
+            When(x => x.Longitude != null, () =>
+            {
+                RuleFor(x => x.Longitude!.Value)
+                    .InclusiveBetween(-180, 180)
+                    .WithMessage("Longitude must be between -180 and 180");
+            });
+
             // File validations (optional for update)
             When(x => x.IdCardFront != null, () =>
             {

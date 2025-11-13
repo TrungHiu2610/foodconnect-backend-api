@@ -59,7 +59,11 @@ namespace FoodConnect.Backend.Infrastructure.Persistence.Configurations
                 .HasMaxLength(1000);
             builder.Property(p=> p.Status)
                 .IsRequired()
-                .HasDefaultValue(ProductStatusEnum.Draft); 
+                .HasDefaultValue(ProductStatusEnum.Draft);
+            
+            // Ignore calculated fields (not mapped to database)
+            builder.Ignore(p => p.CalculatedDistance);
+            
             builder.HasOne(p => p.Category)
                 .WithMany(c => c.Products)
                 .HasForeignKey(p => p.CategoryId);

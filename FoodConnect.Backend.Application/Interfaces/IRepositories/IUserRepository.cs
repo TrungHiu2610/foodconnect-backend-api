@@ -14,5 +14,6 @@ namespace FoodConnect.Backend.Application.Interfaces.IRepositories
         Task<Guid?> GetShopIdByUserIdAsync(Guid userId);
         Task<User?> GetUserWithRolesAsync(Guid id);
         Task<bool> IsEmailUniqueAsync(string email);
+        Task<Address?> GetDefaultAddressByIdAsync(Guid id);
     }
 }

@@ -55,5 +55,28 @@ namespace FoodConnect.Backend.API.Controllers
             var result = await Mediator.Send(command);
             return result != null ? (result.Success ? Ok(result) : BadRequest(result)) : BadRequest();
         }
+
+        [HttpPost]
+        [Authorize]
+        public async Task<IActionResult> CreateProductReview([FromForm] CreateProductReviewCommand command)
+        {
+            var result = await Mediator.Send(command);
+            return result != null ? (result.Success ? Ok(result) : BadRequest(result)) : BadRequest();
+        }
+
+        [HttpPost]
+        [Authorize(Roles = "Seller")]
+        public async Task<IActionResult> SellerRespondToReview([FromBody] SellerRespondToReviewCommand command)
+        {
+            var result = await Mediator.Send(command);
+            return result != null ? (result.Success ? Ok(result) : BadRequest(result)) : BadRequest();
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> GetShopReviews([FromBody] GetShopReviewsQuery query)
+        {
+            var result = await Mediator.Send(query);
+            return result != null ? (result.Success ? Ok(result) : BadRequest(result)) : BadRequest();
+        }
     }
 }

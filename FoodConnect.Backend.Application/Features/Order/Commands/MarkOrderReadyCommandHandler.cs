@@ -1,0 +1,69 @@
+using FoodConnect.Backend.Application.Commons.DTOs.Responses;
+using FoodConnect.Backend.Application.Commons.Interfaces;
+using FoodConnect.Backend.Application.Interfaces;
+using FoodConnect.Backend.Application.Interfaces.IRepositories;
+using FoodConnect.Backend.Domain.Enums;
+using MediatR;
+
+namespace FoodConnect.Backend.Application.Features.Order.Commands
+{
+    public class MarkOrderReadyCommandHandler : IRequestHandler<MarkOrderReadyCommand, BaseResponse<CreateOrUpdateResponse>>
+    {
+        private readonly IOrderRepository _orderRepository;
+        private readonly IUnitOfWork _unitOfWork;
+        private readonly ICurrentUserService _currentUserService;
+
+        public MarkOrderReadyCommandHandler(
+            IOrderRepository orderRepository,
+            IUnitOfWork unitOfWork,
+            ICurrentUserService currentUserService)
+        {
+            _orderRepository = orderRepository;
+            _unitOfWork = unitOfWork;
+            _currentUserService = currentUserService;
+        }
+
+        public async Task<BaseResponse<CreateOrUpdateResponse>> Handle(MarkOrderReadyCommand request, CancellationToken cancellationToken)
+        {
+            var result = new BaseResponse<CreateOrUpdateResponse>();
+
+            // Check authorization
+            var userId = _currentUserService.UserId;
+            if (!userId.HasValue)
+            {
+                return result.BuildUnauthorized();
+            }
+
+            // Get order with shop info
+            var order = await _orderRepository.GetOrderWithDetailsAsync(request.OrderId);
+            if (order == null)
+            {
+                return result.BuildNotFound("Order not found");
+            }
+
+            // Verify seller owns this order's shop
+            if (order.Shop.UserId != userId.Value)
+            {
+                return result.BuildForbidden("You don't have permission to update this order");
+            }
+
+            // Validate status transition
+            if (order.Status != OrderStatusEnum.Preparing)
+            {
+                return result.BuildFail($"Cannot mark order as ready. Current status is {order.Status}");
+            }
+
+            // Update order status
+            order.Status = OrderStatusEnum.ReadyForPickup;
+            order.ReadyForPickupAt = DateTime.UtcNow;
+
+            _orderRepository.Update(order);
+            await _unitOfWork.SaveChangesAsync();
+
+            return result.BuildSuccess(
+                new CreateOrUpdateResponse { Id = order.Id },
+                "Order marked as ready for pickup"
+            );
+        }
+    }
+}

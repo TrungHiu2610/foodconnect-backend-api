@@ -67,8 +67,7 @@ namespace FoodConnect.Backend.Application.Features.Cart.Commands
                     UserId = cart.UserId != Guid.Empty ? cart.UserId : null,
                     SessionId = cart.SessionId,
                     ShopGroups = new List<ShopCartGroup>(),
-                    TotalItems = 0,
-                    TotalAmount = 0,
+                    Summary = new CartSummary(),
                     CreatedAtUtc = cart.CreatedAtUtc,
                     UpdatedAtUtc = DateTime.UtcNow
                 };

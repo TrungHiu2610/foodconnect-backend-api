@@ -1,19 +1,15 @@
 ﻿using AutoMapper;
+using FoodConnect.Backend.Application.Commons.Constants;
 using FoodConnect.Backend.Application.Commons.DTOs.Responses;
-using FoodConnect.Backend.Application.Commons.Interfaces;
-using FoodConnect.Backend.Application.Interfaces.IRepositories;
-using FoodConnect.Backend.Application.Interfaces;
-using MediatR;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using FoodConnect.Backend.Application.Commons.DTOs.Responses.Product;
-using Microsoft.EntityFrameworkCore;
-using FoodConnect.Backend.Application.Commons.Models;
-using System.Linq.Expressions;
 using FoodConnect.Backend.Application.Commons.Extensions;
+using FoodConnect.Backend.Application.Commons.Interfaces;
+using FoodConnect.Backend.Application.Commons.Models;
+using FoodConnect.Backend.Application.Interfaces.IRepositories;
+using FoodConnect.Backend.Domain.Enums;
+using MediatR;
+using Microsoft.EntityFrameworkCore;
+using System.Linq.Expressions;
 
 namespace FoodConnect.Backend.Application.Features.Product.Queries
 {
@@ -21,7 +17,11 @@ namespace FoodConnect.Backend.Application.Features.Product.Queries
     {
         private readonly IProductRepository _productRepository;
         private readonly ICategoryRepository _categoryRepository;
+        private readonly IAddressRepository _addressRepository;
+        private readonly ICurrentUserService _currentUserService;
+        private readonly IDistanceCalculatorService _distanceCalculator;
         private readonly IMapper _mapper;
+        
         private static readonly Dictionary<string, Expression<Func<Domain.Entities.Product, object>>> _sortableColumns =
             new Dictionary<string, Expression<Func<Domain.Entities.Product, object>>>(StringComparer.OrdinalIgnoreCase)
             {
@@ -30,24 +30,100 @@ namespace FoodConnect.Backend.Application.Features.Product.Queries
                 { "createdAt", p => p.CreatedAtUtc }
             };
 
-        public GetListProductQueryHandler(IProductRepository productRepository, ICategoryRepository categoryRepository, IMapper mapper)
+        public GetListProductQueryHandler(
+            IProductRepository productRepository, 
+            ICategoryRepository categoryRepository,
+            IAddressRepository addressRepository,
+            ICurrentUserService currentUserService,
+            IDistanceCalculatorService distanceCalculator,
+            IMapper mapper)
         {
             _productRepository = productRepository;
             _categoryRepository = categoryRepository;
+            _addressRepository = addressRepository;
+            _currentUserService = currentUserService;
+            _distanceCalculator = distanceCalculator;
             _mapper = mapper;
         }
         public async Task<BaseResponse<PaginatedList<GetListProductItemResponse>>> Handle(GetListProductQuery request, CancellationToken cancellationToken)
         {
-            var result = new BaseResponse<PaginatedList<GetListProductResponse>>();
+            var result = new BaseResponse<PaginatedList<GetListProductItemResponse>>();
 
-            var query = _productRepository.GetProductsAsQueryable().Include(p => p.ProductAssets).Include(p=>p.Shop).AsNoTracking();
+            // Get buyer location (from params or default address)
+            var buyerLocation = await GetBuyerLocationAsync(request);
+
+            var query = _productRepository.GetProductsAsQueryable()
+                .Include(p => p.ProductAssets)
+                .Include(p => p.Shop)
+                .Include(p => p.Category)
+                .AsNoTracking();
             
-            // 1. filter
-            if (request.CategoryId != null)
+            // Apply filters
+            query = await ApplyFiltersAsync(query, request, cancellationToken);
+
+            // Apply sorting
+            query = ApplySorting(query, request);
+
+            // Apply text search and location filtering
+            var (filteredProducts, totalCount) = await ApplySearchAndLocationFilterAsync(
+                query, request, buyerLocation, cancellationToken);
+
+            // Paginate
+            var paginatedProducts = filteredProducts
+                .Skip((request.PageNumber - 1) * request.PageSize)
+                .Take(request.PageSize)
+                .ToList();
+
+            // Map to DTOs
+            var productDtos = _mapper.Map<List<GetListProductItemResponse>>(paginatedProducts);
+            var paginatedList = new PaginatedList<GetListProductItemResponse>(
+                productDtos, totalCount, request.PageNumber, request.PageSize);
+
+            return result.BuildSuccess(paginatedList, "Get list products successfully");
+        }
+
+        #region Private Helper Methods
+
+        /// <summary>
+        /// Get buyer location from request params, or fallback to default address
+        /// </summary>
+        private async Task<(double? Latitude, double? Longitude)> GetBuyerLocationAsync(GetListProductQuery request)
+        {
+            // If location provided in request, use it
+            if (request.BuyerLatitude.HasValue && request.BuyerLongitude.HasValue)
+            {
+                return (request.BuyerLatitude, request.BuyerLongitude);
+            }
+
+            // Try to get from user's default address
+            var userId = _currentUserService.UserId;
+            if (userId.HasValue)
+            {
+                var defaultAddress = await _addressRepository.GetDefaultAddressByUserIdAsync(userId.Value);
+                if (defaultAddress?.Latitude != null && defaultAddress?.Longitude != null)
+                {
+                    return (defaultAddress.Latitude, defaultAddress.Longitude);
+                }
+            }
+
+            return (null, null);
+        }
+
+        /// <summary>
+        /// Apply category, shop, status, availability filters
+        /// </summary>
+        private async Task<IQueryable<Domain.Entities.Product>> ApplyFiltersAsync(
+            IQueryable<Domain.Entities.Product> query, 
+            GetListProductQuery request,
+            CancellationToken cancellationToken)
+        {
+            // Category filter (including parent category children)
+            if (request.CategoryId.HasValue)
             {
                 var category = await _categoryRepository.GetByIdAsync(request.CategoryId.Value, c => c.Parent);
-                if(category != null && category.Parent == null)
+                if (category != null && category.Parent == null)
                 {
+                    // Parent category: include all children
                     var childrenCategory = await _categoryRepository.GetChildrenByParentIdAsync(category.Id);
                     var childCategoryIds = childrenCategory.Select(c => c.Id).ToList();
                     query = query.Where(p => childCategoryIds.Contains(p.CategoryId));
@@ -58,30 +134,42 @@ namespace FoodConnect.Backend.Application.Features.Product.Queries
                 }
             }
 
-            if (request.ShopId != null)
+            // Shop filter
+            if (request.ShopId.HasValue)
             {
                 query = query.Where(p => p.ShopId == request.ShopId);
             }
 
+            // Availability filter
             if (request.IsAvailable.HasValue)
             {
                 query = query.Where(p => p.IsAvailable == request.IsAvailable.Value);
             }
 
+            // Status filter
             if (!string.IsNullOrWhiteSpace(request.Status))
             {
-                if (Enum.TryParse<Domain.Enums.ProductStatusEnum>(request.Status, true, out var statusEnum))
+                if (Enum.TryParse<ProductStatusEnum>(request.Status, true, out var statusEnum))
                 {
                     query = query.Where(p => p.Status == statusEnum);
                 }
             }
 
-            // 2. sort
+            return query;
+        }
+
+        /// <summary>
+        /// Apply sorting logic
+        /// </summary>
+        private IQueryable<Domain.Entities.Product> ApplySorting(
+            IQueryable<Domain.Entities.Product> query, 
+            GetListProductQuery request)
+        {
             if (request.SortInfos != null && request.SortInfos.Any())
             {
                 IOrderedQueryable<Domain.Entities.Product>? orderedQuery = null;
                 
-                // If shop management view: Sort out-of-stock products last
+                // Shop management: Sort out-of-stock products last
                 if (request.SortOutOfStockLast)
                 {
                     orderedQuery = query.OrderByDescending(p => p.IsAvailable);
@@ -114,55 +202,112 @@ namespace FoodConnect.Backend.Application.Features.Product.Queries
                 // Default sort
                 if (request.SortOutOfStockLast)
                 {
-                    // Shop management: Available products first, then sort by date
                     query = query.OrderByDescending(p => p.IsAvailable)
                                  .ThenByDescending(p => p.CreatedAtUtc);
                 }
                 else
                 {
-                    // Buyer view: Just sort by date
                     query = query.OrderByDescending(p => p.CreatedAtUtc);
                 }
             }
 
-            // 3. search
-            var hasTextSearch = !string.IsNullOrEmpty(request.TextSearch);
+            return query;
+        }
 
-            if (hasTextSearch)
+        private async Task<(List<Domain.Entities.Product> Products, int TotalCount)> ApplySearchAndLocationFilterAsync(
+            IQueryable<Domain.Entities.Product> query,
+            GetListProductQuery request,
+            (double? Latitude, double? Longitude) buyerLocation,
+            CancellationToken cancellationToken)
+        {
+            var allProducts = await query.ToListAsync(cancellationToken);
+
+            // Apply text search
+            if (!string.IsNullOrEmpty(request.TextSearch))
             {
-                var allFilteredProducts = await query.ToListAsync(cancellationToken);
-                
-                var normalizedSearch = request.TextSearch!.NormalizeForSearch();
-                var matchedProducts = allFilteredProducts.Where(p =>
+                var normalizedSearch = request.TextSearch.NormalizeForSearch();
+                allProducts = allProducts.Where(p =>
                     (p.Name != null && p.Name.NormalizeForSearch().Contains(normalizedSearch)) ||
                     (p.Description != null && p.Description.NormalizeForSearch().Contains(normalizedSearch))
                 ).ToList();
-                
-                // Paginate
-                var totalItems = matchedProducts.Count;
-                var products = matchedProducts
-                    .Skip((request.PageNumber - 1) * request.PageSize)
-                    .Take(request.PageSize)
-                    .ToList();
-
-                var productDtos = _mapper.Map<List<GetListProductItemResponse>>(products);
-                var paginatedList = new PaginatedList<GetListProductItemResponse>(productDtos, totalItems, request.PageNumber, request.PageSize);
-
-                return new BaseResponse<PaginatedList<GetListProductItemResponse>>().BuildSuccess(paginatedList, "Get list products successfully");
             }
-            else
-            {
-                var totalItems = await query.CountAsync(cancellationToken);
-                var products = await query
-                    .Skip((request.PageNumber - 1) * request.PageSize)
-                    .Take(request.PageSize)
-                    .ToListAsync(cancellationToken);
 
-                var productDtos = _mapper.Map<List<GetListProductItemResponse>>(products);
-                var paginatedList = new PaginatedList<GetListProductItemResponse>(productDtos, totalItems, request.PageNumber, request.PageSize);
+            // Apply location-based filtering for delivery type
+            var filteredProducts = ApplyLocationFilter(allProducts, request, buyerLocation);
 
-                return new BaseResponse<PaginatedList<GetListProductItemResponse>>().BuildSuccess(paginatedList, "Get list products successfully");
-            }
+            return (filteredProducts, filteredProducts.Count);
         }
+
+        private List<Domain.Entities.Product> ApplyLocationFilter(
+            List<Domain.Entities.Product> products,
+            GetListProductQuery request,
+            (double? Latitude, double? Longitude) buyerLocation)
+        {
+            bool hasLocation = buyerLocation.Latitude.HasValue && buyerLocation.Longitude.HasValue;
+            var filteredProducts = new List<Domain.Entities.Product>();
+
+            foreach (var product in products)
+            {
+                if (product.Category == null) continue;
+
+                var deliveryType = product.Category.DeliveryType;
+
+                // Filter by delivery type if specified
+                if (request.DeliveryType.HasValue && deliveryType != request.DeliveryType.Value)
+                {
+                    continue;
+                }
+
+                // If buyer has no location
+                if (!hasLocation)
+                {
+                    // Only show Standard products
+                    if (deliveryType == DeliveryTypeEnum.Standard)
+                    {
+                        filteredProducts.Add(product);
+                    }
+                    continue;
+                }
+
+                // Buyer has location
+                if (deliveryType == DeliveryTypeEnum.Express)
+                {
+                    // Express: Only show if shop within range
+                    if (product.Shop?.Latitude != null && product.Shop?.Longitude != null)
+                    {
+                        double distance = _distanceCalculator.CalculateDistance(
+                            buyerLocation.Latitude!.Value,
+                            buyerLocation.Longitude!.Value,
+                            product.Shop.Latitude.Value,
+                            product.Shop.Longitude.Value
+                        );
+
+                        if (distance <= (double)ShippingFeeConstant.EXPRESS_MAX_DISTANCE)
+                        {
+                            product.CalculatedDistance = distance; // Set for later use
+                            filteredProducts.Add(product);
+                        }
+                    }
+                }
+                else // Standard
+                {
+                    if (product.Shop?.Latitude != null && product.Shop?.Longitude != null)
+                    {
+                        double distance = _distanceCalculator.CalculateDistance(
+                            buyerLocation.Latitude!.Value,
+                            buyerLocation.Longitude!.Value,
+                            product.Shop.Latitude.Value,
+                            product.Shop.Longitude.Value
+                        );
+                        product.CalculatedDistance = distance;
+                    }
+                    filteredProducts.Add(product);
+                }
+            }
+
+            return filteredProducts;
+        }
+
+        #endregion
     }
 }

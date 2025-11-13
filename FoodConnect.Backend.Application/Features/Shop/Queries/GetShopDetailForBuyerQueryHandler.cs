@@ -1,3 +1,4 @@
+using FoodConnect.Backend.Application.Commons.Constants;
 using FoodConnect.Backend.Application.Commons.DTOs.Responses;
 using FoodConnect.Backend.Application.Commons.DTOs.Responses.Shop;
 using FoodConnect.Backend.Application.Interfaces.IRepositories;
@@ -118,19 +119,50 @@ namespace FoodConnect.Backend.Application.Features.Shop.Queries
                         .ToList() ?? new List<string>(),
                     
                     // Available Products
-                    AvailableProducts = products.Select(p => new ShopProductDto
+                    AvailableProducts = products.Select(p => 
                     {
-                        Id = p.Id,
-                        Name = p.Name,
-                        Description = p.Description,
-                        Price = p.Price,
-                        DiscountPrice = null, // Product doesn't have DiscountPrice field yet
-                        Stock = p.StockQuantity ?? 0,
-                        IsAvailable = p.IsAvailable,
-                        ThumbnailUrl = p.ProductAssets?
-                            .FirstOrDefault(a => a.AssetType == ProductAssetTypeEnum.Image)?
-                            .AssetUrl,
-                        CategoryName = p.Category?.Name ?? ""
+                        var dto = new ShopProductDto
+                        {
+                            Id = p.Id,
+                            Name = p.Name,
+                            Description = p.Description,
+                            Price = p.Price,
+                            DiscountPrice = null,
+                            Stock = p.StockQuantity ?? 0,
+                            IsAvailable = p.IsAvailable,
+                            ThumbnailUrl = p.ProductAssets?
+                                .FirstOrDefault(a => a.AssetType == ProductAssetTypeEnum.Image)?
+                                .AssetUrl,
+                            CategoryName = p.Category?.Name ?? "",
+                            DeliveryType = p.Category?.DeliveryType.ToString() ?? "Standard",
+                            ProductBadges = new List<string>()
+                        };
+
+                        // Check if Express product is outside delivery range
+                        if (p.Category?.DeliveryType == DeliveryTypeEnum.Express)
+                        {
+                            if (distance.HasValue && distance.Value > (double)ShippingFeeConstant.EXPRESS_MAX_DISTANCE)
+                            {
+                                dto.IsDeliverable = false;
+                                dto.DeliverabilityMessage = $"Giao hàng Express chỉ khả dụng trong bán kính {ShippingFeeConstant.EXPRESS_MAX_DISTANCE}km";
+                                dto.ProductBadges.Add("Ngoài vùng giao hàng");
+                            }
+                            else if (!distance.HasValue)
+                            {
+                                dto.DeliverabilityMessage = "Bật vị trí để kiểm tra khả năng giao hàng Express";
+                                dto.ProductBadges.Add("Cần xác nhận vị trí");
+                            }
+                            else
+                            {
+                                dto.IsDeliverable = true;
+                            }
+                        }
+                        else // Standard delivery
+                        {
+                            dto.IsDeliverable = true;
+                        }
+
+                        return dto;
                     }).ToList()
                 };
 
@@ -142,9 +174,6 @@ namespace FoodConnect.Backend.Application.Features.Shop.Queries
             }
         }
 
-        /// <summary>
-        /// Calculate distance between two coordinates using Haversine formula
-        /// </summary>
         private double CalculateDistance(double lat1, double lon1, double lat2, double lon2)
         {
             const double R = 6371; // Earth's radius in kilometers
@@ -162,9 +191,6 @@ namespace FoodConnect.Backend.Application.Features.Shop.Queries
 
         private double ToRadians(double degrees) => degrees * Math.PI / 180;
 
-        /// <summary>
-        /// Calculate shop badges based on properties
-        /// </summary>
         private List<string> CalculateBadges(Domain.Entities.Shop shop)
         {
             var badges = new List<string>();

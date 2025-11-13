@@ -104,6 +104,19 @@ namespace FoodConnect.Backend.Infrastructure.Repositories
 
             return allCategoryIds.ToList();
         }
+
+        public async Task<IEnumerable<Shop>> GetAllActiveShopsAsync()
+        {
+            return await _context.Shops
+                .AsNoTracking()
+                .Where(s => s.Status == Domain.Enums.ShopStatusEnum.Active)
+                .Include(s => s.ShopCategories)
+                    .ThenInclude(sc => sc.Category)
+                .Include(s => s.OperatingHours)
+                .OrderBy(s => s.ShopName)
+                .ToListAsync();
+        }
+
         public IQueryable<Shop> GetShopsAsQueryable()
         {
             return _context.Shops

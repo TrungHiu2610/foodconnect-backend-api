@@ -67,5 +67,10 @@ namespace FoodConnect.Backend.Application.Commons.DTOs.Responses.Shop
         public bool IsAvailable { get; set; }
         public string? ThumbnailUrl { get; set; }
         public string CategoryName { get; set; } = string.Empty;
+        
+        public string DeliveryType { get; set; } = string.Empty; // "Express" or "Standard"
+        public bool IsDeliverable { get; set; } = true; 
+        public string? DeliverabilityMessage { get; set; } 
+        public List<string> ProductBadges { get; set; } = new(); //["Ngoài vùng giao hàng"]
     }
 }
