@@ -1,9 +1,11 @@
 ﻿using FoodConnect.Backend.Application.Commons.DTOs;
 using FoodConnect.Backend.Application.Features.Auth.Commands.EmailRegister;
+using FoodConnect.Backend.Application.Features.Auth.Commands.ForgotPassword;
 using FoodConnect.Backend.Application.Features.Auth.Commands.GoogleLogin;
 using FoodConnect.Backend.Application.Features.Auth.Commands.PhoneLogin;
 using FoodConnect.Backend.Application.Features.Auth.Commands.RefreshToken;
 using FoodConnect.Backend.Application.Features.Auth.Commands.Register;
+using FoodConnect.Backend.Application.Features.Auth.Commands.ResetPassword;
 using FoodConnect.Backend.Application.Features.Auth.Queries.Login;
 using FoodConnect.Backend.Domain.Enums;
 using Microsoft.AspNetCore.Authorization;
@@ -85,6 +87,20 @@ namespace FoodConnect.Backend.API.Controllers
                 return BadRequest(result);
             }
             SetRefreshTokenCookie(result.Data.RefreshToken, result.Data.RefreshTokenExpiresAtUtc);
+            return result != null ? (result.Success ? Ok(result) : BadRequest(result)) : BadRequest();
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> ForgotPassword(ForgotPasswordCommand command)
+        {
+            var result = await Mediator.Send(command);
+            return result != null ? (result.Success ? Ok(result) : BadRequest(result)) : BadRequest();
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> ResetPassword(ResetPasswordCommand command)
+        {
+            var result = await Mediator.Send(command);
             return result != null ? (result.Success ? Ok(result) : BadRequest(result)) : BadRequest();
         }
 

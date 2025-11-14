@@ -57,5 +57,36 @@ namespace FoodConnect.Backend.Infrastructure.Services
 
             await _sesClient.SendEmailAsync(sendRequest);
         }
+
+        public async Task SendPasswordResetEmailAsync(string toEmail, string fullName, string resetToken)
+        {
+            var sendRequest = new SendEmailRequest
+            {
+                Source = $"{_fromName} <{_fromEmail}>",
+                Destination = new Destination { ToAddresses = new List<string> { toEmail } },
+                Message = new Message
+                {
+                    Subject = new Content("Password Reset Request"),
+                    Body = new Body
+                    {
+                        Html = new Content
+                        {
+                            Charset = "UTF-8",
+                            Data = $@"
+                                <h2>Hello {fullName},</h2>
+                                <p>You requested to reset your password.</p>
+                                <p>Your password reset code is: <strong style='font-size: 24px;'>{resetToken}</strong></p>
+                                <p>This code will expire in 15 minutes.</p>
+                                <p>If you didn't request this, please ignore this email and your password will remain unchanged.</p>
+                                <br/>
+                                <p>Best regards,<br/>FoodConnect Team</p>
+                            "
+                        }
+                    }
+                }
+            };
+
+            await _sesClient.SendEmailAsync(sendRequest);
+        }
     }
 }
