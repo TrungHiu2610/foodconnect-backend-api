@@ -96,7 +96,7 @@ namespace FoodConnect.Backend.Application.Features.Product.Queries
             }
 
             // Try to get from user's default address
-            var userId = _currentUserService.UserId;
+            var userId = _currentUserService.UserId ?? request.UserId;
             if (userId.HasValue)
             {
                 var defaultAddress = await _addressRepository.GetDefaultAddressByUserIdAsync(userId.Value);
