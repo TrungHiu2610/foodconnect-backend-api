@@ -6,7 +6,8 @@ namespace FoodConnect.Backend.Application.Features.Order.DTOs
     {
         public PaymentMethodEnum PaymentMethod { get; set; }
         public string ShippingAddressJson { get; set; } = string.Empty;
-        public string? Notes { get; set; }
+        public Dictionary<string, string>? OrderNotes { get; set; }
+        
         // List of CartItem IDs to create order from
         public List<Guid> CartItemIds { get; set; } = new List<Guid>();
     }

@@ -209,6 +209,13 @@ namespace FoodConnect.Backend.Application.Features.Order.Commands
                     // Generate order code
                     var orderCode = await GenerateOrderCode();
 
+                    // Get note for this shop (if provided)
+                    string? shopNote = null;
+                    if (request.OrderNotes != null && request.OrderNotes.TryGetValue(shopId.ToString(), out var note))
+                    {
+                        shopNote = note;
+                    }
+
                     // Create order
                     var order = new Domain.Entities.Order
                     {
@@ -223,7 +230,7 @@ namespace FoodConnect.Backend.Application.Features.Order.Commands
                         DeliveryType = deliveryType, // Auto-determined from Product.Category
                         DistanceKm = Math.Round(distanceKm, 2),
                         ShippingAddressJson = request.ShippingAddressJson,
-                        Notes = request.Notes,
+                        Notes = shopNote, // Use shop-specific note
                         BuyerId = buyerId,
                         ShopId = shopId
                     };
