@@ -123,6 +123,7 @@ services.AddScoped<IAddressRepository, AddressRepository>();
 services.AddScoped<IOrderRepository, OrderRepository>();
 services.AddScoped<IOrderItemRepository, OrderItemRepository>();
 services.AddScoped<INotificationRepository, NotificationRepository>();
+services.AddScoped<IWishlistRepository, WishlistRepository>();
 services.AddScoped<IUnitOfWork, UnitOfWork>();
 
 // Application Services  
