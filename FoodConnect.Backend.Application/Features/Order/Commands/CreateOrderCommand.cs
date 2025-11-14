@@ -15,7 +15,7 @@ namespace FoodConnect.Backend.Application.Features.Order.Commands
         public PaymentMethodEnum PaymentMethod { get; set; }
         // DeliveryType removed - will be auto-determined from Product.Category
         public string ShippingAddressJson { get; set; } = string.Empty;
-        public string? Notes { get; set; }
+        public Dictionary<string, string>? OrderNotes { get; set; }
         public List<Guid> CartItemIds { get; set; } = new List<Guid>();
     }
 }
