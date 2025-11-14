@@ -13,5 +13,11 @@ namespace FoodConnect.Backend.Application.Commons.Options
         public string BucketName { get; set; }
         public string Region { get; set; }
         public string PublicBaseUrl { get; set; }
+        public SESSettings SES { get; set; }
+    }
+    public class SESSettings
+    {
+        public string FromEmail { get; set; }
+        public string FromName { get; set; }
     }
 }

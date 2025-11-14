@@ -22,6 +22,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Amazon.Runtime;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
+using StackExchange.Redis;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -85,6 +86,29 @@ var awsOptions = new Amazon.Extensions.NETCore.Setup.AWSOptions
     Credentials = credentials,
     Region = region
 };
+
+// Redis
+services.AddSingleton<IConnectionMultiplexer>(sp =>
+{
+    var host = builder.Configuration["Redis:Host"];
+    var port = builder.Configuration["Redis:Port"];
+
+    var configuration = ConfigurationOptions.Parse($"{host}:{port}");
+    configuration.User = builder.Configuration["Redis:Username"];
+    configuration.Password = builder.Configuration["Redis:Password"];
+    return ConnectionMultiplexer.Connect(configuration);
+});
+
+services.AddScoped<IRedisService, RedisService>();
+
+// SMS Service
+services.AddScoped<ISmsService, TwilioSmsService>();
+
+// Email Service
+services.AddScoped<IEmailService, AwsSesEmailService>();
+
+// Google Auth Service
+services.AddScoped<IGoogleAuthService, GoogleAuthService>();
 
 services.AddDefaultAWSOptions(awsOptions);
 services.AddAWSService<IAmazonS3>();

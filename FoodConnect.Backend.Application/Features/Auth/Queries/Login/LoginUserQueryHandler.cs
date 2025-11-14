@@ -31,10 +31,32 @@ namespace FoodConnect.Backend.Application.Features.Auth.Queries.Login
                 return result.BuildFail("Invalid credentials.");
             }
 
+            // Check password hash exists (for Local provider)
+            if (string.IsNullOrEmpty(user.PasswordHash))
+            {
+                return result.BuildFail("This account uses a different login method (Phone/Google).");
+            }
+
             var isPasswordValid = BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash);
             if (!isPasswordValid)
             {
                 return result.BuildFail("Invalid credentials.");
+            }
+
+            // Check user status
+            if (user.Status == UserStatusEnum.Pending)
+            {
+                return result.BuildFail("Please verify your email first.");
+            }
+
+            if (user.Status == UserStatusEnum.Banned)
+            {
+                return result.BuildFail("Your account has been banned.");
+            }
+
+            if (user.Status == UserStatusEnum.Locked)
+            {
+                return result.BuildFail("Your account has been locked.");
             }
 
             var roleNames = user.UserRoles.Select(ur => ur.Role.Name).ToList();

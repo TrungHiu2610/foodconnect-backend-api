@@ -10,13 +10,14 @@ namespace FoodConnect.Backend.Domain.Entities
     public class User : BaseEntity
     {
         public string FullName { get; set; }
-        public string Email { get; set; }
+        public string? Email { get; set; }
         public string? PhoneNumber { get; set; }
-        public string PasswordHash { get; set; }
+        public string? PasswordHash { get; set; }
         public string? AvatarUrl { get; set; }
         public DateTime? DateOfBirth { get; set; }
         public string? Gender { get; set; } // "Male", "Female", "Other"
         public UserStatusEnum Status { get; set; } = UserStatusEnum.Pending;
+        public AuthProviderEnum Provider { get; set; } = AuthProviderEnum.Local;
 
         public virtual ICollection<UserRole> UserRoles { get; set; } = new List<UserRole>();
         public virtual ICollection<RefreshToken> RefreshTokens { get; set; } = new List<RefreshToken>();
