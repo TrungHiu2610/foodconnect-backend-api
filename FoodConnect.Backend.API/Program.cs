@@ -133,7 +133,13 @@ services.AddScoped<IDistanceCalculatorService, DistanceCalculatorService>();
 services.AddScoped<IShippingFeeCalculatorService, ShippingFeeCalculatorService>();
 
 // SignalR & Notification Services
-services.AddSignalR();
+services.AddSignalR(options =>
+{
+    options.EnableDetailedErrors = true; 
+    options.KeepAliveInterval = TimeSpan.FromSeconds(15);
+    options.ClientTimeoutInterval = TimeSpan.FromSeconds(30);
+    options.HandshakeTimeout = TimeSpan.FromSeconds(15);
+});
 services.AddScoped<INotificationService, NotificationService>();
 services.AddScoped<OrderNotificationService>();
 
@@ -160,6 +166,8 @@ services.AddEndpointsApiExplorer();
 services.AddSwaggerGen();
 
 var app = builder.Build();
+
+app.UseWebSockets();
 
 app.UseCors(MyAllowSpecificOrigins);
 
