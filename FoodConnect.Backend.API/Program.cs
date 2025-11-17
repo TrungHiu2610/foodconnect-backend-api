@@ -22,6 +22,8 @@ using Microsoft.Extensions.DependencyInjection;
 using Amazon.Runtime;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
+using StackExchange.Redis;
+using Resend;
 using FoodConnect.Backend.Infrastructure.Hubs;
 using FoodConnect.Backend.Application.Features.Notification.Services;
 using FoodConnect.Backend.Application.Commons.Services;
@@ -52,6 +54,8 @@ services.AddCors(options =>
                           }
                       });
 });
+
+services.AddHttpClient();
 
 var configuration = builder.Configuration;
 
@@ -104,6 +108,42 @@ var awsOptions = new Amazon.Extensions.NETCore.Setup.AWSOptions
     Region = region
 };
 
+// Redis
+services.AddSingleton<IConnectionMultiplexer>(sp =>
+{
+    var host = builder.Configuration["Redis:Host"];
+    var port = builder.Configuration["Redis:Port"];
+
+    var configuration = ConfigurationOptions.Parse($"{host}:{port}");
+    configuration.User = builder.Configuration["Redis:Username"];
+    configuration.Password = builder.Configuration["Redis:Password"];
+    return ConnectionMultiplexer.Connect(configuration);
+});
+
+services.AddScoped<IRedisService, RedisService>();
+
+// SMS Service
+//services.AddScoped<ISmsService, AwsSnsService>();
+services.AddScoped<ISmsService, SpeedSmsService>();
+//services.AddScoped<ISmsService, VonageSMSService>();
+
+// Email Service
+services.AddOptions();
+services.AddHttpClient<ResendClient>();
+services.Configure<ResendClientOptions>(o =>
+{
+    o.ApiToken = configuration["Resend:ApiKey"]!;
+});
+services.AddTransient<IResend, ResendClient>();
+services.AddScoped<IEmailService, ResendEmailService>();
+
+// Google Auth Service
+services.AddScoped<IGoogleAuthService, GoogleAuthService>();
+
+// Firebase Auth Service
+services.AddSingleton<FoodConnect.Backend.Application.Services.FirebaseService.IFirebaseAuthService, FoodConnect.Backend.Application.Services.FirebaseService.FirebaseAuthService>();
+
+// Storage Service
 services.AddDefaultAWSOptions(awsOptions);
 services.AddAWSService<IAmazonS3>();
 services.AddScoped<IFileStorageService, AwsS3FileStorageService>();

@@ -1030,7 +1030,6 @@ namespace FoodConnect.Backend.Infrastructure.Migrations
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("Email")
-                        .IsRequired()
                         .HasMaxLength(255)
                         .HasColumnType("character varying(255)");
 
@@ -1046,11 +1045,13 @@ namespace FoodConnect.Backend.Infrastructure.Migrations
                         .HasColumnType("boolean");
 
                     b.Property<string>("PasswordHash")
-                        .IsRequired()
                         .HasColumnType("text");
 
                     b.Property<string>("PhoneNumber")
                         .HasColumnType("text");
+
+                    b.Property<int>("Provider")
+                        .HasColumnType("integer");
 
                     b.Property<int>("Status")
                         .HasColumnType("integer");

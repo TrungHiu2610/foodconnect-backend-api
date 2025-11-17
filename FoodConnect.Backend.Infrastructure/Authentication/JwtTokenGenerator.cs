@@ -30,8 +30,9 @@ namespace FoodConnect.Backend.Infrastructure.Authentication
             var claims = new List<Claim>
             {
             new(ClaimTypes.NameIdentifier, user.Id.ToString()),
-            new(ClaimTypes.Email, user.Email),
-            new(Microsoft.IdentityModel.JsonWebTokens.JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
+            new(ClaimTypes.Email, user.Email ?? ""),
+            new(Microsoft.IdentityModel.JsonWebTokens.JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
+            new(ClaimTypes.Name, user.FullName)
             };
 
             foreach (var role in roleNames)
