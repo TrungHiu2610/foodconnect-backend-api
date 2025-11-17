@@ -45,6 +45,20 @@ namespace FoodConnect.Backend.Application.Features.Shop.Commands
                     .WithMessage("At least one category is required");
             });
 
+            When(x => x.Latitude != null, () =>
+            {
+                RuleFor(x => x.Latitude!.Value)
+                    .InclusiveBetween(-90, 90)
+                    .WithMessage("Latitude must be between -90 and 90");
+            });
+
+            When(x => x.Longitude != null, () =>
+            {
+                RuleFor(x => x.Longitude!.Value)
+                    .InclusiveBetween(-180, 180)
+                    .WithMessage("Longitude must be between -180 and 180");
+            });
+
             // File validations (optional for update)
             When(x => x.IdCardFront != null, () =>
             {
@@ -81,18 +95,11 @@ namespace FoodConnect.Backend.Application.Features.Shop.Commands
                     .WithMessage("Cover image must not exceed 10MB");
             });
 
-            When(x => x.FoodSafetyCertificate != null, () =>
+            When(x => x.FoodSafetyCertificates != null && x.FoodSafetyCertificates.Any(), () =>
             {
-                RuleFor(x => x.FoodSafetyCertificate!.Length)
-                    .LessThanOrEqualTo(10 * 1024 * 1024)
-                    .WithMessage("Food safety certificate must not exceed 10MB");
-            });
-
-            When(x => x.KitchenPhotos != null && x.KitchenPhotos.Any(), () =>
-            {
-                RuleFor(x => x.KitchenPhotos!)
-                    .Must(photos => photos.All(p => p.Length <= 10 * 1024 * 1024))
-                    .WithMessage("Each kitchen photo must not exceed 10MB");
+                RuleFor(x => x.FoodSafetyCertificates!)
+                    .Must(certificates => certificates.All(c => c.Length <= 10 * 1024 * 1024))
+                    .WithMessage("Each food safety certificate must not exceed 10MB");
             });
         }
     }

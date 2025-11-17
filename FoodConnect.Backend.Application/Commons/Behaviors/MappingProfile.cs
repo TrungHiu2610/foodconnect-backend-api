@@ -38,6 +38,8 @@ namespace FoodConnect.Backend.Application.Commons.Behaviors
             CreateMap<Product, GetProductDetailResponse>()
                 .ForMember(dest => dest.CategoryName,
                            opt => opt.MapFrom(src => src.Category.Name))
+                .ForMember(dest => dest.ParentCategoryId,
+                           opt => opt.MapFrom(src => src.Category.ParentId))
                 .ForMember(dest => dest.Status,
                            opt => opt.MapFrom(src => src.Status.ToString()))
                 .ForMember(dest => dest.DeliveryType,
@@ -58,8 +60,12 @@ namespace FoodConnect.Backend.Application.Commons.Behaviors
                 ))
                 .ForMember(dest => dest.Status,
                            opt => opt.MapFrom(src => src.Status.ToString()))
+                .ForMember(dest => dest.DeliveryType,
+                           opt => opt.MapFrom(src => src.Category.DeliveryType.ToString()))
                 .ForMember(dest => dest.ShopName,
-                           opt => opt.MapFrom(src => src.Shop.ShopName));
+                           opt => opt.MapFrom(src => src.Shop.ShopName))
+                .ForMember(dest => dest.ShopId,
+                           opt => opt.MapFrom(src => src.Shop.Id));
 
             // update product
             CreateMap<UpdateProductCommand, Product>()
@@ -180,6 +186,23 @@ namespace FoodConnect.Backend.Application.Commons.Behaviors
                 .ForMember(dest => dest.AddressType, opt => opt.MapFrom((src, dest) => 
                     src.AddressType.HasValue ? (AddressTypeEnum)src.AddressType.Value : dest.AddressType))
                 .ForAllMembers(opts => opts.Condition((src, dest, srcMember) => srcMember != null));
+            #endregion
+
+            #region product review mappings
+
+            // ProductReviewAsset → ProductReviewAssetDto
+            CreateMap<ProductReviewAsset, ProductReviewAssetDto>()
+                .ForMember(dest => dest.AssetType, opt => opt.MapFrom(src => (int)src.AssetType))
+                .ForMember(dest => dest.AssetTypeName, opt => opt.MapFrom(src => src.AssetType.ToString()));
+
+            // ProductReview → ProductReviewResponse
+            CreateMap<ProductReview, ProductReviewResponse>()
+                .ForMember(dest => dest.ProductName, opt => opt.MapFrom(src => src.Product.Name))
+                .ForMember(dest => dest.BuyerName, opt => opt.MapFrom(src => src.Buyer.FullName))
+                .ForMember(dest => dest.BuyerAvatarUrl, opt => opt.MapFrom(src => src.Buyer.AvatarUrl))
+                .ForMember(dest => dest.Assets, opt => opt.MapFrom(src => src.Assets))
+                .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(src => src.CreatedAtUtc));
+
             #endregion
         }
     }

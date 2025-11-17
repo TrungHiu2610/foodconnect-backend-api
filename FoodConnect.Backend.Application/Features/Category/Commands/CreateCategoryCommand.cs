@@ -20,7 +20,7 @@ namespace FoodConnect.Backend.Application.Features.Category.Commands
         public string? ImageUrl { get; set; }
         public IFormFile? File { get; set; }
         public bool IsActive { get; set; } = true;
-        public string? DeliveryType { get; set; } = DeliveryTypeEnum.Standard.ToString();
+        public string? DeliveryType { get; set; }
         public Guid? ParentId { get; set; }
     }
 }

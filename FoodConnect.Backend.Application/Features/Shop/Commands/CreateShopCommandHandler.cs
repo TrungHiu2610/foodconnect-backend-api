@@ -143,17 +143,23 @@ namespace FoodConnect.Backend.Application.Features.Shop.Commands
                     });
                 }
 
-                // Food Safety Certificate (Required)
-                var foodSafetyCertUrl = await _fileStorageService.UploadFileAsync(request.FoodSafetyCertificate, prefix);
-                uploadedFiles.Add(foodSafetyCertUrl);
-                
-                shopAssets.Add(new Domain.Entities.ShopAsset
+                // Food Safety Certificates (Required - Multiple files)
+                if (request.FoodSafetyCertificates != null && request.FoodSafetyCertificates.Any())
                 {
-                    Id = Guid.NewGuid(),
-                    ShopId = shop.Id,
-                    AssetUrl = foodSafetyCertUrl,
-                    AssetType = ShopAssetTypeEnum.FoodSafetyCertificate
-                });
+                    foreach (var certificate in request.FoodSafetyCertificates)
+                    {
+                        var url = await _fileStorageService.UploadFileAsync(certificate, prefix);
+                        uploadedFiles.Add(url);
+                        
+                        shopAssets.Add(new Domain.Entities.ShopAsset
+                        {
+                            Id = Guid.NewGuid(),
+                            ShopId = shop.Id,
+                            AssetUrl = url,
+                            AssetType = ShopAssetTypeEnum.FoodSafetyCertificate
+                        });
+                    }
+                }
 
 
                 shop.Assets = shopAssets;

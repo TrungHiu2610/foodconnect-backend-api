@@ -24,6 +24,9 @@ using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
 using StackExchange.Redis;
 using Resend;
+using FoodConnect.Backend.Infrastructure.Hubs;
+using FoodConnect.Backend.Application.Features.Notification.Services;
+using FoodConnect.Backend.Application.Commons.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -75,6 +78,21 @@ services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             IssuerSigningKey = new SymmetricSecurityKey(
                 Encoding.UTF8.GetBytes(configuration["JwtSettings:Secret"])),
             ClockSkew = TimeSpan.Zero
+        };
+
+        // Configure JWT authentication for SignalR
+        options.Events = new JwtBearerEvents
+        {
+            OnMessageReceived = context =>
+            {
+                var accessToken = context.Request.Query["access_token"];
+                var path = context.HttpContext.Request.Path;
+                if (!string.IsNullOrEmpty(accessToken) && path.StartsWithSegments("/hubs"))
+                {
+                    context.Token = accessToken;
+                }
+                return Task.CompletedTask;
+            }
         };
     });
 
@@ -136,17 +154,34 @@ services.AddScoped<IUserRepository, UserRepository>();
 services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
 services.AddScoped<IProductRepository, ProductRepository>();
 services.AddScoped<IProductAssetRepository, ProductAssetRepository>();
+services.AddScoped<IProductReviewRepository, ProductReviewRepository>();
 services.AddScoped<IShopRepository, ShopRepository>();
 services.AddScoped<ICategoryRepository, CategoryRepository>();
 services.AddScoped<ICartRepository, CartRepository>();
 services.AddScoped<ICartItemRepository, CartItemRepository>();
 services.AddScoped<IAddressRepository, AddressRepository>();
+services.AddScoped<IOrderRepository, OrderRepository>();
+services.AddScoped<IOrderItemRepository, OrderItemRepository>();
+services.AddScoped<INotificationRepository, NotificationRepository>();
 services.AddScoped<IUnitOfWork, UnitOfWork>();
 
 // Application Services  
 services.AddSingleton<IJwtTokenGenerator, JwtTokenGenerator>();
 services.AddHttpContextAccessor();
 services.AddScoped<ICurrentUserService, CurrentUserService>();
+services.AddScoped<IDistanceCalculatorService, DistanceCalculatorService>();
+services.AddScoped<IShippingFeeCalculatorService, ShippingFeeCalculatorService>();
+
+// SignalR & Notification Services
+services.AddSignalR(options =>
+{
+    options.EnableDetailedErrors = true; 
+    options.KeepAliveInterval = TimeSpan.FromSeconds(15);
+    options.ClientTimeoutInterval = TimeSpan.FromSeconds(30);
+    options.HandshakeTimeout = TimeSpan.FromSeconds(15);
+});
+services.AddScoped<INotificationService, NotificationService>();
+services.AddScoped<OrderNotificationService>();
 
 // MediatR  
 services.AddMediatR(cfg =>
@@ -172,6 +207,8 @@ services.AddSwaggerGen();
 
 var app = builder.Build();
 
+app.UseWebSockets();
+
 app.UseCors(MyAllowSpecificOrigins);
 
 // Configure the HTTP request pipeline.  
@@ -189,6 +226,7 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+app.MapHub<NotificationHub>("/hubs/notifications");
 
 app.Run();
 public partial class Program { }

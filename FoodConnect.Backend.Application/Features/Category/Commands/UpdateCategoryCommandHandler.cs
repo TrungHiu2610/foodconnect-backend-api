@@ -38,12 +38,18 @@ namespace FoodConnect.Backend.Application.Features.Category.Commands
                 return result.BuildFail("Category not found");
             }
             // validate ParentId
+            Domain.Entities.Category? parentCategory = null;
             if (request.ParentId != null)
             {
-                var parentCategory = await _categoryRepository.GetByIdAsync((Guid)request.ParentId);
+                parentCategory = await _categoryRepository.GetByIdAsync((Guid)request.ParentId);
                 if (parentCategory == null)
                 {
                     return result.BuildFail("Parent category not found");
+                }
+                
+                if (!string.IsNullOrEmpty(request.DeliveryType))
+                {
+                    return result.BuildFail("Child category cannot have a custom delivery type. It will inherit from parent category.");
                 }
             }
 
@@ -54,6 +60,12 @@ namespace FoodConnect.Backend.Application.Features.Category.Commands
             {
                 // map to entity
                 _mapper.Map(request, category);
+                
+                // If ParentId is being set/updated, inherit DeliveryType from parent
+                if (parentCategory != null)
+                {
+                    category.DeliveryType = parentCategory.DeliveryType;
+                }
 
                 // update file
                 if (request.File != null)

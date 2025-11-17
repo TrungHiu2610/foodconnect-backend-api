@@ -20,8 +20,8 @@ namespace FoodConnect.Backend.Application.Features.Shop.Commands
         public string? District { get; set; }
         public string? City { get; set; }
         public string? Country { get; set; }
-        public double? Latitude { get; set; }
-        public double? Longitude { get; set; }
+        public double Latitude { get; set; }
+        public double Longitude { get; set; }
         
         public int PayoutMethod { get; set; } 
         public string PayoutAccountInfo { get; set; } = string.Empty;
@@ -32,7 +32,7 @@ namespace FoodConnect.Backend.Application.Features.Shop.Commands
         public IFormFile? IdCardFront { get; set; }
         public IFormFile? IdCardBack { get; set; }
         public IFormFile? PortraitPhoto { get; set; }
-        public IFormFile FoodSafetyCertificate { get; set; } = null!; // Bắt buộc
+        public List<IFormFile> FoodSafetyCertificates { get; set; } = new List<IFormFile>(); // Bắt buộc
         
         public string? OperatingHoursJson { get; set; }
     }

@@ -32,6 +32,21 @@ namespace FoodConnect.Backend.API.Controllers
             return result != null ? (result.Success ? Ok(result) : BadRequest(result)) : BadRequest();
         }
 
+        [HttpGet]
+        public async Task<IActionResult> GetChildrenByParentId([FromQuery] GetChildrenCategoriesByParentQuery query)
+        {
+            var result = await Mediator.Send(query);
+            return result != null ? (result.Success ? Ok(result) : BadRequest(result)) : BadRequest();
+        }
+
+        [HttpGet]
+        [Authorize(Roles = "Seller")]
+        public async Task<IActionResult> GetCategoriesByShop([FromQuery] GetCategoriesByShopQuery query)
+        {
+            var result = await Mediator.Send(query);
+            return result != null ? (result.Success ? Ok(result) : BadRequest(result)) : BadRequest();
+        }
+
         [HttpPost]
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> CreateCategory([FromForm] CreateCategoryCommand command)

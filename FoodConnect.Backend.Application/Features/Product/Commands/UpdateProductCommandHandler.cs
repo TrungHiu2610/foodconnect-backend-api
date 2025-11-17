@@ -67,6 +67,20 @@ namespace FoodConnect.Backend.Application.Features.Product.Commands
                 {
                     return result.BuildFail("Category not found");
                 }
+
+                // Validate that category is a leaf category (no children)
+                var hasChildren = await _categoryRepository.HasChildrenAsync(request.CategoryId.Value);
+                if (hasChildren)
+                {
+                    return result.BuildFail("Product can only be assigned to a leaf category (category without sub-categories)");
+                }
+
+                // Validate that category belongs to shop's registered categories (including children)
+                var shopCategoryIds = await _shopRepository.GetAllCategoryIdsForShopAsync(shop.Id);
+                if (!shopCategoryIds.Contains(request.CategoryId.Value))
+                {
+                    return result.BuildFail("Category is not in the list of categories that your shop is registered to sell");
+                }
             }
 
             // validate product

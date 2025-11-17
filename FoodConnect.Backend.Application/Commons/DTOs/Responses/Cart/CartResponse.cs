@@ -6,18 +6,31 @@ namespace FoodConnect.Backend.Application.Commons.DTOs.Responses.Cart
         public Guid? UserId { get; set; }
         public string? SessionId { get; set; }
         public List<ShopCartGroup> ShopGroups { get; set; } = new List<ShopCartGroup>();
-        public int TotalItems { get; set; }
-        public decimal TotalAmount { get; set; }
+        public CartSummary Summary { get; set; } = new CartSummary();
         public DateTime CreatedAtUtc { get; set; }
         public DateTime? UpdatedAtUtc { get; set; }
     }
 
+    public class CartSummary
+    {
+        public int TotalItems { get; set; }
+        public decimal TotalAmount { get; set; }
+    }
+
+    /// <summary>
+    /// Shop group for Cart Page - simple list of items (no delivery type grouping)
+    /// </summary>
     public class ShopCartGroup
     {
         public Guid ShopId { get; set; }
         public string ShopName { get; set; } = string.Empty;
         public string ShopStatus { get; set; } = string.Empty;
+        
+        /// <summary>
+        /// All items in this shop (not grouped by delivery type)
+        /// </summary>
         public List<CartItemResponse> Items { get; set; } = new List<CartItemResponse>();
+        
         public decimal ShopSubtotal { get; set; }
     }
 

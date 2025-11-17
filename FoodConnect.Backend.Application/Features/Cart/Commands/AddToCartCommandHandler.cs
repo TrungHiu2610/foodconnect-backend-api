@@ -147,14 +147,24 @@ namespace FoodConnect.Backend.Application.Features.Cart.Commands
 
             if (cart.CartItems != null && cart.CartItems.Any())
             {
-                var groupedByShop = cart.CartItems
+                // Sort cart items by CreatedAtUtc to maintain order (consistent with GetCart)
+                var sortedCartItems = cart.CartItems
                     .Where(item => item.Product != null && item.Product.Shop != null)
+                    .OrderBy(item => item.CreatedAtUtc)
+                    .ToList();
+
+                var groupedByShop = sortedCartItems
                     .GroupBy(item => new
                     {
                         ShopId = item.Product!.ShopId,
                         ShopName = item.Product.Shop!.ShopName,
-                        ShopStatus = item.Product.Shop.Status
-                    });
+                        ShopStatus = item.Product.Shop.Status,
+                        // Track earliest item for shop ordering
+                        FirstItemCreatedAt = sortedCartItems
+                            .Where(ci => ci.Product!.ShopId == item.Product!.ShopId)
+                            .Min(ci => ci.CreatedAtUtc)
+                    })
+                    .OrderBy(g => g.Key.FirstItemCreatedAt);
 
                 foreach (var shopGroup in groupedByShop)
                 {
@@ -163,10 +173,13 @@ namespace FoodConnect.Backend.Application.Features.Cart.Commands
                         ShopId = shopGroup.Key.ShopId,
                         ShopName = shopGroup.Key.ShopName,
                         ShopStatus = shopGroup.Key.ShopStatus.ToString(),
-                        Items = new List<CartItemResponse>()
+                        Items = new List<CartItemResponse>() // Changed from OrderPreviewGroups
                     };
-
-                    foreach (var item in shopGroup)
+                    
+                    // Maintain creation order within shop
+                    var sortedShopItems = shopGroup.OrderBy(item => item.CreatedAtUtc);
+                    
+                    foreach (var item in sortedShopItems)
                     {
                         var product = item.Product;
 
@@ -189,8 +202,13 @@ namespace FoodConnect.Backend.Application.Features.Cart.Commands
                 }
             }
 
-            response.TotalItems = response.ShopGroups.SelectMany(g => g.Items).Sum(i => i.Quantity);
-            response.TotalAmount = response.ShopGroups.Sum(g => g.ShopSubtotal);
+            var allItems = response.ShopGroups.SelectMany(s => s.Items).ToList();
+            
+            response.Summary = new CartSummary
+            {
+                TotalItems = allItems.Count,
+                TotalAmount = allItems.Sum(i => i.Subtotal)
+            };
 
             return response;
         }
