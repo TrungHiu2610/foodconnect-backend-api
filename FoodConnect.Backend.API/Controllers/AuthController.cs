@@ -1,5 +1,6 @@
 ﻿using FoodConnect.Backend.Application.Commons.DTOs;
 using FoodConnect.Backend.Application.Features.Auth.Commands.EmailRegister;
+using FoodConnect.Backend.Application.Features.Auth.Commands.FirebasePhoneLogin;
 using FoodConnect.Backend.Application.Features.Auth.Commands.ForgotPassword;
 using FoodConnect.Backend.Application.Features.Auth.Commands.GoogleLogin;
 using FoodConnect.Backend.Application.Features.Auth.Commands.PhoneLogin;
@@ -29,6 +30,22 @@ namespace FoodConnect.Backend.API.Controllers
 
         [HttpPost]
         public async Task<IActionResult> VerifyPhoneOtp(VerifyPhoneOtpCommand command)
+        {
+            var result = await Mediator.Send(command);
+            if (result.Data == null)
+            {
+                return BadRequest(result);
+            }
+            SetRefreshTokenCookie(result.Data.RefreshToken, result.Data.RefreshTokenExpiresAtUtc);
+            return result != null ? (result.Success ? Ok(result) : BadRequest(result)) : BadRequest();
+        }
+
+        #endregion
+
+        #region Firebase Phone Authentication
+
+        [HttpPost]
+        public async Task<IActionResult> FirebasePhoneLogin(FirebasePhoneLoginCommand command)
         {
             var result = await Mediator.Send(command);
             if (result.Data == null)

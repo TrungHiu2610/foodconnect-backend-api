@@ -3,6 +3,7 @@ using System;
 using FoodConnect.Backend.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace FoodConnect.Backend.Infrastructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251115203116_AllowEmailToNull")]
+    partial class AllowEmailToNull
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -237,6 +240,65 @@ namespace FoodConnect.Backend.Infrastructure.Migrations
                     b.HasIndex("ParentId");
 
                     b.ToTable("Categories");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = new Guid("4286ba6a-3d40-46be-8539-237190c067b6"),
+                            CreatedAtUtc = new DateTime(2025, 11, 15, 20, 31, 14, 566, DateTimeKind.Utc).AddTicks(1784),
+                            DeliveryType = 0,
+                            Description = "Fresh fruits",
+                            ImageUrl = "https://example.com/images/fruits.jpg",
+                            IsActive = true,
+                            IsDeleted = false,
+                            Name = "Fruits"
+                        },
+                        new
+                        {
+                            Id = new Guid("2fa4cb76-edee-44e3-95e2-1f841b27929a"),
+                            CreatedAtUtc = new DateTime(2025, 11, 15, 20, 31, 14, 566, DateTimeKind.Utc).AddTicks(1800),
+                            DeliveryType = 1,
+                            Description = "Fresh vegetables",
+                            ImageUrl = "https://example.com/images/vegetables.jpg",
+                            IsActive = true,
+                            IsDeleted = false,
+                            Name = "Vegetables"
+                        },
+                        new
+                        {
+                            Id = new Guid("ac8e66b0-4fbc-4c97-ad4b-427eab61db1b"),
+                            CreatedAtUtc = new DateTime(2025, 11, 15, 20, 31, 14, 566, DateTimeKind.Utc).AddTicks(1831),
+                            DeliveryType = 0,
+                            Description = "Dairy products",
+                            ImageUrl = "https://example.com/images/dairy.jpg",
+                            IsActive = true,
+                            IsDeleted = false,
+                            Name = "Dairy"
+                        },
+                        new
+                        {
+                            Id = new Guid("30d76555-7ff9-41d5-a11e-92a347f725bf"),
+                            CreatedAtUtc = new DateTime(2025, 11, 15, 20, 31, 14, 566, DateTimeKind.Utc).AddTicks(1833),
+                            DeliveryType = 1,
+                            Description = "Fresh citrus fruits",
+                            ImageUrl = "https://example.com/images/citrus.jpg",
+                            IsActive = true,
+                            IsDeleted = false,
+                            Name = "Citrus Fruits",
+                            ParentId = new Guid("4286ba6a-3d40-46be-8539-237190c067b6")
+                        },
+                        new
+                        {
+                            Id = new Guid("4cf8d54f-d15c-4f02-b3a4-c40c5206b624"),
+                            CreatedAtUtc = new DateTime(2025, 11, 15, 20, 31, 14, 566, DateTimeKind.Utc).AddTicks(1838),
+                            DeliveryType = 0,
+                            Description = "Fresh berries",
+                            ImageUrl = "https://example.com/images/berries.jpg",
+                            IsActive = true,
+                            IsDeleted = false,
+                            Name = "Berries",
+                            ParentId = new Guid("4286ba6a-3d40-46be-8539-237190c067b6")
+                        });
                 });
 
             modelBuilder.Entity("FoodConnect.Backend.Domain.Entities.Product", b =>
@@ -731,6 +793,7 @@ namespace FoodConnect.Backend.Infrastructure.Migrations
                         .HasColumnType("boolean");
 
                     b.Property<string>("PasswordHash")
+                        .IsRequired()
                         .HasColumnType("text");
 
                     b.Property<string>("PhoneNumber")

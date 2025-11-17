@@ -1,4 +1,5 @@
 using FoodConnect.Backend.Application.Commons.DTOs.Responses;
+using FoodConnect.Backend.Application.Commons.DTOs.Responses.Auth;
 using FoodConnect.Backend.Application.Commons.Interfaces;
 using FoodConnect.Backend.Application.Interfaces;
 using FoodConnect.Backend.Application.Interfaces.IRepositories;
@@ -7,7 +8,7 @@ using MediatR;
 
 namespace FoodConnect.Backend.Application.Features.Auth.Commands.ResetPassword
 {
-    public class ResetPasswordCommandHandler : IRequestHandler<ResetPasswordCommand, BaseResponse<object>>
+    public class ResetPasswordCommandHandler : IRequestHandler<ResetPasswordCommand, BaseResponse<PasswordResetResponse>>
     {
         private readonly IUserRepository _userRepository;
         private readonly IRedisService _redisService;
@@ -23,9 +24,9 @@ namespace FoodConnect.Backend.Application.Features.Auth.Commands.ResetPassword
             _unitOfWork = unitOfWork;
         }
 
-        public async Task<BaseResponse<object>> Handle(ResetPasswordCommand request, CancellationToken cancellationToken)
+        public async Task<BaseResponse<PasswordResetResponse>> Handle(ResetPasswordCommand request, CancellationToken cancellationToken)
         {
-            var result = new BaseResponse<object>();
+            var result = new BaseResponse<PasswordResetResponse>();
 
             // Get user by email
             var user = await _userRepository.GetByEmailAsync(request.Email);
@@ -76,8 +77,14 @@ namespace FoodConnect.Backend.Application.Features.Auth.Commands.ResetPassword
             // Delete reset token from Redis
             await _redisService.DeleteAsync(redisKey);
 
-            return result.BuildSuccess(new { message = "Password has been reset successfully" }, 
-                "Password reset successfully");
+            var response = new PasswordResetResponse
+            {
+                Email = user.Email,
+                ResetAt = DateTime.UtcNow,
+                RequiresRelogin = true
+            };
+
+            return result.BuildSuccess(response, "Password reset successfully");
         }
     }
 }

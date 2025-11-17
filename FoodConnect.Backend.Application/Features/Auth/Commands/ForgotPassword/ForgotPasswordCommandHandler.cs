@@ -1,4 +1,5 @@
 using FoodConnect.Backend.Application.Commons.DTOs.Responses;
+using FoodConnect.Backend.Application.Commons.DTOs.Responses.Auth;
 using FoodConnect.Backend.Application.Commons.Interfaces;
 using FoodConnect.Backend.Application.Interfaces.IRepositories;
 using FoodConnect.Backend.Domain.Enums;
@@ -6,7 +7,7 @@ using MediatR;
 
 namespace FoodConnect.Backend.Application.Features.Auth.Commands.ForgotPassword
 {
-    public class ForgotPasswordCommandHandler : IRequestHandler<ForgotPasswordCommand, BaseResponse<object>>
+    public class ForgotPasswordCommandHandler : IRequestHandler<ForgotPasswordCommand, BaseResponse<OtpSentResponse>>
     {
         private readonly IUserRepository _userRepository;
         private readonly IRedisService _redisService;
@@ -22,17 +23,22 @@ namespace FoodConnect.Backend.Application.Features.Auth.Commands.ForgotPassword
             _emailService = emailService;
         }
 
-        public async Task<BaseResponse<object>> Handle(ForgotPasswordCommand request, CancellationToken cancellationToken)
+        public async Task<BaseResponse<OtpSentResponse>> Handle(ForgotPasswordCommand request, CancellationToken cancellationToken)
         {
-            var result = new BaseResponse<object>();
+            var result = new BaseResponse<OtpSentResponse>();
 
             // Check if user exists
             var user = await _userRepository.GetByEmailAsync(request.Email);
             if (user == null)
             {
-                // Security: Don't reveal if email exists or not
-                return result.BuildSuccess(new { message = "If your email is registered, you will receive a password reset code." }, 
-                    "Password reset code sent");
+                // Return generic success response
+                var dummyResponse = new OtpSentResponse
+                {
+                    Destination = MaskEmail(request.Email),
+                    ExpiresInSeconds = 900, // 15 minutes
+                    SentAt = DateTime.UtcNow
+                };
+                return result.BuildSuccess(dummyResponse, "If your email is registered, you will receive a password reset code");
             }
 
             // Check if user uses Local provider (has password)
@@ -58,13 +64,37 @@ namespace FoodConnect.Backend.Application.Features.Auth.Commands.ForgotPassword
 
             // Store reset token in Redis with 15 minutes TTL
             var redisKey = $"reset:password:{request.Email}";
-            await _redisService.SetAsync(redisKey, resetToken, TimeSpan.FromMinutes(15));
+            var expiryMinutes = 15;
+            await _redisService.SetAsync(redisKey, resetToken, TimeSpan.FromMinutes(expiryMinutes));
 
             // Send password reset email
             await _emailService.SendPasswordResetEmailAsync(request.Email, user.FullName, resetToken);
 
-            return result.BuildSuccess(new { message = "Password reset code sent to your email" }, 
-                "Password reset code sent successfully");
+            var response = new OtpSentResponse
+            {
+                Destination = MaskEmail(request.Email),
+                ExpiresInSeconds = expiryMinutes * 60,
+                SentAt = DateTime.UtcNow
+            };
+
+            return result.BuildSuccess(response, "Password reset code sent successfully");
+        }
+
+        private string MaskEmail(string email)
+        {
+            var parts = email.Split('@');
+            if (parts.Length != 2) return email;
+
+            var username = parts[0];
+            var domain = parts[1];
+
+            if (username.Length <= 2)
+            {
+                return $"{username[0]}***@{domain}";
+            }
+
+            var maskedUsername = $"{username[0]}***{username[username.Length - 1]}";
+            return $"{maskedUsername}@{domain}";
         }
     }
 }

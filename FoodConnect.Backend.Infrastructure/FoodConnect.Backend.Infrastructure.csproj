@@ -10,6 +10,8 @@
   <ItemGroup>
     <PackageReference Include="AWSSDK.S3" Version="4.0.7.7" />
     <PackageReference Include="AWSSDK.SimpleEmail" Version="4.0.2.3" />
+    <PackageReference Include="AWSSDK.SimpleNotificationService" Version="4.0.0.21" />
+    <PackageReference Include="FirebaseAdmin" Version="3.4.0" />
     <PackageReference Include="Google.Apis.Auth" Version="1.72.0" />
     <PackageReference Include="Microsoft.AspNetCore.Http.Abstractions" Version="2.3.0" />
     <PackageReference Include="Microsoft.EntityFrameworkCore" Version="8.0.20" />
@@ -22,9 +24,10 @@
     <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="8.0.1" />
     <PackageReference Include="Microsoft.Extensions.Configuration.UserSecrets" Version="8.0.1" />
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="8.0.11" />
+    <PackageReference Include="Resend" Version="0.2.1" />
     <PackageReference Include="StackExchange.Redis" Version="2.9.32" />
     <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.14.0" />
-    <PackageReference Include="Twilio" Version="7.13.6" />
+    <PackageReference Include="Vonage" Version="8.16.0" />
   </ItemGroup>
 
   <ItemGroup>

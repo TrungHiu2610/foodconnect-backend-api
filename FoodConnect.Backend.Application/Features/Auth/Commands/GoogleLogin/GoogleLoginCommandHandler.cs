@@ -79,7 +79,7 @@ namespace FoodConnect.Backend.Application.Features.Auth.Commands.GoogleLogin
             }
 
             // Get user roles
-            var roleNames = user.UserRoles.Select(ur => ur.Role.Name).ToList();
+            var roleNames = user.UserRoles.Select(ur => ur.RoleId.ToString()).ToList();
 
             // Check shop ID if user is seller
             Guid? shopId = null;

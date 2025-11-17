@@ -55,7 +55,7 @@ namespace FoodConnect.Backend.API.Middlewares
 
                 default:
                     _logger.LogError(exception, "An unhandled exception has occurred.");
-                    response = response.BuildFail("An internal server error has occurred. Please try again later.");
+                    response = response.BuildFail(actualException.Message);
                     break;
             }
 

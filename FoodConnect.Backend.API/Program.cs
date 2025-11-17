@@ -23,6 +23,7 @@ using Amazon.Runtime;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
 using StackExchange.Redis;
+using Resend;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -50,6 +51,8 @@ services.AddCors(options =>
                           }
                       });
 });
+
+services.AddHttpClient();
 
 var configuration = builder.Configuration;
 
@@ -102,14 +105,27 @@ services.AddSingleton<IConnectionMultiplexer>(sp =>
 services.AddScoped<IRedisService, RedisService>();
 
 // SMS Service
-services.AddScoped<ISmsService, TwilioSmsService>();
+//services.AddScoped<ISmsService, AwsSnsService>();
+services.AddScoped<ISmsService, SpeedSmsService>();
+//services.AddScoped<ISmsService, VonageSMSService>();
 
 // Email Service
-services.AddScoped<IEmailService, AwsSesEmailService>();
+services.AddOptions();
+services.AddHttpClient<ResendClient>();
+services.Configure<ResendClientOptions>(o =>
+{
+    o.ApiToken = configuration["Resend:ApiKey"]!;
+});
+services.AddTransient<IResend, ResendClient>();
+services.AddScoped<IEmailService, ResendEmailService>();
 
 // Google Auth Service
 services.AddScoped<IGoogleAuthService, GoogleAuthService>();
 
+// Firebase Auth Service
+services.AddSingleton<FoodConnect.Backend.Application.Services.FirebaseService.IFirebaseAuthService, FoodConnect.Backend.Application.Services.FirebaseService.FirebaseAuthService>();
+
+// Storage Service
 services.AddDefaultAWSOptions(awsOptions);
 services.AddAWSService<IAmazonS3>();
 services.AddScoped<IFileStorageService, AwsS3FileStorageService>();
