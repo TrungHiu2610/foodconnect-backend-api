@@ -10,5 +10,8 @@ namespace FoodConnect.Backend.Application.Features.Order.DTOs
         
         // List of CartItem IDs to create order from
         public List<Guid> CartItemIds { get; set; } = new List<Guid>();
+        
+        // Optional: Promotion ID to apply discount
+        public Guid? PromotionId { get; set; }
     }
 }

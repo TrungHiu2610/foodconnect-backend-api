@@ -5,11 +5,6 @@ using MediatR;
 
 namespace FoodConnect.Backend.Application.Features.Order.Commands
 {
-    /// <summary>
-    /// Command to create orders from cart items.
-    /// Orders will be automatically split by (Shop + DeliveryType).
-    /// DeliveryType is determined from Product.Category.DeliveryType.
-    /// </summary>
     public class CreateOrderCommand : IRequest<BaseResponse<List<OrderDetailDto>>>
     {
         public PaymentMethodEnum PaymentMethod { get; set; }
@@ -17,5 +12,6 @@ namespace FoodConnect.Backend.Application.Features.Order.Commands
         public string ShippingAddressJson { get; set; } = string.Empty;
         public Dictionary<string, string>? OrderNotes { get; set; }
         public List<Guid> CartItemIds { get; set; } = new List<Guid>();
+        public Guid? PromotionId { get; set; }
     }
 }

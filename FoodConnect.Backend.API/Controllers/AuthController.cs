@@ -1,6 +1,12 @@
 ﻿using FoodConnect.Backend.Application.Commons.DTOs;
+using FoodConnect.Backend.Application.Features.Auth.Commands.EmailRegister;
+using FoodConnect.Backend.Application.Features.Auth.Commands.FirebasePhoneLogin;
+using FoodConnect.Backend.Application.Features.Auth.Commands.ForgotPassword;
+using FoodConnect.Backend.Application.Features.Auth.Commands.GoogleLogin;
+using FoodConnect.Backend.Application.Features.Auth.Commands.PhoneLogin;
 using FoodConnect.Backend.Application.Features.Auth.Commands.RefreshToken;
 using FoodConnect.Backend.Application.Features.Auth.Commands.Register;
+using FoodConnect.Backend.Application.Features.Auth.Commands.ResetPassword;
 using FoodConnect.Backend.Application.Features.Auth.Queries.Login;
 using FoodConnect.Backend.Domain.Enums;
 using Microsoft.AspNetCore.Authorization;
@@ -13,7 +19,114 @@ namespace FoodConnect.Backend.API.Controllers
     [ApiController]
     public class AuthController : ApiBaseController
     {
+        #region Phone + OTP Authentication
+
         [HttpPost]
+        public async Task<IActionResult> SendPhoneOtp(SendPhoneOtpCommand command)
+        {
+            var result = await Mediator.Send(command);
+            return result != null ? (result.Success ? Ok(result) : BadRequest(result)) : BadRequest();
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> VerifyPhoneOtp(VerifyPhoneOtpCommand command)
+        {
+            var result = await Mediator.Send(command);
+            if (result.Data == null)
+            {
+                return BadRequest(result);
+            }
+            SetRefreshTokenCookie(result.Data.RefreshToken, result.Data.RefreshTokenExpiresAtUtc);
+            return result != null ? (result.Success ? Ok(result) : BadRequest(result)) : BadRequest();
+        }
+
+        #endregion
+
+        #region Firebase Phone Authentication
+
+        [HttpPost]
+        public async Task<IActionResult> FirebasePhoneLogin(FirebasePhoneLoginCommand command)
+        {
+            var result = await Mediator.Send(command);
+            if (result.Data == null)
+            {
+                return BadRequest(result);
+            }
+            SetRefreshTokenCookie(result.Data.RefreshToken, result.Data.RefreshTokenExpiresAtUtc);
+            return result != null ? (result.Success ? Ok(result) : BadRequest(result)) : BadRequest();
+        }
+
+        #endregion
+
+        #region Google OAuth Authentication
+
+        [HttpPost]
+        public async Task<IActionResult> GoogleLogin(GoogleLoginCommand command)
+        {
+            var result = await Mediator.Send(command);
+            if (result.Data == null)
+            {
+                return BadRequest(result);
+            }
+            SetRefreshTokenCookie(result.Data.RefreshToken, result.Data.RefreshTokenExpiresAtUtc);
+            return result != null ? (result.Success ? Ok(result) : BadRequest(result)) : BadRequest();
+        }
+
+        #endregion
+
+        #region Email + Password Authentication
+
+        [HttpPost]
+        public async Task<IActionResult> RegisterWithEmail(RegisterWithEmailCommand command)
+        {
+            var result = await Mediator.Send(command);
+            return result != null ? (result.Success ? Ok(result) : BadRequest(result)) : BadRequest();
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> VerifyEmailOtp(VerifyEmailOtpCommand command)
+        {
+            var result = await Mediator.Send(command);
+            if (result.Data == null)
+            {
+                return BadRequest(result);
+            }
+            SetRefreshTokenCookie(result.Data.RefreshToken, result.Data.RefreshTokenExpiresAtUtc);
+            return result != null ? (result.Success ? Ok(result) : BadRequest(result)) : BadRequest();
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> LoginWithEmail(LoginUserQuery query)
+        {
+            var result = await Mediator.Send(query);
+            if (result.Data == null)
+            {
+                return BadRequest(result);
+            }
+            SetRefreshTokenCookie(result.Data.RefreshToken, result.Data.RefreshTokenExpiresAtUtc);
+            return result != null ? (result.Success ? Ok(result) : BadRequest(result)) : BadRequest();
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> ForgotPassword(ForgotPasswordCommand command)
+        {
+            var result = await Mediator.Send(command);
+            return result != null ? (result.Success ? Ok(result) : BadRequest(result)) : BadRequest();
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> ResetPassword(ResetPasswordCommand command)
+        {
+            var result = await Mediator.Send(command);
+            return result != null ? (result.Success ? Ok(result) : BadRequest(result)) : BadRequest();
+        }
+
+        #endregion
+
+        #region Legacy Authentication (Deprecated - use LoginWithEmail instead)
+
+        [HttpPost]
+        [Obsolete("Use RegisterWithEmail instead")]
         public async Task<IActionResult> Register(RegisterUserCommand command)
         {
             var result = await Mediator.Send(command);
@@ -21,6 +134,7 @@ namespace FoodConnect.Backend.API.Controllers
         }
 
         [HttpPost]
+        [Obsolete("Use LoginWithEmail instead")]
         public async Task<IActionResult> Login(LoginUserQuery query)
         {
             var result = await Mediator.Send(query);
@@ -32,6 +146,10 @@ namespace FoodConnect.Backend.API.Controllers
 
             return result != null ? (result.Success ? Ok(result) : BadRequest(result)) : BadRequest();
         }
+
+        #endregion
+
+        #region Token Management
 
         [HttpPost]
         public async Task<IActionResult> Refresh(RefreshTokenCommand command)
@@ -50,6 +168,10 @@ namespace FoodConnect.Backend.API.Controllers
 
             return result != null ? (result.Success ? Ok(result) : BadRequest(result)) : BadRequest();
         }
+
+        #endregion
+
+        #region User Info
 
         [HttpGet]
         [Authorize]
@@ -76,6 +198,8 @@ namespace FoodConnect.Backend.API.Controllers
             };
             return Ok(response);
         }
+
+        #endregion
 
         #region Private methods
         private void SetRefreshTokenCookie(string refreshToken, DateTime expires)

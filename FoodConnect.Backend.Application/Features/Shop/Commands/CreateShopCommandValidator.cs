@@ -22,7 +22,7 @@ namespace FoodConnect.Backend.Application.Features.Shop.Commands
 
             RuleFor(x => x.SellerPhone)
                 .NotEmpty().WithMessage("Seller phone is required")
-                .Matches(@"^(0|\+84)[0-9]{9,10}$").WithMessage("Invalid phone number format")
+                .Matches(@"^(0\d{9}|\+84\d{8,9})$")
                 .MaximumLength(15).WithMessage("Seller phone must not exceed 15 characters");
 
             RuleFor(x => x.PayoutMethod)

@@ -11,9 +11,11 @@ namespace FoodConnect.Backend.Application.Interfaces.IRepositories
     {
         Task<User?> GetByIdAsync(Guid id);
         Task<User?> GetByEmailAsync(string email);
+        Task<User?> GetByPhoneNumberAsync(string phoneNumber);
         Task<Guid?> GetShopIdByUserIdAsync(Guid userId);
         Task<User?> GetUserWithRolesAsync(Guid id);
         Task<bool> IsEmailUniqueAsync(string email);
+        Task<bool> IsPhoneNumberUniqueAsync(string phoneNumber);
         Task<Address?> GetDefaultAddressByIdAsync(Guid id);
     }
 }

@@ -85,6 +85,13 @@ jobs:
             -e "AWS__SecretKey=${{ secrets.AWS_SECRET_KEY }}" \
             -e "AWS__Region=${{ secrets.AWS_REGION }}" \
             -e "AWS__PublicBaseUrl=${{ secrets.AWS_PUBLIC_BASE_URL }}" \
+            -e "Redis__Host=${{ secrets.REDIS_HOST }}" \
+            -e "Redis__Port=${{ secrets.REDIS_PORT }}" \
+            -e "Redis__Username=${{ secrets.REDIS_USERNAME }}" \
+            -e "Redis__Password=${{ secrets.REDIS_PASSWORD }}" \
+            -e "Google__ClientId=${{ secrets.GOOGLE_CLIENT_ID }}" \
+            -e "Resend__ApiKey=${{ secrets.RESEND_API_KEY }}" \
+            -e "Firebase__ServiceAccount=${{ secrets.FIREBASE_SERVICE_ACCOUNT }}" \
             --restart always \
             ${{ secrets.DOCKERHUB_USERNAME }}/foodconnect-backend:develop
 

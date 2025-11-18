@@ -35,6 +35,9 @@ namespace FoodConnect.Backend.Infrastructure.Persistence
         public DbSet<ProductReview> ProductReviews { get; set; }
         public DbSet<ProductReviewAsset> ProductReviewAssets { get; set; }
         public DbSet<Wishlist> Wishlists { get; set; }
+        public DbSet<Promotion> Promotions { get; set; }
+        public DbSet<PromotionProduct> PromotionProducts { get; set; }
+        public DbSet<PromotionUsage> PromotionUsages { get; set; }
 
         #endregion
 

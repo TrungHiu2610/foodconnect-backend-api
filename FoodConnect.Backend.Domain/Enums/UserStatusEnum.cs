@@ -10,6 +10,7 @@ namespace FoodConnect.Backend.Domain.Enums
     {
         Pending = 0,
         Active = 1,
-        Banned = 2
+        Banned = 2,
+        Locked = 3
     }
 }

@@ -22,6 +22,14 @@ namespace FoodConnect.Backend.Infrastructure.Repositories
                 .FirstOrDefaultAsync(u => u.Email == email);
         }
 
+        public async Task<User?> GetByPhoneNumberAsync(string phoneNumber)
+        {
+            return await _context.Users
+                .Include(u => u.UserRoles)
+                .ThenInclude(ur => ur.Role)
+                .FirstOrDefaultAsync(u => u.PhoneNumber == phoneNumber);
+        }
+
         public async Task<Guid?> GetShopIdByUserIdAsync(Guid userId)
         {
             var shop = await _context.Shops
@@ -49,6 +57,11 @@ namespace FoodConnect.Backend.Infrastructure.Repositories
         public async Task<bool> IsEmailUniqueAsync(string email)
         {
             return !await _context.Users.AnyAsync(u => u.Email == email);
+        }
+
+        public async Task<bool> IsPhoneNumberUniqueAsync(string phoneNumber)
+        {
+            return !await _context.Users.AnyAsync(u => u.PhoneNumber == phoneNumber);
         }
     }
 }
