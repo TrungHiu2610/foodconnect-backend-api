@@ -3,6 +3,7 @@ using System;
 using FoodConnect.Backend.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace FoodConnect.Backend.Infrastructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251115140208_AddPromotionManagement")]
+    partial class AddPromotionManagement
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -368,11 +371,10 @@ namespace FoodConnect.Backend.Infrastructure.Migrations
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("PromotionCode")
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)");
+                        .HasColumnType("text");
 
-                    b.Property<decimal?>("PromotionDiscountAmount")
-                        .HasColumnType("decimal(18,2)");
+                    b.Property<decimal>("PromotionDiscountAmount")
+                        .HasColumnType("numeric");
 
                     b.Property<Guid?>("PromotionId")
                         .HasColumnType("uuid");
@@ -413,7 +415,7 @@ namespace FoodConnect.Backend.Infrastructure.Migrations
 
                     b.HasIndex("ShopId");
 
-                    b.ToTable("Orders", (string)null);
+                    b.ToTable("Orders");
                 });
 
             modelBuilder.Entity("FoodConnect.Backend.Domain.Entities.OrderItem", b =>
@@ -1205,6 +1207,7 @@ namespace FoodConnect.Backend.Infrastructure.Migrations
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("Email")
+                        .IsRequired()
                         .HasMaxLength(255)
                         .HasColumnType("character varying(255)");
 
@@ -1220,13 +1223,11 @@ namespace FoodConnect.Backend.Infrastructure.Migrations
                         .HasColumnType("boolean");
 
                     b.Property<string>("PasswordHash")
+                        .IsRequired()
                         .HasColumnType("text");
 
                     b.Property<string>("PhoneNumber")
                         .HasColumnType("text");
-
-                    b.Property<int>("Provider")
-                        .HasColumnType("integer");
 
                     b.Property<int>("Status")
                         .HasColumnType("integer");
@@ -1343,8 +1344,7 @@ namespace FoodConnect.Backend.Infrastructure.Migrations
 
                     b.HasOne("FoodConnect.Backend.Domain.Entities.Promotion", "Promotion")
                         .WithMany()
-                        .HasForeignKey("PromotionId")
-                        .OnDelete(DeleteBehavior.Restrict);
+                        .HasForeignKey("PromotionId");
 
                     b.HasOne("FoodConnect.Backend.Domain.Entities.Shop", "Shop")
                         .WithMany()

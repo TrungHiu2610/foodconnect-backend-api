@@ -21,6 +21,8 @@ namespace FoodConnect.Backend.Application.Features.Order.Commands
         private readonly ICartItemRepository _cartItemRepository;
         private readonly IProductRepository _productRepository;
         private readonly IShopRepository _shopRepository;
+        private readonly IPromotionRepository _promotionRepository;
+        private readonly IPromotionUsageRepository _promotionUsageRepository;
         private readonly IUnitOfWork _unitOfWork;
         private readonly ICurrentUserService _currentUserService;
         private readonly OrderNotificationService _orderNotificationService;
@@ -33,6 +35,8 @@ namespace FoodConnect.Backend.Application.Features.Order.Commands
             ICartItemRepository cartItemRepository,
             IProductRepository productRepository,
             IShopRepository shopRepository,
+            IPromotionRepository promotionRepository,
+            IPromotionUsageRepository promotionUsageRepository,
             IUnitOfWork unitOfWork,
             ICurrentUserService currentUserService,
             OrderNotificationService orderNotificationService,
@@ -44,6 +48,8 @@ namespace FoodConnect.Backend.Application.Features.Order.Commands
             _cartItemRepository = cartItemRepository;
             _productRepository = productRepository;
             _shopRepository = shopRepository;
+            _promotionRepository = promotionRepository;
+            _promotionUsageRepository = promotionUsageRepository;
             _unitOfWork = unitOfWork;
             _currentUserService = currentUserService;
             _orderNotificationService = orderNotificationService;
@@ -133,6 +139,43 @@ namespace FoodConnect.Backend.Application.Features.Order.Commands
                 return result.BuildFail("Shipping address must include location coordinates (Latitude and Longitude)");
             }
 
+            // Validate promotion if provided
+            Domain.Entities.Promotion? promotion = null;
+            if (request.PromotionId.HasValue)
+            {
+                promotion = await _promotionRepository.GetPromotionWithProductsAsync(request.PromotionId.Value);
+                if (promotion == null)
+                {
+                    return result.BuildFail("Promotion not found");
+                }
+
+                // Check if promotion is active
+                if (promotion.Status != PromotionStatusEnum.Active)
+                {
+                    return result.BuildFail($"Promotion is not active (Status: {promotion.Status})");
+                }
+
+                // Check date validity
+                var now = DateTime.UtcNow;
+                if (now < promotion.StartDate || now > promotion.EndDate)
+                {
+                    return result.BuildFail("Promotion is not valid at this time");
+                }
+
+                // Check max usage count
+                if (promotion.MaxUsageCount.HasValue && promotion.TotalUsedCount >= promotion.MaxUsageCount.Value)
+                {
+                    return result.BuildFail("Promotion has reached maximum usage limit");
+                }
+
+                // Check user usage limit
+                var userUsageCount = await _promotionRepository.GetUserUsageCountAsync(promotion.Id, buyerId);
+                if (userUsageCount >= promotion.UsagePerCustomer)
+                {
+                    return result.BuildFail($"You have already used this promotion {promotion.UsagePerCustomer} time(s)");
+                }
+            }
+
             // Pre-validate all Express delivery groups BEFORE creating ANY orders
             // This ensures we fail fast if any Express item is out of range
             foreach (var orderGroup in orderGroups.Where(g => g.Key.DeliveryType == DeliveryTypeEnum.Express))
@@ -203,7 +246,49 @@ namespace FoodConnect.Backend.Application.Features.Order.Commands
 
                     // Calculate order totals
                     double subTotal = (double)groupItems.Sum(ci => (ci.Product?.Price ?? 0) * ci.Quantity);
-                    double discount = 0; // TODO: Apply discounts in future
+                    
+                    // Calculate promotion discount
+                    double discount = 0;
+                    decimal? promotionDiscountAmount = null;
+                    string? promotionCode = null;
+                    Guid? applicablePromotionId = null;
+
+                    if (promotion != null && promotion.ShopId == shopId)
+                    {
+                        // Check if promotion applies to these products
+                        bool isApplicable = promotion.ApplicableToAllProducts;
+                        
+                        if (!isApplicable)
+                        {
+                            // Check if any product in this order is part of the promotion
+                            var productIds = groupItems.Select(ci => ci.ProductId).ToList();
+                            var promotionProductIds = promotion.PromotionProducts.Select(pp => pp.ProductId).ToList();
+                            isApplicable = productIds.Any(pid => promotionProductIds.Contains(pid));
+                        }
+
+                        if (isApplicable)
+                        {
+                            // Check minimum order value
+                            if ((decimal)subTotal >= promotion.MinimumOrderValue)
+                            {
+                                // Calculate discount based on type
+                                if (promotion.PromotionType == PromotionTypeEnum.Percentage)
+                                {
+                                    // Percentage discount (DiscountValue is percentage, e.g., 10 for 10%)
+                                    promotionDiscountAmount = (decimal)subTotal * (promotion.DiscountValue / 100);
+                                }
+                                else // FixedAmount
+                                {
+                                    promotionDiscountAmount = promotion.DiscountValue;
+                                }
+
+                                discount = (double)promotionDiscountAmount;
+                                applicablePromotionId = promotion.Id;
+                                promotionCode = $"PROMO-{promotion.Id.ToString().Substring(0, 8).ToUpper()}";
+                            }
+                        }
+                    }
+
                     double total = subTotal + ((double)shippingFee) - discount;
 
                     // Generate order code
@@ -232,7 +317,10 @@ namespace FoodConnect.Backend.Application.Features.Order.Commands
                         ShippingAddressJson = request.ShippingAddressJson,
                         Notes = shopNote, // Use shop-specific note
                         BuyerId = buyerId,
-                        ShopId = shopId
+                        ShopId = shopId,
+                        PromotionId = applicablePromotionId,
+                        PromotionDiscountAmount = promotionDiscountAmount,
+                        PromotionCode = promotionCode
                     };
 
                     await _orderRepository.AddAsync(order);
@@ -259,6 +347,28 @@ namespace FoodConnect.Backend.Application.Features.Order.Commands
                     foreach (var cartItem in groupItems)
                     {
                         _cartItemRepository.Remove(cartItem);
+                    }
+
+                    // Record promotion usage if applicable
+                    if (applicablePromotionId.HasValue)
+                    {
+                        var promotionUsage = new PromotionUsage
+                        {
+                            Id = Guid.NewGuid(),
+                            PromotionId = applicablePromotionId.Value,
+                            UserId = buyerId,
+                            OrderId = order.Id,
+                            DiscountAmount = promotionDiscountAmount ?? 0,
+                            UsedAt = DateTime.UtcNow
+                        };
+                        await _promotionUsageRepository.AddAsync(promotionUsage);
+
+                        // Update promotion total used count
+                        if (promotion != null)
+                        {
+                            promotion.TotalUsedCount += 1;
+                            _promotionRepository.Update(promotion);
+                        }
                     }
                 }
 

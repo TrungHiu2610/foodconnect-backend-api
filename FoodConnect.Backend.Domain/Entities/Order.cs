@@ -21,6 +21,11 @@ namespace FoodConnect.Backend.Domain.Entities
         public string ShippingAddressJson { get; set; } = string.Empty;
         public string? Notes { get; set; }
         public string? CancelReason { get; set; }
+
+        public Guid? PromotionId { get; set; }
+        public virtual Promotion? Promotion { get; set; }
+        public decimal? PromotionDiscountAmount { get; set; }
+        public string? PromotionCode { get; set; }
         
         public string? DeliveryProofImageUrl { get; set; }
         
