@@ -25,6 +25,10 @@ using Microsoft.AspNetCore.Server.Kestrel.Core;
 using FoodConnect.Backend.Infrastructure.Hubs;
 using FoodConnect.Backend.Application.Features.Notification.Services;
 using FoodConnect.Backend.Application.Commons.Services;
+using Hangfire;
+using Hangfire.PostgreSql;
+using FoodConnect.Backend.Application.Features.Promotion.Jobs;
+using FoodConnect.Backend.Application.Features.Promotion.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -123,6 +127,9 @@ services.AddScoped<IAddressRepository, AddressRepository>();
 services.AddScoped<IOrderRepository, OrderRepository>();
 services.AddScoped<IOrderItemRepository, OrderItemRepository>();
 services.AddScoped<INotificationRepository, NotificationRepository>();
+services.AddScoped<IPromotionRepository, PromotionRepository>();
+services.AddScoped<IPromotionProductRepository, PromotionProductRepository>();
+services.AddScoped<IPromotionUsageRepository, PromotionUsageRepository>();
 services.AddScoped<IUnitOfWork, UnitOfWork>();
 
 // Application Services  
@@ -142,6 +149,18 @@ services.AddSignalR(options =>
 });
 services.AddScoped<INotificationService, NotificationService>();
 services.AddScoped<OrderNotificationService>();
+services.AddScoped<PromotionNotificationService>();
+
+// Hangfire
+services.AddHangfire(config => config
+    .SetDataCompatibilityLevel(CompatibilityLevel.Version_180)
+    .UseSimpleAssemblyNameTypeSerializer()
+    .UseRecommendedSerializerSettings()
+    .UsePostgreSqlStorage(options => 
+        options.UseNpgsqlConnection(configuration.GetConnectionString("DefaultConnection"))));
+
+services.AddHangfireServer();
+services.AddScoped<PromotionStatusJob>();
 
 // MediatR  
 services.AddMediatR(cfg =>
@@ -184,6 +203,22 @@ app.UseHttpsRedirection();
 
 app.UseAuthentication();
 app.UseAuthorization();
+
+app.UseHangfireDashboard("/hangfire", new DashboardOptions
+{
+    Authorization = new[] { new HangfireAuthorizationFilter() }
+});
+
+// Schedule recurring jobs
+RecurringJob.AddOrUpdate<PromotionStatusJob>(
+    "auto-activate-promotions",
+    job => job.AutoActivatePromotionsAsync(),
+    Cron.Minutely);
+
+RecurringJob.AddOrUpdate<PromotionStatusJob>(
+    "auto-expire-promotions",
+    job => job.AutoExpirePromotionsAsync(),
+    Cron.Minutely);
 
 app.MapControllers();
 app.MapHub<NotificationHub>("/hubs/notifications");

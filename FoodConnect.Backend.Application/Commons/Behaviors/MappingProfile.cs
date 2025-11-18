@@ -2,6 +2,7 @@
 using FoodConnect.Backend.Application.Commons.DTOs;
 using FoodConnect.Backend.Application.Commons.DTOs.Responses.Category;
 using FoodConnect.Backend.Application.Commons.DTOs.Responses.Product;
+using FoodConnect.Backend.Application.Commons.DTOs.Responses.Promotion;
 using FoodConnect.Backend.Application.Commons.DTOs.Responses.Shop;
 using FoodConnect.Backend.Application.Features.Category.Commands;
 using FoodConnect.Backend.Application.Features.Product.Commands;
@@ -202,6 +203,69 @@ namespace FoodConnect.Backend.Application.Commons.Behaviors
                 .ForMember(dest => dest.BuyerAvatarUrl, opt => opt.MapFrom(src => src.Buyer.AvatarUrl))
                 .ForMember(dest => dest.Assets, opt => opt.MapFrom(src => src.Assets))
                 .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(src => src.CreatedAtUtc));
+
+            #endregion
+
+            #region promotion mappings
+
+            CreateMap<Domain.Entities.Promotion, PromotionResponse>()
+                .ForMember(dest => dest.PromotionType, opt => opt.MapFrom(src => (int)src.PromotionType))
+                .ForMember(dest => dest.PromotionTypeName, opt => opt.MapFrom(src => src.PromotionType.ToString()))
+                .ForMember(dest => dest.Status, opt => opt.MapFrom(src => (int)src.Status))
+                .ForMember(dest => dest.StatusName, opt => opt.MapFrom(src => src.Status.ToString()))
+                .ForMember(dest => dest.ShopName, opt => opt.MapFrom(src => src.Shop.ShopName))
+                .ForMember(dest => dest.RemainingUsage, opt => opt.MapFrom(src => 
+                    src.MaxUsageCount.HasValue ? src.MaxUsageCount.Value - src.TotalUsedCount : 0))
+                .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(src => src.CreatedAtUtc))
+                .ForMember(dest => dest.ApplicableProducts, opt => opt.MapFrom(src => 
+                    src.PromotionProducts.Select(pp => new PromotionProductDto
+                    {
+                        ProductId = pp.ProductId,
+                        ProductName = pp.Product.Name,
+                        ProductPrice = pp.Product.Price,
+                        ThumbnailUrl = pp.Product.ProductAssets != null && pp.Product.ProductAssets.Any()
+                            ? pp.Product.ProductAssets.FirstOrDefault(a => a.IsThumbnail)!.AssetUrl ?? pp.Product.ProductAssets.FirstOrDefault()!.AssetUrl
+                            : null
+                    }).ToList()));
+
+            CreateMap<Domain.Entities.Promotion, PromotionListResponse>()
+                .ForMember(dest => dest.PromotionType, opt => opt.MapFrom(src => (int)src.PromotionType))
+                .ForMember(dest => dest.PromotionTypeName, opt => opt.MapFrom(src => src.PromotionType.ToString()))
+                .ForMember(dest => dest.Status, opt => opt.MapFrom(src => (int)src.Status))
+                .ForMember(dest => dest.StatusName, opt => opt.MapFrom(src => src.Status.ToString()))
+                .ForMember(dest => dest.ShopName, opt => opt.MapFrom(src => src.Shop.ShopName))
+                .ForMember(dest => dest.RemainingUsage, opt => opt.MapFrom(src => 
+                    src.MaxUsageCount.HasValue ? src.MaxUsageCount.Value - src.TotalUsedCount : (int?)null))
+                .ForMember(dest => dest.ProductCount, opt => opt.MapFrom(src=>src.PromotionProducts.Count()));
+
+            CreateMap<Domain.Entities.Promotion, PromotionDetailForBuyerResponse>()
+                .ForMember(dest => dest.PromotionType, opt => opt.MapFrom(src => (int)src.PromotionType))
+                .ForMember(dest => dest.PromotionTypeName, opt => opt.MapFrom(src => src.PromotionType.ToString()))
+                .ForMember(dest => dest.ShopId, opt => opt.MapFrom(src => src.ShopId))
+                .ForMember(dest => dest.ShopName, opt => opt.MapFrom(src => src.Shop.ShopName))
+                .ForMember(dest => dest.ShopLogoUrl, opt => opt.MapFrom(src => src.Shop.LogoUrl))
+                .ForMember(dest => dest.RemainingUsage, opt => opt.MapFrom(src => 
+                    src.MaxUsageCount.HasValue ? src.MaxUsageCount.Value - src.TotalUsedCount : 0))
+                .ForMember(dest => dest.CanUse, opt => opt.Ignore())
+                .ForMember(dest => dest.UserUsageCount, opt => opt.Ignore())
+                .ForMember(dest => dest.ApplicableProducts, opt => opt.MapFrom(src => 
+                    src.PromotionProducts.Select(pp => new PromotionProductForBuyerDto
+                    {
+                        ProductId = pp.ProductId,
+                        ProductName = pp.Product.Name,
+                        OriginalPrice = pp.Product.Price,
+                        DiscountedPrice = src.PromotionType == PromotionTypeEnum.Percentage
+                            ? pp.Product.Price - (pp.Product.Price * src.DiscountValue / 100)
+                            : pp.Product.Price - src.DiscountValue,
+                        DiscountAmount = src.PromotionType == PromotionTypeEnum.Percentage
+                            ? pp.Product.Price * src.DiscountValue / 100
+                            : src.DiscountValue,
+                        ThumbnailUrl = pp.Product.ProductAssets != null && pp.Product.ProductAssets.Any()
+                            ? pp.Product.ProductAssets.FirstOrDefault(a => a.IsThumbnail)!.AssetUrl ?? pp.Product.ProductAssets.FirstOrDefault()!.AssetUrl
+                            : null,
+                        IsAvailable = pp.Product.IsAvailable,
+                        StockQuantity = pp.Product.StockQuantity
+                    }).ToList()));
 
             #endregion
         }
