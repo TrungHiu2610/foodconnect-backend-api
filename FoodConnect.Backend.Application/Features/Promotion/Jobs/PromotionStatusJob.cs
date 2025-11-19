@@ -1,6 +1,7 @@
 using FoodConnect.Backend.Application.Interfaces;
 using FoodConnect.Backend.Application.Interfaces.IRepositories;
 using FoodConnect.Backend.Application.Features.Promotion.Services;
+using FoodConnect.Backend.Application.Features.Wishlist.Services;
 using FoodConnect.Backend.Domain.Enums;
 using Microsoft.Extensions.Logging;
 
@@ -12,17 +13,20 @@ namespace FoodConnect.Backend.Application.Features.Promotion.Jobs
         private readonly IUnitOfWork _unitOfWork;
         private readonly ILogger<PromotionStatusJob> _logger;
         private readonly PromotionNotificationService _promotionNotificationService;
+        private readonly ShopFollowerNotificationService _shopFollowerNotificationService;
 
         public PromotionStatusJob(
             IPromotionRepository promotionRepository,
             IUnitOfWork unitOfWork,
             ILogger<PromotionStatusJob> logger,
-            PromotionNotificationService promotionNotificationService)
+            PromotionNotificationService promotionNotificationService,
+            ShopFollowerNotificationService shopFollowerNotificationService)
         {
             _promotionRepository = promotionRepository;
             _unitOfWork = unitOfWork;
             _logger = logger;
             _promotionNotificationService = promotionNotificationService;
+            _shopFollowerNotificationService = shopFollowerNotificationService;
         }
         public async Task AutoActivatePromotionsAsync()
         {
@@ -47,8 +51,11 @@ namespace FoodConnect.Backend.Application.Features.Promotion.Jobs
                         promotion.Id, 
                         promotion.PromotionName);
 
-                    // Send notification (async but don't wait)
+                    // Send notification to shop owner (async but don't wait)
                     _ = _promotionNotificationService.NotifyPromotionActivatedAsync(promotion);
+                    
+                    // Notify all shop followers about new active promotion
+                    _ = _shopFollowerNotificationService.NotifyFollowersAboutPromotionAsync(promotion);
                 }
 
                 if (activatedCount > 0)

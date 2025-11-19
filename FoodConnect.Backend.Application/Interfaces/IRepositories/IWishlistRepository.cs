@@ -9,5 +9,6 @@ namespace FoodConnect.Backend.Application.Interfaces.IRepositories
         Task<List<Wishlist>> GetByUserIdAsync(Guid userId, int? type = null);
         Task<List<Guid>> GetUsersWishlistedProductAsync(Guid productId);
         Task<List<Guid>> GetUsersWishlistedShopAsync(Guid shopId);
+        Task<List<Wishlist>> GetShopFollowersWithNotificationsAsync(Guid shopId);
     }
 }

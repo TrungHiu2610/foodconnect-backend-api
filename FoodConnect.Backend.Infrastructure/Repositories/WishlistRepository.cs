@@ -59,5 +59,15 @@ namespace FoodConnect.Backend.Infrastructure.Repositories
                 .Distinct()
                 .ToListAsync();
         }
+
+        public async Task<List<Wishlist>> GetShopFollowersWithNotificationsAsync(Guid shopId)
+        {
+            return await _context.Wishlists
+                .Where(w => w.ShopId == shopId 
+                    && w.Type == WishlistTypeEnum.Shop 
+                    && w.NotificationEnabled 
+                    && !w.IsDeleted)
+                .ToListAsync();
+        }
     }
 }

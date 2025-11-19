@@ -5,6 +5,7 @@ using FoodConnect.Backend.Application.Commons.DTOs.Responses.Product;
 using FoodConnect.Backend.Application.Commons.Interfaces;
 using FoodConnect.Backend.Application.Interfaces;
 using FoodConnect.Backend.Application.Interfaces.IRepositories;
+using FoodConnect.Backend.Application.Features.Wishlist.Services;
 using FoodConnect.Backend.Domain.Entities;
 using FoodConnect.Backend.Domain.Enums;
 using MediatR;
@@ -20,10 +21,12 @@ namespace FoodConnect.Backend.Application.Features.Product.Commands
         private readonly IMapper _mapper;
         private readonly IFileStorageService _fileStorageService;
         private readonly ICurrentUserService _currentUserService;
+        private readonly ShopFollowerNotificationService _shopFollowerNotificationService;
 
         public CreateProductCommandHandler(IProductRepository productRepository, IShopRepository shopRepository,
             ICategoryRepository categoryRepository, IUnitOfWork unitOfWork, IMapper mapper, 
-            IFileStorageService fileStorageService, ICurrentUserService currentUserService)
+            IFileStorageService fileStorageService, ICurrentUserService currentUserService,
+            ShopFollowerNotificationService shopFollowerNotificationService)
         {
             _productRepository = productRepository;
             _shopRepository = shopRepository;
@@ -32,6 +35,7 @@ namespace FoodConnect.Backend.Application.Features.Product.Commands
             _mapper = mapper;
             _fileStorageService = fileStorageService;
             _currentUserService = currentUserService;
+            _shopFollowerNotificationService = shopFollowerNotificationService;
         }
         public async Task<BaseResponse<CreateProductResponse>> Handle(CreateProductCommand request, CancellationToken cancellationToken)
         {
@@ -137,6 +141,17 @@ namespace FoodConnect.Backend.Application.Features.Product.Commands
 
                 response.Id = product.Id;
                 response.IsSuccess = true;
+
+                // Notify shop followers about new product (only if product is active and available)
+                if (product.Status == ProductStatusEnum.Active && product.IsAvailable)
+                {
+                    // Load product with full details for notification
+                    var fullProduct = await _productRepository.GetByIdAsync(product.Id);
+                    if (fullProduct != null)
+                    {
+                        _ = _shopFollowerNotificationService.NotifyFollowersAboutNewProductAsync(fullProduct, cancellationToken);
+                    }
+                }
 
                 return result.BuildSuccess(response, "Create product success");
             }

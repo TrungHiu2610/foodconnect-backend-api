@@ -31,6 +31,7 @@ using Hangfire;
 using Hangfire.PostgreSql;
 using FoodConnect.Backend.Application.Features.Promotion.Jobs;
 using FoodConnect.Backend.Application.Features.Promotion.Services;
+using FoodConnect.Backend.Application.Features.Wishlist.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -191,6 +192,7 @@ services.AddSignalR(options =>
 services.AddScoped<INotificationService, NotificationService>();
 services.AddScoped<OrderNotificationService>();
 services.AddScoped<PromotionNotificationService>();
+services.AddScoped<ShopFollowerNotificationService>();
 
 // Hangfire
 services.AddHangfire(config => config

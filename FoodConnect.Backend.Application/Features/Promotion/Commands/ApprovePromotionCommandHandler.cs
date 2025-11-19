@@ -3,6 +3,7 @@ using FoodConnect.Backend.Application.Commons.Interfaces;
 using FoodConnect.Backend.Application.Interfaces;
 using FoodConnect.Backend.Application.Interfaces.IRepositories;
 using FoodConnect.Backend.Application.Features.Promotion.Services;
+using FoodConnect.Backend.Application.Features.Wishlist.Services;
 using FoodConnect.Backend.Domain.Enums;
 using MediatR;
 
@@ -14,17 +15,20 @@ namespace FoodConnect.Backend.Application.Features.Promotion.Commands
         private readonly IUnitOfWork _unitOfWork;
         private readonly ICurrentUserService _currentUserService;
         private readonly PromotionNotificationService _promotionNotificationService;
+        private readonly ShopFollowerNotificationService _shopFollowerNotificationService;
 
         public ApprovePromotionCommandHandler(
             IPromotionRepository promotionRepository,
             IUnitOfWork unitOfWork,
             ICurrentUserService currentUserService,
-            PromotionNotificationService promotionNotificationService)
+            PromotionNotificationService promotionNotificationService,
+            ShopFollowerNotificationService shopFollowerNotificationService)
         {
             _promotionRepository = promotionRepository;
             _unitOfWork = unitOfWork;
             _currentUserService = currentUserService;
             _promotionNotificationService = promotionNotificationService;
+            _shopFollowerNotificationService = shopFollowerNotificationService;
         }
 
         public async Task<BaseResponse<CreateOrUpdateResponse>> Handle(ApprovePromotionCommand request, CancellationToken cancellationToken)
@@ -68,6 +72,9 @@ namespace FoodConnect.Backend.Application.Features.Promotion.Commands
             if (promotion.Status == PromotionStatusEnum.Active)
             {
                 await _promotionNotificationService.NotifyPromotionActivatedAsync(promotion, cancellationToken);
+                
+                // Notify all shop followers about new promotion
+                await _shopFollowerNotificationService.NotifyFollowersAboutPromotionAsync(promotion, cancellationToken);
             }
 
             return result.BuildSuccess(new CreateOrUpdateResponse { Id = promotion.Id }, "Promotion approved successfully");
