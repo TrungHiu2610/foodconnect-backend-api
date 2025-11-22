@@ -6,10 +6,12 @@ using System.Threading.Tasks;
 
 namespace FoodConnect.Backend.Domain.Enums
 {
-    public enum PaymentMethodEnum
+    public enum ComplaintStatusEnum
     {
-        COD = 0,
-        MOMO = 1,
-        VNPay = 2,
+        Pending,
+        SellerResponded,
+        Reviewing,
+        Resolved,
+        Rejected
     }
 }

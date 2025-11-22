@@ -44,6 +44,8 @@ namespace FoodConnect.Backend.Infrastructure.Persistence
         public DbSet<Promotion> Promotions { get; set; }
         public DbSet<PromotionProduct> PromotionProducts { get; set; }
         public DbSet<PromotionUsage> PromotionUsages { get; set; }
+        public DbSet<OrderComplaint> OrderComplaints { get; set; }
+        public DbSet<OrderComplaintAsset> OrderComplaintAssets { get; set; }
 
         #endregion
 
