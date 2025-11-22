@@ -11,6 +11,13 @@ namespace FoodConnect.Backend.Application.Commons.Interfaces
         // Send to shop owner
         Task SendNewOrderAlertAsync(Guid shopOwnerId, NotificationDto notification);
         
+        // Withdrawal notifications
+        Task SendWithdrawalNotificationAsync(Guid userId, NotificationDto notification);
+        Task SendWithdrawalStatusUpdateAsync(Guid userId, Guid withdrawalId, string status, string message);
+        Task NotifyAdminNewWithdrawalRequestAsync(Guid withdrawalId, string sellerName, decimal amount);
+        Task NotifySellerWithdrawalProcessedAsync(Guid sellerId, Guid withdrawalId, bool isApproved, string message);
+        Task NotifySellerWithdrawalResolvedAsync(Guid sellerId, Guid withdrawalId, string message);
+        
         // Send to group (e.g., all admins)
         Task SendToGroupAsync(string groupName, NotificationDto notification);
         

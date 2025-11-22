@@ -1,4 +1,4 @@
-using FoodConnect.Backend.Application.Commons.DTOs.Responses;
+﻿using FoodConnect.Backend.Application.Commons.DTOs.Responses;
 using FoodConnect.Backend.Application.Commons.DTOs.Responses.Cart;
 using FoodConnect.Backend.Application.Commons.Interfaces;
 using FoodConnect.Backend.Application.Interfaces.IRepositories;
@@ -6,9 +6,6 @@ using MediatR;
 
 namespace FoodConnect.Backend.Application.Features.Cart.Queries
 {
-    /// <summary>
-    /// Get cart for Cart Page - simple view with items grouped by shop only
-    /// </summary>
     public class GetCartQueryHandler : IRequestHandler<GetCartQuery, BaseResponse<CartResponse>>
     {
         private readonly ICartRepository _cartRepository;

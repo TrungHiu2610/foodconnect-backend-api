@@ -11,16 +11,22 @@ namespace FoodConnect.Backend.Domain.Enums
         OrderDelivered = 5,
         OrderCompleted = 6,
         OrderCancelled = 7,
-        
+
         // Shop related
         ShopApproved = 100,
         ShopRejected = 101,
-        
-    // Product related
-    ProductOutOfStock = 200,
-    ProductBackInStock = 201,
-        
+
+        // Product related
+        ProductOutOfStock = 200,
+        ProductBackInStock = 201,
+
         // System
-        SystemAnnouncement = 300
+        SystemAnnouncement = 300,
+
+        // Withdrawal related
+        WithdrawalRequest = 400,
+        WithdrawalApproved = 401,
+        WithdrawalRejected = 402,
+        WithdrawalResolved = 403
     }
 }

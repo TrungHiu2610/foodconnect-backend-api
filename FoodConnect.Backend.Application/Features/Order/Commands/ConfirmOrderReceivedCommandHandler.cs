@@ -5,6 +5,7 @@ using FoodConnect.Backend.Application.Features.Order.DTOs;
 using FoodConnect.Backend.Application.Features.Order.Mappers;
 using FoodConnect.Backend.Application.Interfaces;
 using FoodConnect.Backend.Application.Interfaces.IRepositories;
+using FoodConnect.Backend.Domain.Entities;
 using FoodConnect.Backend.Domain.Enums;
 using MediatR;
 
@@ -13,17 +14,26 @@ namespace FoodConnect.Backend.Application.Features.Order.Commands
     public class ConfirmOrderReceivedCommandHandler : IRequestHandler<ConfirmOrderReceivedCommand, BaseResponse<OrderDetailDto>>
     {
         private readonly IOrderRepository _orderRepository;
+        private readonly ISellerWalletRepository _walletRepository;
+        private readonly ISellerWalletTransactionRepository _transactionRepository;
+        private readonly ISystemConfigRepository _systemConfigRepository;
         private readonly IUnitOfWork _unitOfWork;
         private readonly ICurrentUserService _currentUserService;
         private readonly OrderNotificationService _orderNotificationService;
 
         public ConfirmOrderReceivedCommandHandler(
             IOrderRepository orderRepository,
+            ISellerWalletRepository walletRepository,
+            ISellerWalletTransactionRepository transactionRepository,
+            ISystemConfigRepository systemConfigRepository,
             IUnitOfWork unitOfWork,
             ICurrentUserService currentUserService,
             OrderNotificationService orderNotificationService)
         {
             _orderRepository = orderRepository;
+            _walletRepository = walletRepository;
+            _transactionRepository = transactionRepository;
+            _systemConfigRepository = systemConfigRepository;
             _unitOfWork = unitOfWork;
             _currentUserService = currentUserService;
             _orderNotificationService = orderNotificationService;
@@ -59,22 +69,91 @@ namespace FoodConnect.Backend.Application.Features.Order.Commands
                 return result.BuildFail("Only delivered orders can be confirmed as received");
             }
 
-            // Update order status
-            order.Status = OrderStatusEnum.Completed;
-            order.CompletedAt = DateTime.UtcNow;
+            if (order.PaymentMethod != PaymentMethodEnum.COD && order.PaymentStatus != PaymentStatusEnum.Paid)
+            {
+                return result.BuildFail("Order must be paid before completing");
+            }
 
-            _orderRepository.Update(order);
-            await _unitOfWork.SaveChangesAsync(cancellationToken);
+            await using var transaction = await _unitOfWork.BeginTransactionAsync();
+            try
+            {
+                order.Status = OrderStatusEnum.Completed;
+                order.CompletedAt = DateTime.UtcNow;
+                _orderRepository.Update(order);
 
-            // Reload order with full details
-            order = await _orderRepository.GetOrderWithDetailsAsync(request.OrderId);
+                var sellerId = order.Shop.UserId;
+                var wallet = await _walletRepository.GetBySellerIdAsync(sellerId);
 
-            // Send notification to seller
-            await _orderNotificationService.NotifyOrderCompletedAsync(order!, cancellationToken);
+                if (wallet == null)
+                {
+                    wallet = new SellerWallet
+                    {
+                        SellerId = sellerId,
+                        Balance = 0,
+                        TotalEarned = 0,
+                        TotalWithdrawn = 0,
+                        PendingBalance = 0,
+                        Status = SellerWalletStatusEnum.Active
+                    };
+                    await _walletRepository.AddAsync(wallet);
+                    await _unitOfWork.SaveChangesAsync(cancellationToken);
+                }
 
-            var orderDto = OrderMapper.MapToDetailDto(order!);
+                var commissionRate = await _systemConfigRepository.GetCommissionRateAsync();
+                var commissionableAmount = (decimal)(order.Total - order.ShippingFee);
+                var commissionAmount = commissionableAmount * (commissionRate / 100);
+                var sellerEarning = commissionableAmount - commissionAmount;
 
-            return result.BuildSuccess(orderDto, "Order confirmed as received successfully");
+                var balanceBefore = wallet.Balance;
+
+                var earningTransaction = new SellerWalletTransaction
+                {
+                    WalletId = wallet.Id,
+                    OrderId = order.Id,
+                    TransactionType = TransactionTypeEnum.OrderEarning,
+                    Amount = commissionableAmount,
+                    BalanceBefore = balanceBefore,
+                    BalanceAfter = balanceBefore + commissionableAmount,
+                    Status = TransactionStatusEnum.Completed,
+                    Description = $"Order earning from order {order.OrderCode}"
+                };
+                await _transactionRepository.AddAsync(earningTransaction);
+
+                wallet.Balance += commissionableAmount;
+                wallet.TotalEarned += sellerEarning;
+
+                var balanceAfterEarning = wallet.Balance;
+
+                var commissionTransaction = new SellerWalletTransaction
+                {
+                    WalletId = wallet.Id,
+                    OrderId = order.Id,
+                    TransactionType = TransactionTypeEnum.CommissionDeduction,
+                    Amount = -commissionAmount,
+                    BalanceBefore = balanceAfterEarning,
+                    BalanceAfter = balanceAfterEarning - commissionAmount,
+                    Status = TransactionStatusEnum.Completed,
+                    Description = $"Commission deduction ({commissionRate}%) from order {order.OrderCode}"
+                };
+                await _transactionRepository.AddAsync(commissionTransaction);
+
+                wallet.Balance -= commissionAmount;
+                _walletRepository.Update(wallet);
+
+                await _unitOfWork.SaveChangesAsync(cancellationToken);
+                await transaction.CommitAsync(cancellationToken);
+
+                order = await _orderRepository.GetOrderWithDetailsAsync(request.OrderId);
+                await _orderNotificationService.NotifyOrderCompletedAsync(order!, cancellationToken);
+
+                var orderDto = OrderMapper.MapToDetailDto(order!);
+                return result.BuildSuccess(orderDto, "Order confirmed as received successfully");
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync(cancellationToken);
+                return result.BuildFail($"Failed to confirm order: {ex.Message}");
+            }
         }
     }
 }

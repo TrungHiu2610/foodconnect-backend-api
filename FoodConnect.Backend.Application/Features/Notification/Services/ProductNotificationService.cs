@@ -1,4 +1,4 @@
-using FoodConnect.Backend.Application.Commons.DTOs.Notifications;
+﻿using FoodConnect.Backend.Application.Commons.DTOs.Notifications;
 using FoodConnect.Backend.Application.Commons.Interfaces;
 using FoodConnect.Backend.Application.Interfaces;
 using FoodConnect.Backend.Application.Interfaces.IRepositories;
@@ -30,10 +30,6 @@ namespace FoodConnect.Backend.Application.Features.Notification.Services
             _orderRepository = orderRepository;
             _unitOfWork = unitOfWork;
         }
-
-        /// <summary>
-        /// Notify all users who have this product in cart or pending orders
-        /// </summary>
         public async Task NotifyProductOutOfStockAsync(ProductEntity product, CancellationToken cancellationToken = default)
         {
             // 1. Find all buyers with this product in their cart
@@ -101,10 +97,6 @@ namespace FoodConnect.Backend.Application.Features.Notification.Services
                 await _notificationService.UpdateUnreadCountAsync(buyerId, unreadCount);
             }
         }
-
-        /// <summary>
-        /// Notify when product is back in stock
-        /// </summary>
         public async Task NotifyProductBackInStockAsync(ProductEntity product, CancellationToken cancellationToken = default)
         {
             // Find buyers who have this product in their cart or orders

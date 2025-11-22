@@ -21,6 +21,8 @@ namespace FoodConnect.Backend.Application.Commons.DTOs.Notifications
         public bool RequiresSound { get; set; }
         public int? SoundRepeatIntervalSeconds { get; set; }
         public bool RequiresAction { get; set; }
+        public string? Priority { get; set; }
+        public string? ReferenceId { get; set; }
     }
     
     public class CreateNotificationDto
