@@ -6,5 +6,8 @@ public enum TransactionTypeEnum
     CommissionDeduction = 1,
     Withdraw = 2,
     Refund = 3,
-    Adjustment = 4
+    Adjustment = 4,
+    TopUp = 5,
+    OrderPayment = 6,
+    CashbackReceived = 7
 }

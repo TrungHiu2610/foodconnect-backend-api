@@ -15,10 +15,12 @@ public class WithdrawalRequestRepository : BaseRepository<WithdrawalRequest>, IW
     public async Task<WithdrawalRequest?> GetDetailByIdAsync(Guid id)
     {
         return await _context.WithdrawalRequests
+            .Include(w => w.SellerWallet)
             .Include(w => w.Wallet)
             .Include(w => w.Seller)
             .Include(w => w.ProcessedByAdmin)
-            .Include(w => w.Transactions)
+            .Include(w => w.SellerWalletTransactions)
+            .Include(w => w.WalletTransactions)
             .FirstOrDefaultAsync(w => w.Id == id);
     }
 

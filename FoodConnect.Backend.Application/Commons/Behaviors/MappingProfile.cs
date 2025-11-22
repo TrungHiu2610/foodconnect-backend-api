@@ -234,6 +234,21 @@ namespace FoodConnect.Backend.Application.Commons.Behaviors
                 .ForMember(dest => dest.StatusName, opt => opt.MapFrom(src => src.Status.ToString()))
                 .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(src => src.CreatedAtUtc));
 
+            CreateMap<Domain.Entities.Wallet, Application.Commons.DTOs.Responses.Wallet.WalletResponse>()
+                .ForMember(dest => dest.WalletType, opt => opt.MapFrom(src => (int)src.WalletType))
+                .ForMember(dest => dest.WalletTypeName, opt => opt.MapFrom(src => src.WalletType.ToString()))
+                .ForMember(dest => dest.Status, opt => opt.MapFrom(src => (int)src.Status))
+                .ForMember(dest => dest.StatusName, opt => opt.MapFrom(src => src.Status.ToString()))
+                .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(src => src.CreatedAtUtc));
+
+            CreateMap<WalletTransaction, Application.Commons.DTOs.Responses.Wallet.WalletTransactionResponse>()
+                .ForMember(dest => dest.OrderCode, opt => opt.MapFrom(src => src.Order != null ? src.Order.OrderCode : null))
+                .ForMember(dest => dest.TransactionType, opt => opt.MapFrom(src => (int)src.TransactionType))
+                .ForMember(dest => dest.TransactionTypeName, opt => opt.MapFrom(src => src.TransactionType.ToString()))
+                .ForMember(dest => dest.Status, opt => opt.MapFrom(src => (int)src.Status))
+                .ForMember(dest => dest.StatusName, opt => opt.MapFrom(src => src.Status.ToString()))
+                .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(src => src.CreatedAtUtc));
+
             #endregion
 
             #region promotion mappings

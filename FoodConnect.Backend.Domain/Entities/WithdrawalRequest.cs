@@ -25,8 +25,11 @@ public class WithdrawalRequest : BaseEntity
     public string? ProofImageUrl { get; set; }
     public string? IssueImageUrl { get; set; }
     
-    public virtual SellerWallet Wallet { get; set; } = null!;
+    // Support both old SellerWallet and new Wallet
+    public virtual SellerWallet? SellerWallet { get; set; }
+    public virtual Wallet? Wallet { get; set; }
     public virtual User Seller { get; set; } = null!;
     public virtual User? ProcessedByAdmin { get; set; }
-    public virtual ICollection<SellerWalletTransaction> Transactions { get; set; } = new List<SellerWalletTransaction>();
+    public virtual ICollection<SellerWalletTransaction> SellerWalletTransactions { get; set; } = new List<SellerWalletTransaction>();
+    public virtual ICollection<WalletTransaction> WalletTransactions { get; set; } = new List<WalletTransaction>();
 }
