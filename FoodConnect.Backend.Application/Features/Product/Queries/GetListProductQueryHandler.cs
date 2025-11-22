@@ -83,10 +83,6 @@ namespace FoodConnect.Backend.Application.Features.Product.Queries
         }
 
         #region Private Helper Methods
-
-        /// <summary>
-        /// Get buyer location from request params, or fallback to default address
-        /// </summary>
         private async Task<(double? Latitude, double? Longitude)> GetBuyerLocationAsync(GetListProductQuery request)
         {
             // If location provided in request, use it
@@ -108,10 +104,6 @@ namespace FoodConnect.Backend.Application.Features.Product.Queries
 
             return (null, null);
         }
-
-        /// <summary>
-        /// Apply category, shop, status, availability filters
-        /// </summary>
         private async Task<IQueryable<Domain.Entities.Product>> ApplyFiltersAsync(
             IQueryable<Domain.Entities.Product> query, 
             GetListProductQuery request,
@@ -157,10 +149,6 @@ namespace FoodConnect.Backend.Application.Features.Product.Queries
 
             return query;
         }
-
-        /// <summary>
-        /// Apply sorting logic
-        /// </summary>
         private IQueryable<Domain.Entities.Product> ApplySorting(
             IQueryable<Domain.Entities.Product> query, 
             GetListProductQuery request)

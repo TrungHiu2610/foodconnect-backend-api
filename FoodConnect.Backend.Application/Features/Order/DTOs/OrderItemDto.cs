@@ -1,4 +1,4 @@
-namespace FoodConnect.Backend.Application.Features.Order.DTOs
+﻿namespace FoodConnect.Backend.Application.Features.Order.DTOs
 {
     public class OrderItemDto
     {
@@ -9,10 +9,6 @@ namespace FoodConnect.Backend.Application.Features.Order.DTOs
         public int Quantity { get; set; }
         public double UnitPrice { get; set; }
         public double TotalPrice { get; set; }
-        
-        /// <summary>
-        /// Indicates if this product has been reviewed by the buyer
-        /// </summary>
         public bool IsReviewed { get; set; }
     }
 }

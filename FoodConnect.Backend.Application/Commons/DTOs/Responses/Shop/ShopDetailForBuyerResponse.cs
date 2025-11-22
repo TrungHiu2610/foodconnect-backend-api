@@ -1,9 +1,5 @@
-namespace FoodConnect.Backend.Application.Commons.DTOs.Responses.Shop
+﻿namespace FoodConnect.Backend.Application.Commons.DTOs.Responses.Shop
 {
-    /// <summary>
-    /// Detailed shop information for buyer view
-    /// Includes operating hours, assets, and available products
-    /// </summary>
     public class ShopDetailForBuyerResponse
     {
         public Guid Id { get; set; }

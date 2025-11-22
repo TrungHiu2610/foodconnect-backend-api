@@ -65,6 +65,10 @@ namespace FoodConnect.Backend.Application.Features.Order.Commands
             // Check if order is pending
             if (order.Status != OrderStatusEnum.Pending)
             {
+                if (order.Status == OrderStatusEnum.AwaitingPayment)
+                {
+                    return result.BuildFail("Order is awaiting payment. Customer must complete payment first.");
+                }
                 return result.BuildFail("Only pending orders can be accepted");
             }
 
