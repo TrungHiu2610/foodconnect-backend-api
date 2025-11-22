@@ -173,6 +173,8 @@ services.AddScoped<IPromotionUsageRepository, PromotionUsageRepository>();
 services.AddScoped<ISystemConfigRepository, SystemConfigRepository>();
 services.AddScoped<ISellerWalletRepository, SellerWalletRepository>();
 services.AddScoped<ISellerWalletTransactionRepository, SellerWalletTransactionRepository>();
+services.AddScoped<IWalletRepository, WalletRepository>();
+services.AddScoped<IWalletTransactionRepository, WalletTransactionRepository>();
 services.AddScoped<IWithdrawalRequestRepository, WithdrawalRequestRepository>();
 services.AddScoped<IPaymentTransactionRepository, PaymentTransactionRepository>();
 services.AddScoped<IUnitOfWork, UnitOfWork>();
