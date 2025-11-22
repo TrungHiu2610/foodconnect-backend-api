@@ -18,6 +18,7 @@ namespace FoodConnect.Backend.Domain.Enums
         Completed = 7,         // Buyer đã xác nhận nhận hàng
         Cancelled = 8,         // Đã hủy
         Returned = 9,          // Đã trả hàng
-        AwaitingPayment = 10   // Chờ thanh toán online (VNPay/MoMo)
+        AwaitingPayment = 10,  // Chờ thanh toán online (VNPay/MoMo)
+        Disputing = 11         // Đang trong quá trình khiếu nại
     }
 }

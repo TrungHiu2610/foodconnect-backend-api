@@ -27,6 +27,11 @@ namespace FoodConnect.Backend.Domain.Enums
         WithdrawalRequest = 400,
         WithdrawalApproved = 401,
         WithdrawalRejected = 402,
-        WithdrawalResolved = 403
+        WithdrawalResolved = 403,
+
+        // Complaint related
+        ComplaintCreated = 500,
+        ComplaintUpdated = 501,
+        ComplaintResolved = 502
     }
 }

@@ -26,11 +26,13 @@ using StackExchange.Redis;
 using Resend;
 using FoodConnect.Backend.Infrastructure.Hubs;
 using FoodConnect.Backend.Application.Features.Notification.Services;
+using FoodConnect.Backend.Application.Features.Complaint.Services;
 using FoodConnect.Backend.Application.Commons.Services;
 using Hangfire;
 using Hangfire.PostgreSql;
 using FoodConnect.Backend.Application.Features.Promotion.Jobs;
 using FoodConnect.Backend.Application.Features.Promotion.Services;
+using FoodConnect.Backend.Application.Features.Complaint.Jobs;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -177,6 +179,8 @@ services.AddScoped<IWalletRepository, WalletRepository>();
 services.AddScoped<IWalletTransactionRepository, WalletTransactionRepository>();
 services.AddScoped<IWithdrawalRequestRepository, WithdrawalRequestRepository>();
 services.AddScoped<IPaymentTransactionRepository, PaymentTransactionRepository>();
+services.AddScoped<IOrderComplaintRepository, OrderComplaintRepository>();
+services.AddScoped<IOrderComplaintAssetRepository, OrderComplaintAssetRepository>();
 services.AddScoped<IUnitOfWork, UnitOfWork>();
 
 // Application Services  
@@ -186,6 +190,7 @@ services.AddScoped<ICurrentUserService, CurrentUserService>();
 services.AddScoped<IDistanceCalculatorService, DistanceCalculatorService>();
 services.AddScoped<IShippingFeeCalculatorService, ShippingFeeCalculatorService>();
 services.AddScoped<IVNPayService, VNPayService>();
+services.AddScoped<WalletService>();
 
 // SignalR & Notification Services
 services.AddSignalR(options =>
@@ -198,6 +203,7 @@ services.AddSignalR(options =>
 services.AddScoped<INotificationService, NotificationService>();
 services.AddScoped<OrderNotificationService>();
 services.AddScoped<PromotionNotificationService>();
+services.AddScoped<ComplaintNotificationService>();
 
 // Hangfire
 services.AddHangfire(config => config
@@ -209,6 +215,7 @@ services.AddHangfire(config => config
 
 services.AddHangfireServer();
 services.AddScoped<PromotionStatusJob>();
+services.AddScoped<ComplaintEscalationJob>();
 
 // MediatR  
 services.AddMediatR(cfg =>
@@ -267,6 +274,11 @@ RecurringJob.AddOrUpdate<PromotionStatusJob>(
     "auto-expire-promotions",
     job => job.AutoExpirePromotionsAsync(),
     Cron.Minutely);
+
+RecurringJob.AddOrUpdate<ComplaintEscalationJob>(
+    "escalate-expired-complaints",
+    job => job.EscalateExpiredComplaintsAsync(),
+    Cron.Hourly);
 
 app.MapControllers();
 app.MapHub<NotificationHub>("/hubs/notifications");

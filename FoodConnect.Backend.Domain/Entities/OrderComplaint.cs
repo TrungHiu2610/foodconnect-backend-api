@@ -10,21 +10,39 @@ namespace FoodConnect.Backend.Domain.Entities
 {
     public class OrderComplaint : BaseEntity, IHardDelete
     {
+        // Buyer information
         public string BuyerReason { get; set; } = string.Empty;
+        
+        // Seller response
         public string? SellerResponse { get; set; }
-        public bool IsFixedAmount { get; set; } = false;
-        public decimal? SellerDesiredRefundAmount { get; set; }
+        public DateTime? SellerRespondedAt { get; set; }
+        public decimal? SellerDesiredRefundPercentage { get; set; }  // 0-100%
+        public decimal? SellerDesiredRefundAmount { get; set; }      // Fixed amount
+        public bool IsSellerRefundFixedAmount { get; set; } = false; // true = amount, false = percentage
+        
+        // Admin decision
         public string? AdminDecisionReason { get; set; }
+        public DateTime? AdminDecidedAt { get; set; }
         public decimal? ApprovedRefundAmount { get; set; }
-        public ComplaintStatusEnum Status { get; set; } = ComplaintStatusEnum.Pending;
+        public bool IsApproved { get; set; }
+        
+        // Status tracking
+        public OrderComplaintStatusEnum Status { get; set; } = OrderComplaintStatusEnum.PendingSeller;
+        public DateTime? CompletedAt { get; set; }
+        
+        // Relationships
         public Guid OrderId { get; set; }
         public virtual Order Order { get; set; } = null!;
+        
         public Guid BuyerId { get; set; }
         public virtual User Buyer { get; set; } = null!;
+        
         public Guid SellerId { get; set; }
         public virtual User Seller { get; set; } = null!;
+        
         public Guid? AdminId { get; set; }
-        public virtual User Admin { get; set; } = null!;
+        public virtual User? Admin { get; set; }
+        
         public virtual ICollection<OrderComplaintAsset> Assets { get; set; } = new List<OrderComplaintAsset>();
     }
 }
