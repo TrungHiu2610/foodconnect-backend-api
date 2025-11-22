@@ -92,6 +92,11 @@ jobs:
             -e "Google__ClientId=${{ secrets.GOOGLE_CLIENT_ID }}" \
             -e "Resend__ApiKey=${{ secrets.RESEND_API_KEY }}" \
             -e "Firebase__ServiceAccount=${{ secrets.FIREBASE_SERVICE_ACCOUNT }}" \
+            -e "AppSettings__FrontendUrl=${{ secrets.FRONTENDURL }}" \
+            -e "VNPay__TmnCode=${{ secrets.VNPAY_TMNCODE }}" \
+            -e "VNPay__HashSecret=${{ secrets.VNPAY_HASHSECRET }}" \
+            -e "VNPay__Url=${{ secrets.VNPAY_URL }}" \
+            -e "VNPay__ReturnUrl=${{ secrets.VNPAY_RETURNURL }}" \
             --restart always \
             ${{ secrets.DOCKERHUB_USERNAME }}/foodconnect-backend:develop
 
