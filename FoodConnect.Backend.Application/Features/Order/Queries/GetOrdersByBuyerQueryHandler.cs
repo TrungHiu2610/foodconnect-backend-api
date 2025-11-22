@@ -1,5 +1,6 @@
 using FoodConnect.Backend.Application.Commons.DTOs.Responses;
 using FoodConnect.Backend.Application.Commons.Interfaces;
+using FoodConnect.Backend.Application.Commons.Models;
 using FoodConnect.Backend.Application.Features.Order.DTOs;
 using FoodConnect.Backend.Application.Features.Order.Mappers;
 using FoodConnect.Backend.Application.Interfaces.IRepositories;
@@ -8,7 +9,7 @@ using MediatR;
 
 namespace FoodConnect.Backend.Application.Features.Order.Queries
 {
-    public class GetOrdersByBuyerQueryHandler : IRequestHandler<GetOrdersByBuyerQuery, BaseResponse<List<OrderSummaryDto>>>
+    public class GetOrdersByBuyerQueryHandler : IRequestHandler<GetOrdersByBuyerQuery, BaseResponse<PaginatedList<OrderSummaryDto>>>
     {
         private readonly IOrderRepository _orderRepository;
         private readonly IProductReviewRepository _reviewRepository;
@@ -24,9 +25,9 @@ namespace FoodConnect.Backend.Application.Features.Order.Queries
             _currentUserService = currentUserService;
         }
 
-        public async Task<BaseResponse<List<OrderSummaryDto>>> Handle(GetOrdersByBuyerQuery request, CancellationToken cancellationToken)
+        public async Task<BaseResponse<PaginatedList<OrderSummaryDto>>> Handle(GetOrdersByBuyerQuery request, CancellationToken cancellationToken)
         {
-            var result = new BaseResponse<List<OrderSummaryDto>>();
+            var result = new BaseResponse<PaginatedList<OrderSummaryDto>>();
 
             if (!_currentUserService.UserId.HasValue)
             {
@@ -50,7 +51,21 @@ namespace FoodConnect.Backend.Application.Features.Order.Queries
                 orderDtos = orderDtos.Where(o => o.ReviewStatus == request.ReviewStatus.Value).ToList();
             }
 
-            return result.BuildSuccess(orderDtos, "Orders retrieved successfully");
+            // Apply pagination
+            var totalCount = orderDtos.Count;
+            var paginatedOrders = orderDtos
+                .Skip((request.PageNumber - 1) * request.PageSize)
+                .Take(request.PageSize)
+                .ToList();
+
+            var paginatedList = new PaginatedList<OrderSummaryDto>(
+                paginatedOrders,
+                totalCount,
+                request.PageNumber,
+                request.PageSize
+            );
+
+            return result.BuildSuccess(paginatedList, "Orders retrieved successfully");
         }
         
         private async Task<OrderReviewStatusEnum> CalculateReviewStatusAsync(Guid orderId, Guid buyerId)

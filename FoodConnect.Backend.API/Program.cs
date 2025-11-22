@@ -44,19 +44,29 @@ var MyAllowSpecificOrigins = "_myAllowSpecificOrigins";
 var allowedOrigins = builder.Configuration.GetSection("CorsSettings:AllowedOrigins").Get<string[]>();
 
 var services = builder.Services;
+//services.AddCors(options =>
+//{
+//    options.AddPolicy(name: MyAllowSpecificOrigins,
+//                      policy =>
+//                      {
+//                          if (allowedOrigins != null && allowedOrigins.Length > 0)
+//                          {
+//                              policy.WithOrigins(allowedOrigins)
+//                                    .AllowAnyHeader()
+//                                    .AllowAnyMethod()
+//                                    .AllowCredentials(); 
+//                          }
+//                      });
+//});
+
 services.AddCors(options =>
 {
-    options.AddPolicy(name: MyAllowSpecificOrigins,
-                      policy =>
-                      {
-                          if (allowedOrigins != null && allowedOrigins.Length > 0)
-                          {
-                              policy.WithOrigins(allowedOrigins)
-                                    .AllowAnyHeader()
-                                    .AllowAnyMethod()
-                                    .AllowCredentials(); 
-                          }
-                      });
+    options.AddDefaultPolicy(builder =>
+    {
+        builder.AllowAnyOrigin()
+               .AllowAnyMethod()
+               .AllowAnyHeader();
+    });
 });
 
 services.AddHttpClient();
@@ -228,7 +238,7 @@ var app = builder.Build();
 
 app.UseWebSockets();
 
-app.UseCors(MyAllowSpecificOrigins);
+app.UseCors();
 
 // Configure the HTTP request pipeline.  
 if (app.Environment.IsDevelopment())
