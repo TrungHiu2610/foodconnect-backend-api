@@ -39,6 +39,8 @@ namespace FoodConnect.Backend.Domain.Entities
         public Shop Shop { get; set; } = null!;
         public ICollection<OrderItem> OrderItems { get; set; } = new List<OrderItem>();
         public ICollection<ProductReview> ProductReviews { get; set; } = new List<ProductReview>();
+        public Guid? OrderComplaintId { get; set; }
+        public OrderComplaint? OrderComplaint { get; set; }
         public ICollection<PaymentTransaction> PaymentTransactions { get; set; } = new List<PaymentTransaction>();
     }
 }
