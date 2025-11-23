@@ -181,6 +181,8 @@ services.AddScoped<IWithdrawalRequestRepository, WithdrawalRequestRepository>();
 services.AddScoped<IPaymentTransactionRepository, PaymentTransactionRepository>();
 services.AddScoped<IOrderComplaintRepository, OrderComplaintRepository>();
 services.AddScoped<IOrderComplaintAssetRepository, OrderComplaintAssetRepository>();
+services.AddScoped<IConversationRepository, ConversationRepository>();
+services.AddScoped<IMessageRepository, MessageRepository>();
 services.AddScoped<IUnitOfWork, UnitOfWork>();
 
 // Application Services  
@@ -201,6 +203,7 @@ services.AddSignalR(options =>
     options.HandshakeTimeout = TimeSpan.FromSeconds(15);
 });
 services.AddScoped<INotificationService, NotificationService>();
+services.AddScoped<IChatNotificationService, ChatNotificationService>();
 services.AddScoped<OrderNotificationService>();
 services.AddScoped<PromotionNotificationService>();
 services.AddScoped<ComplaintNotificationService>();
@@ -282,6 +285,7 @@ RecurringJob.AddOrUpdate<ComplaintEscalationJob>(
 
 app.MapControllers();
 app.MapHub<NotificationHub>("/hubs/notifications");
+app.MapHub<ChatHub>("/hubs/chat");
 
 app.Run();
 public partial class Program { }
