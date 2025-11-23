@@ -29,6 +29,7 @@ namespace FoodConnect.Backend.Infrastructure.Repositories
             await _context.Set<T>().AddRangeAsync(entities);
         }
         public virtual async Task<IEnumerable<T>> GetAllAsync() => await _context.Set<T>().ToListAsync();
+        public virtual IQueryable<T> GetAllQueryable() => _context.Set<T>().AsQueryable();
         public async Task<T?> GetByIdAsync(Guid id,
         params Expression<Func<T, object>>[] includes)
         {

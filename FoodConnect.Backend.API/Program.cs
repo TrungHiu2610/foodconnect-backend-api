@@ -177,6 +177,7 @@ services.AddScoped<IWalletRepository, WalletRepository>();
 services.AddScoped<IWalletTransactionRepository, WalletTransactionRepository>();
 services.AddScoped<IWithdrawalRequestRepository, WithdrawalRequestRepository>();
 services.AddScoped<IPaymentTransactionRepository, PaymentTransactionRepository>();
+services.AddScoped<IUserStatusAuditLogRepository, UserStatusAuditLogRepository>();
 services.AddScoped<IUnitOfWork, UnitOfWork>();
 
 // Application Services  
