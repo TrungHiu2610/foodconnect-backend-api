@@ -56,6 +56,14 @@ namespace FoodConnect.Backend.Application.Commons.Helpers
         public static string BuyerActivity(Guid buyerId, int topN) =>
             $"buyer:activity:{buyerId}:{topN}";
 
+        // Violation Management Cache Keys
+        public static string AccountViolationList(string? role, decimal? minScore, decimal? maxScore, 
+            bool? hasWarning, int pageNumber, int pageSize, string? sortBy, string? sortOrder) =>
+            $"admin:violations:list:{role ?? "all"}:{minScore?.ToString() ?? "nomin"}:{maxScore?.ToString() ?? "nomax"}:{hasWarning?.ToString() ?? "all"}:{pageNumber}:{pageSize}:{sortBy ?? "score"}:{sortOrder ?? "desc"}";
+
+        public static string AccountActivityDetail(Guid userId, int recentOrdersLimit) =>
+            $"admin:violations:detail:{userId}:{recentOrdersLimit}";
+
         // Cache Invalidation Patterns
         public static string SellerPattern(Guid shopId) => $"seller:*:{shopId}*";
         public static string AdminPattern() => "admin:*";
