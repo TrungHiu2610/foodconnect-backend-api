@@ -1,4 +1,4 @@
-using FoodConnect.Backend.Application.Commons.Constants;
+﻿using FoodConnect.Backend.Application.Commons.Constants;
 using FoodConnect.Backend.Application.Commons.DTOs.Responses;
 using FoodConnect.Backend.Application.Commons.DTOs.Responses.Cart;
 using FoodConnect.Backend.Application.Commons.Interfaces;
@@ -73,8 +73,8 @@ namespace FoodConnect.Backend.Application.Features.Cart.Queries
         }
 
         private async Task<CheckoutPreviewResponse> MapCartToCheckoutPreviewAsync(
-            Domain.Entities.Cart cart, 
-            Guid? userId, 
+            Domain.Entities.Cart cart,
+            Guid? userId,
             List<Guid>? selectedCartItemIds)
         {
             var response = new CheckoutPreviewResponse
@@ -220,9 +220,9 @@ namespace FoodConnect.Backend.Application.Features.Cart.Queries
                             {
                                 var shop = await _shopRepository.GetByIdAsync(shopGroup.Key.ShopId);
                                 shippingFee = _shippingFeeCalculator.CalculateShippingFee(
-                                    DeliveryTypeEnum.Standard, 
-                                    distanceKm.Value, 
-                                    buyerAddress!.City, 
+                                    DeliveryTypeEnum.Standard,
+                                    distanceKm.Value,
+                                    buyerAddress!.City,
                                     shop!.City);
                             }
                         }
@@ -250,7 +250,7 @@ namespace FoodConnect.Backend.Application.Features.Cart.Queries
                 .SelectMany(s => s.OrderPreviewGroups)
                 .SelectMany(g => g.Items)
                 .ToList();
-            
+
             var allOrderGroups = response.ShopGroups
                 .SelectMany(s => s.OrderPreviewGroups)
                 .ToList();

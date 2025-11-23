@@ -56,10 +56,11 @@ namespace FoodConnect.Backend.Application.Features.Order.Commands
                 return result.BuildForbidden("You don't have permission to cancel this order");
             }
 
-            // Check if order can be cancelled (only pending orders)
-            if (order.Status != OrderStatusEnum.Pending)
+            // Check if order can be cancelled
+            // Allow cancelling: Pending (COD before seller accepts) or AwaitingPayment (unpaid online orders)
+            if (order.Status != OrderStatusEnum.Pending && order.Status != OrderStatusEnum.AwaitingPayment)
             {
-                return result.BuildFail("Only pending orders can be cancelled");
+                return result.BuildFail("Only pending or awaiting payment orders can be cancelled");
             }
 
             // Update order status

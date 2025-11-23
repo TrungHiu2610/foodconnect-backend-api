@@ -1,4 +1,4 @@
-using FoodConnect.Backend.Application.Commons.DTOs.Responses;
+﻿using FoodConnect.Backend.Application.Commons.DTOs.Responses;
 using FoodConnect.Backend.Application.Commons.DTOs.Responses.Shop;
 using FoodConnect.Backend.Application.Interfaces.IRepositories;
 using FoodConnect.Backend.Domain.Enums;
@@ -74,10 +74,6 @@ namespace FoodConnect.Backend.Application.Features.Shop.Queries
                 return result.BuildFail($"Failed to retrieve featured shops: {ex.Message}");
             }
         }
-
-        /// <summary>
-        /// Calculate distance between two coordinates using Haversine formula
-        /// </summary>
         private double CalculateDistance(double lat1, double lon1, double lat2, double lon2)
         {
             const double R = 6371; // Earth's radius in kilometers
@@ -94,10 +90,6 @@ namespace FoodConnect.Backend.Application.Features.Shop.Queries
         }
 
         private double ToRadians(double degrees) => degrees * Math.PI / 180;
-
-        /// <summary>
-        /// Map shop entities to response DTOs
-        /// </summary>
         private List<ShopListForBuyerResponse> MapToResponse(List<Domain.Entities.Shop> shops)
         {
             return shops.Select(shop => new ShopListForBuyerResponse
@@ -122,10 +114,6 @@ namespace FoodConnect.Backend.Application.Features.Shop.Queries
                 Address = shop.GetFullAddress()
             }).ToList();
         }
-
-        /// <summary>
-        /// Calculate shop badges based on properties
-        /// </summary>
         private List<string> CalculateBadges(Domain.Entities.Shop shop)
         {
             var badges = new List<string>();

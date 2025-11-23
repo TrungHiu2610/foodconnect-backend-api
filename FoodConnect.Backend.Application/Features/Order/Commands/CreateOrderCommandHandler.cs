@@ -302,6 +302,13 @@ namespace FoodConnect.Backend.Application.Features.Order.Commands
                     }
 
                     // Create order
+                    // Set status based on payment method:
+                    // - Online payment (VNPay/MoMo): AwaitingPayment (must pay first)
+                    // - COD: Pending (seller sees immediately)
+                    var initialStatus = request.PaymentMethod == PaymentMethodEnum.COD
+                        ? OrderStatusEnum.Pending
+                        : OrderStatusEnum.AwaitingPayment;
+
                     var order = new Domain.Entities.Order
                     {
                         Id = Guid.NewGuid(),
@@ -310,7 +317,7 @@ namespace FoodConnect.Backend.Application.Features.Order.Commands
                         ShippingFee = (double)shippingFee,
                         Discount = discount,
                         Total = total,
-                        Status = OrderStatusEnum.Pending,
+                        Status = initialStatus,
                         PaymentMethod = request.PaymentMethod,
                         DeliveryType = deliveryType, // Auto-determined from Product.Category
                         DistanceKm = Math.Round(distanceKm, 2),
@@ -384,8 +391,12 @@ namespace FoodConnect.Backend.Application.Features.Order.Commands
                     {
                         orderDetails.Add(OrderMapper.MapToDetailDto(fullOrder));
                         
-                        // Send notification to seller
-                        await _orderNotificationService.NotifyNewOrderAsync(fullOrder, cancellationToken);
+                        // Only send notification to seller for COD orders (Pending status)
+                        // AwaitingPayment orders will notify seller after successful payment
+                        if (fullOrder.Status == OrderStatusEnum.Pending)
+                        {
+                            await _orderNotificationService.NotifyNewOrderAsync(fullOrder, cancellationToken);
+                        }
                     }
                 }
 

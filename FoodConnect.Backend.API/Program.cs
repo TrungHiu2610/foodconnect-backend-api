@@ -180,6 +180,13 @@ services.AddScoped<INotificationRepository, NotificationRepository>();
 services.AddScoped<IPromotionRepository, PromotionRepository>();
 services.AddScoped<IPromotionProductRepository, PromotionProductRepository>();
 services.AddScoped<IPromotionUsageRepository, PromotionUsageRepository>();
+services.AddScoped<ISystemConfigRepository, SystemConfigRepository>();
+services.AddScoped<ISellerWalletRepository, SellerWalletRepository>();
+services.AddScoped<ISellerWalletTransactionRepository, SellerWalletTransactionRepository>();
+services.AddScoped<IWalletRepository, WalletRepository>();
+services.AddScoped<IWalletTransactionRepository, WalletTransactionRepository>();
+services.AddScoped<IWithdrawalRequestRepository, WithdrawalRequestRepository>();
+services.AddScoped<IPaymentTransactionRepository, PaymentTransactionRepository>();
 services.AddScoped<IUnitOfWork, UnitOfWork>();
 
 // Application Services  
@@ -188,6 +195,7 @@ services.AddHttpContextAccessor();
 services.AddScoped<ICurrentUserService, CurrentUserService>();
 services.AddScoped<IDistanceCalculatorService, DistanceCalculatorService>();
 services.AddScoped<IShippingFeeCalculatorService, ShippingFeeCalculatorService>();
+services.AddScoped<IVNPayService, VNPayService>();
 
 // SignalR & Notification Services
 services.AddSignalR(options =>

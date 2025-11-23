@@ -47,7 +47,9 @@ namespace FoodConnect.Backend.Infrastructure.Repositories
                     .ThenInclude(oi => oi.Product)
                         .ThenInclude(p => p.ProductAssets)
                 .Include(o => o.Buyer)
-                .Where(o => o.ShopId == shopId);
+                .Where(o => o.ShopId == shopId)
+                // ⚠️ Security: Sellers should NOT see unpaid orders
+                .Where(o => o.Status != OrderStatusEnum.AwaitingPayment);
 
             if (status.HasValue)
             {

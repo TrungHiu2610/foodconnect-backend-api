@@ -4,6 +4,9 @@ using FoodConnect.Backend.Application.Commons.DTOs.Responses.Category;
 using FoodConnect.Backend.Application.Commons.DTOs.Responses.Product;
 using FoodConnect.Backend.Application.Commons.DTOs.Responses.Promotion;
 using FoodConnect.Backend.Application.Commons.DTOs.Responses.Shop;
+using FoodConnect.Backend.Application.Commons.DTOs.Responses.Payment;
+using FoodConnect.Backend.Application.Commons.DTOs.Responses.SystemConfig;
+using FoodConnect.Backend.Application.Commons.DTOs.Responses.Withdrawal;
 using FoodConnect.Backend.Application.Features.Category.Commands;
 using FoodConnect.Backend.Application.Features.Product.Commands;
 using FoodConnect.Backend.Application.Features.Shop.Commands;
@@ -206,6 +209,48 @@ namespace FoodConnect.Backend.Application.Commons.Behaviors
 
             #endregion
 
+            #region payment transaction mappings
+
+            CreateMap<PaymentTransaction, PaymentTransactionResponse>()
+                .ForMember(dest => dest.OrderCode, opt => opt.MapFrom(src => src.Order.OrderCode))
+                .ForMember(dest => dest.Status, opt => opt.MapFrom(src => (int)src.Status))
+                .ForMember(dest => dest.StatusName, opt => opt.MapFrom(src => src.Status.ToString()))
+                .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(src => src.CreatedAtUtc));
+
+            #endregion
+
+            #region wallet mappings
+
+            CreateMap<SellerWallet, Application.Commons.DTOs.Responses.Wallet.SellerWalletResponse>()
+                .ForMember(dest => dest.Status, opt => opt.MapFrom(src => (int)src.Status))
+                .ForMember(dest => dest.StatusName, opt => opt.MapFrom(src => src.Status.ToString()))
+                .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(src => src.CreatedAtUtc));
+
+            CreateMap<SellerWalletTransaction, Application.Commons.DTOs.Responses.Wallet.WalletTransactionResponse>()
+                .ForMember(dest => dest.OrderCode, opt => opt.MapFrom(src => src.Order != null ? src.Order.OrderCode : null))
+                .ForMember(dest => dest.TransactionType, opt => opt.MapFrom(src => (int)src.TransactionType))
+                .ForMember(dest => dest.TransactionTypeName, opt => opt.MapFrom(src => src.TransactionType.ToString()))
+                .ForMember(dest => dest.Status, opt => opt.MapFrom(src => (int)src.Status))
+                .ForMember(dest => dest.StatusName, opt => opt.MapFrom(src => src.Status.ToString()))
+                .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(src => src.CreatedAtUtc));
+
+            CreateMap<Domain.Entities.Wallet, Application.Commons.DTOs.Responses.Wallet.WalletResponse>()
+                .ForMember(dest => dest.WalletType, opt => opt.MapFrom(src => (int)src.WalletType))
+                .ForMember(dest => dest.WalletTypeName, opt => opt.MapFrom(src => src.WalletType.ToString()))
+                .ForMember(dest => dest.Status, opt => opt.MapFrom(src => (int)src.Status))
+                .ForMember(dest => dest.StatusName, opt => opt.MapFrom(src => src.Status.ToString()))
+                .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(src => src.CreatedAtUtc));
+
+            CreateMap<WalletTransaction, Application.Commons.DTOs.Responses.Wallet.WalletTransactionResponse>()
+                .ForMember(dest => dest.OrderCode, opt => opt.MapFrom(src => src.Order != null ? src.Order.OrderCode : null))
+                .ForMember(dest => dest.TransactionType, opt => opt.MapFrom(src => (int)src.TransactionType))
+                .ForMember(dest => dest.TransactionTypeName, opt => opt.MapFrom(src => src.TransactionType.ToString()))
+                .ForMember(dest => dest.Status, opt => opt.MapFrom(src => (int)src.Status))
+                .ForMember(dest => dest.StatusName, opt => opt.MapFrom(src => src.Status.ToString()))
+                .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(src => src.CreatedAtUtc));
+
+            #endregion
+
             #region promotion mappings
 
             CreateMap<Domain.Entities.Promotion, PromotionResponse>()
@@ -266,6 +311,38 @@ namespace FoodConnect.Backend.Application.Commons.Behaviors
                         IsAvailable = pp.Product.IsAvailable,
                         StockQuantity = pp.Product.StockQuantity
                     }).ToList()));
+
+            #endregion
+
+            #region system config mappings
+
+            CreateMap<SystemConfig, SystemConfigResponse>()
+                .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(src => src.CreatedAtUtc))
+                .ForMember(dest => dest.UpdatedAt, opt => opt.MapFrom(src => src.UpdatedAtUtc))
+                .ForMember(dest => dest.Type, opt => opt.MapFrom(src => (int)src.Type))
+                .ForMember(dest => dest.TypeName, opt => opt.MapFrom(src => src.Type.ToString()));
+
+            #endregion
+
+            #region withdrawal mappings
+
+            CreateMap<WithdrawalRequest, WithdrawalRequestListResponse>()
+                .ForMember(dest => dest.SellerName, opt => opt.MapFrom(src => src.Seller != null ? src.Seller.FullName : string.Empty))
+                .ForMember(dest => dest.Status, opt => opt.MapFrom(src => (int)src.Status))
+                .ForMember(dest => dest.StatusName, opt => opt.MapFrom(src => src.Status.ToString()))
+                .ForMember(dest => dest.PaymentMethod, opt => opt.MapFrom(src => (int)src.PaymentMethod))
+                .ForMember(dest => dest.PaymentMethodName, opt => opt.MapFrom(src => src.PaymentMethod.ToString()))
+                .ForMember(dest => dest.RequestedAt, opt => opt.MapFrom(src => src.CreatedAtUtc))
+                .ForMember(dest => dest.CompletedAt, opt => opt.MapFrom(src => src.CompletedAt));
+
+            CreateMap<WithdrawalRequest, WithdrawalRequestResponse>()
+                .ForMember(dest => dest.SellerName, opt => opt.MapFrom(src => src.Seller != null ? src.Seller.FullName : string.Empty))
+                .ForMember(dest => dest.Status, opt => opt.MapFrom(src => (int)src.Status))
+                .ForMember(dest => dest.StatusName, opt => opt.MapFrom(src => src.Status.ToString()))
+                .ForMember(dest => dest.PaymentMethod, opt => opt.MapFrom(src => (int)src.PaymentMethod))
+                .ForMember(dest => dest.PaymentMethodName, opt => opt.MapFrom(src => src.PaymentMethod.ToString()))
+                .ForMember(dest => dest.RequestedAt, opt => opt.MapFrom(src => src.CreatedAtUtc))
+                .ForMember(dest => dest.ProcessedByName, opt => opt.MapFrom(src => src.ProcessedByAdmin != null ? src.ProcessedByAdmin.FullName : null));
 
             #endregion
         }

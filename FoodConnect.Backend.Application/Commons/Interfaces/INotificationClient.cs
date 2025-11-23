@@ -11,6 +11,10 @@ namespace FoodConnect.Backend.Application.Commons.Interfaces
         // Shop notifications
         Task ReceiveNewOrderAlert(NotificationDto notification);
         
+        // Withdrawal notifications
+        Task ReceiveWithdrawalNotification(NotificationDto notification);
+        Task ReceiveWithdrawalStatusUpdate(string withdrawalId, string status, string message);
+        
         // Generic notification
         Task ReceiveNotification(NotificationDto notification);
         
