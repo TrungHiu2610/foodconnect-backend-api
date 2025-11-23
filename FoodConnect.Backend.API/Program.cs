@@ -31,6 +31,8 @@ using Hangfire;
 using Hangfire.PostgreSql;
 using FoodConnect.Backend.Application.Features.Promotion.Jobs;
 using FoodConnect.Backend.Application.Features.Promotion.Services;
+using FoodConnect.Backend.Application.Features.Order.Jobs;
+using FoodConnect.Backend.Application.Features.Order.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -219,6 +221,8 @@ services.AddHangfire(config => config
 
 services.AddHangfireServer();
 services.AddScoped<PromotionStatusJob>();
+services.AddScoped<OrderAutoCompletionService>();
+services.AddScoped<OrderStatusJob>();
 
 // MediatR  
 services.AddMediatR(cfg =>
@@ -276,6 +280,17 @@ RecurringJob.AddOrUpdate<PromotionStatusJob>(
 RecurringJob.AddOrUpdate<PromotionStatusJob>(
     "auto-expire-promotions",
     job => job.AutoExpirePromotionsAsync(),
+    Cron.Minutely);
+
+// Order management jobs
+RecurringJob.AddOrUpdate<OrderStatusJob>(
+    "auto-cancel-unconfirmed-orders",
+    job => job.AutoCancelUnconfirmedOrdersAsync(),
+    Cron.Minutely);
+
+RecurringJob.AddOrUpdate<OrderStatusJob>(
+    "auto-complete-delivered-orders",
+    job => job.AutoCompleteDeliveredOrdersAsync(),
     Cron.Minutely);
 
 app.MapControllers();
