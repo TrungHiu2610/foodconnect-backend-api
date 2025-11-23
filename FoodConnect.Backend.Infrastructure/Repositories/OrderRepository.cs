@@ -28,6 +28,7 @@ namespace FoodConnect.Backend.Infrastructure.Repositories
             var query = _context.Orders
                 .Include(o => o.OrderItems)
                     .ThenInclude(oi => oi.Product)
+                        .ThenInclude(p=>p.ProductAssets)
                 .Include(o => o.Shop)
                 .Where(o => o.BuyerId == buyerId);
 

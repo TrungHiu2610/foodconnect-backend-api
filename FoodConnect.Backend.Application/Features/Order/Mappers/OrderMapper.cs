@@ -1,4 +1,6 @@
 using FoodConnect.Backend.Application.Features.Order.DTOs;
+using FoodConnect.Backend.Domain.Enums;
+using System.Text.Json;
 
 namespace FoodConnect.Backend.Application.Features.Order.Mappers
 {
@@ -16,6 +18,8 @@ namespace FoodConnect.Backend.Application.Features.Order.Mappers
                 Total = order.Total,
                 Status = order.Status,
                 PaymentMethod = order.PaymentMethod,
+                DeliveryType = order.DeliveryType,
+                EstimatedDelivery = CalculateEstimatedDelivery(order.DeliveryType, order.ShippingAddressJson, order.Shop),
                 ShippingAddressJson = order.ShippingAddressJson,
                 Notes = order.Notes,
                 CancelReason = order.CancelReason,
@@ -48,6 +52,8 @@ namespace FoodConnect.Backend.Application.Features.Order.Mappers
 
         public static OrderSummaryDto MapToSummaryDto(Domain.Entities.Order order)
         {
+            var firstOrderItem = order.OrderItems?.FirstOrDefault();
+            
             return new OrderSummaryDto
             {
                 Id = order.Id,
@@ -56,11 +62,19 @@ namespace FoodConnect.Backend.Application.Features.Order.Mappers
                 Status = order.Status,
                 PaymentMethod = order.PaymentMethod,
                 CreatedAt = order.CreatedAtUtc,
+                EstimatedDelivery = CalculateEstimatedDelivery(order.DeliveryType, order.ShippingAddressJson, order.Shop),
                 ShopId = order.ShopId,
                 ShopName = order.Shop?.ShopName,
                 BuyerId = order.BuyerId,
                 BuyerName = order.Buyer?.FullName,
-                TotalItems = order.OrderItems?.Sum(oi => oi.Quantity) ?? 0
+                TotalItems = order.OrderItems?.Count ?? 0,
+                FirstProduct = firstOrderItem != null ? new FirstProductDto
+                {
+                    ProductName = firstOrderItem.Product?.Name ?? string.Empty,
+                    ProductImageUrl = firstOrderItem.Product?.ProductAssets?.FirstOrDefault(a => a.IsThumbnail)?.AssetUrl,
+                    Quantity = firstOrderItem.Quantity,
+                    TotalPrice = firstOrderItem.TotalPrice
+                } : null
             };
         }
 
@@ -75,6 +89,46 @@ namespace FoodConnect.Backend.Application.Features.Order.Mappers
             if (!string.IsNullOrEmpty(shop.City)) addressParts.Add(shop.City);
 
             return string.Join(", ", addressParts);
+        }
+        
+        private static string CalculateEstimatedDelivery(
+            DeliveryTypeEnum deliveryType,
+            string shippingAddressJson,
+            Domain.Entities.Shop? shop)
+        {
+            // Express delivery: 1-2 giờ
+            if (deliveryType == DeliveryTypeEnum.Express)
+            {
+                return "1-2 giờ";
+            }
+            
+            // Standard delivery: kiểm tra cùng tỉnh hay khác tỉnh
+            try
+            {
+                var shippingAddress = JsonSerializer.Deserialize<ShippingAddressDto>(shippingAddressJson);
+                if (shippingAddress != null && shop != null)
+                {
+                    // So sánh tỉnh/thành phố (normalize để tránh lỗi do khoảng trắng, hoa thường)
+                    var buyerProvince = shippingAddress.Province?.Trim().ToLowerInvariant() ?? string.Empty;
+                    var shopProvince = shop.City?.Trim().ToLowerInvariant() ?? string.Empty;
+                    
+                    if (buyerProvince == shopProvince)
+                    {
+                        return "2-3 ngày"; // Cùng tỉnh
+                    }
+                    else
+                    {
+                        return "3-4 ngày"; // Khác tỉnh
+                    }
+                }
+            }
+            catch
+            {
+                // Nếu có lỗi parse JSON, mặc định trả về 3-4 ngày
+            }
+            
+            // Mặc định cho Standard
+            return "3-4 ngày";
         }
     }
 }
