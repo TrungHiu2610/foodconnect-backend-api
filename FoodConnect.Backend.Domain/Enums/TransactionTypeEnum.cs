@@ -9,5 +9,7 @@ public enum TransactionTypeEnum
     Adjustment = 4,
     TopUp = 5,
     OrderPayment = 6,
-    CashbackReceived = 7
+    CashbackReceived = 7,
+    ComplaintRefund = 8,     // Refund từ complaint (buyer nhận)
+    ComplaintDeduction = 9   // Trừ tiền seller khi complaint approved
 }

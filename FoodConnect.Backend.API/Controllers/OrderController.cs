@@ -35,9 +35,17 @@ namespace FoodConnect.Backend.API.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> GetMyOrders([FromQuery] OrderStatusEnum? status = null)
+        public async Task<IActionResult> GetMyOrders(
+            [FromQuery] OrderStatusEnum? status = null,
+            [FromQuery] int pageNumber = 1,
+            [FromQuery] int pageSize = 10)
         {
-            var query = new GetOrdersByBuyerQuery { Status = status };
+            var query = new GetOrdersByBuyerQuery 
+            { 
+                Status = status,
+                PageNumber = pageNumber,
+                PageSize = pageSize
+            };
             var result = await Mediator.Send(query);
             return result != null ? (result.Success ? Ok(result) : BadRequest(result)) : BadRequest();
         }
@@ -63,12 +71,18 @@ namespace FoodConnect.Backend.API.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> GetShopOrders([FromQuery] Guid shopId, [FromQuery] OrderStatusEnum? status = null)
+        public async Task<IActionResult> GetShopOrders(
+            [FromQuery] Guid shopId, 
+            [FromQuery] OrderStatusEnum? status = null,
+            [FromQuery] int pageNumber = 1,
+            [FromQuery] int pageSize = 10)
         {
             var query = new GetOrdersByShopQuery 
             { 
                 ShopId = shopId,
-                Status = status 
+                Status = status,
+                PageNumber = pageNumber,
+                PageSize = pageSize
             };
             var result = await Mediator.Send(query);
             return result != null ? (result.Success ? Ok(result) : BadRequest(result)) : BadRequest();
