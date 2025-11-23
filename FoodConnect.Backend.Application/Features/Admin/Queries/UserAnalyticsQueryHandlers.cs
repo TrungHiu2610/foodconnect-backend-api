@@ -1,5 +1,7 @@
 using FoodConnect.Backend.Application.Commons.DTOs.Responses;
 using FoodConnect.Backend.Application.Commons.DTOs.Responses.Admin;
+using FoodConnect.Backend.Application.Commons.Helpers;
+using FoodConnect.Backend.Application.Commons.Interfaces;
 using FoodConnect.Backend.Application.Interfaces.IRepositories;
 using FoodConnect.Backend.Domain.Enums;
 using MediatR;
@@ -10,10 +12,14 @@ namespace FoodConnect.Backend.Application.Features.Admin.Queries
     public class GetNewUserStatisticsQueryHandler : IRequestHandler<GetNewUserStatisticsQuery, BaseResponse<NewUserStatisticsResponse>>
     {
         private readonly IUserRepository _userRepository;
+        private readonly IRedisService _redisService;
 
-        public GetNewUserStatisticsQueryHandler(IUserRepository userRepository)
+        public GetNewUserStatisticsQueryHandler(
+            IUserRepository userRepository,
+            IRedisService redisService)
         {
             _userRepository = userRepository;
+            _redisService = redisService;
         }
 
         public async Task<BaseResponse<NewUserStatisticsResponse>> Handle(
@@ -21,6 +27,14 @@ namespace FoodConnect.Backend.Application.Features.Admin.Queries
             CancellationToken cancellationToken)
         {
             var result = new BaseResponse<NewUserStatisticsResponse>();
+
+            // Check cache
+            var cacheKey = CacheKeys.NewUserStats(request.FromDate, request.ToDate, request.GroupBy);
+            var cachedResponse = await _redisService.GetAsync<BaseResponse<NewUserStatisticsResponse>>(cacheKey);
+            if (cachedResponse != null)
+            {
+                return cachedResponse;
+            }
 
             var currentUsers = await _userRepository.GetAllQueryable()
                 .Where(u => u.CreatedAtUtc >= request.FromDate &&
@@ -106,7 +120,9 @@ namespace FoodConnect.Backend.Application.Features.Admin.Queries
                 ToDate = request.ToDate
             };
 
-            return result.BuildSuccess(response, "New user statistics retrieved successfully");
+            var successResult = result.BuildSuccess(response, "New user statistics retrieved successfully");
+            await _redisService.SetAsync(cacheKey, successResult, CacheKeys.Expiration.AdminUserAnalytics);
+            return successResult;
         }
     }
 
@@ -114,13 +130,16 @@ namespace FoodConnect.Backend.Application.Features.Admin.Queries
     {
         private readonly IShopRepository _shopRepository;
         private readonly IOrderRepository _orderRepository;
+        private readonly IRedisService _redisService;
 
         public GetTopSellersQueryHandler(
             IShopRepository shopRepository,
-            IOrderRepository orderRepository)
+            IOrderRepository orderRepository,
+            IRedisService redisService)
         {
             _shopRepository = shopRepository;
             _orderRepository = orderRepository;
+            _redisService = redisService;
         }
 
         public async Task<BaseResponse<TopSellersResponse>> Handle(
@@ -128,6 +147,14 @@ namespace FoodConnect.Backend.Application.Features.Admin.Queries
             CancellationToken cancellationToken)
         {
             var result = new BaseResponse<TopSellersResponse>();
+
+            // Check cache
+            var cacheKey = CacheKeys.TopSellers(request.FromDate, request.ToDate, request.TopN);
+            var cachedResponse = await _redisService.GetAsync<BaseResponse<TopSellersResponse>>(cacheKey);
+            if (cachedResponse != null)
+            {
+                return cachedResponse;
+            }
 
             var ordersQuery = _orderRepository.GetAllQueryable()
                 .Include(o => o.Shop)
@@ -193,17 +220,23 @@ namespace FoodConnect.Backend.Application.Features.Admin.Queries
                 TopSellersByRating = topSellersByRating
             };
 
-            return result.BuildSuccess(response, "Top sellers retrieved successfully");
+            var successResult = result.BuildSuccess(response, "Top sellers retrieved successfully");
+            await _redisService.SetAsync(cacheKey, successResult, CacheKeys.Expiration.AdminUserAnalytics);
+            return successResult;
         }
     }
 
     public class GetLoyalCustomersQueryHandler : IRequestHandler<GetLoyalCustomersQuery, BaseResponse<LoyalCustomersResponse>>
     {
         private readonly IOrderRepository _orderRepository;
+        private readonly IRedisService _redisService;
 
-        public GetLoyalCustomersQueryHandler(IOrderRepository orderRepository)
+        public GetLoyalCustomersQueryHandler(
+            IOrderRepository orderRepository,
+            IRedisService redisService)
         {
             _orderRepository = orderRepository;
+            _redisService = redisService;
         }
 
         public async Task<BaseResponse<LoyalCustomersResponse>> Handle(
@@ -211,6 +244,14 @@ namespace FoodConnect.Backend.Application.Features.Admin.Queries
             CancellationToken cancellationToken)
         {
             var result = new BaseResponse<LoyalCustomersResponse>();
+
+            // Check cache
+            var cacheKey = CacheKeys.LoyalCustomers(request.TopN);
+            var cachedResponse = await _redisService.GetAsync<BaseResponse<LoyalCustomersResponse>>(cacheKey);
+            if (cachedResponse != null)
+            {
+                return cachedResponse;
+            }
 
             var orders = await _orderRepository.GetAllQueryable()
                 .Include(o => o.Buyer)
@@ -252,7 +293,9 @@ namespace FoodConnect.Backend.Application.Features.Admin.Queries
                 TopCustomersBySpending = topCustomersBySpending
             };
 
-            return result.BuildSuccess(response, "Loyal customers retrieved successfully");
+            var successResult = result.BuildSuccess(response, "Loyal customers retrieved successfully");
+            await _redisService.SetAsync(cacheKey, successResult, CacheKeys.Expiration.AdminUserAnalytics);
+            return successResult;
         }
     }
 }

@@ -1,5 +1,7 @@
 using FoodConnect.Backend.Application.Commons.DTOs.Responses;
 using FoodConnect.Backend.Application.Commons.DTOs.Responses.Buyer;
+using FoodConnect.Backend.Application.Commons.Helpers;
+using FoodConnect.Backend.Application.Commons.Interfaces;
 using FoodConnect.Backend.Application.Interfaces.IRepositories;
 using FoodConnect.Backend.Domain.Enums;
 using MediatR;
@@ -12,13 +14,16 @@ namespace FoodConnect.Backend.Application.Features.Buyer.Queries
     {
         private readonly IOrderRepository _orderRepository;
         private readonly IUserRepository _userRepository;
+        private readonly IRedisService _redisService;
 
         public GetBuyerSpendingStatisticsQueryHandler(
             IOrderRepository orderRepository,
-            IUserRepository userRepository)
+            IUserRepository userRepository,
+            IRedisService redisService)
         {
             _orderRepository = orderRepository;
             _userRepository = userRepository;
+            _redisService = redisService;
         }
 
         public async Task<BaseResponse<BuyerSpendingStatisticsResponse>> Handle(
@@ -31,6 +36,14 @@ namespace FoodConnect.Backend.Application.Features.Buyer.Queries
             if (buyer == null)
             {
                 return result.BuildNotFound("Buyer not found");
+            }
+
+            // Check cache
+            var cacheKey = CacheKeys.BuyerSpending(request.BuyerId, request.FromDate, request.ToDate);
+            var cachedResponse = await _redisService.GetAsync<BaseResponse<BuyerSpendingStatisticsResponse>>(cacheKey);
+            if (cachedResponse != null)
+            {
+                return cachedResponse;
             }
 
             var ordersQuery = _orderRepository.GetAllQueryable()
@@ -107,7 +120,9 @@ namespace FoodConnect.Backend.Application.Features.Buyer.Queries
                 ToDate = request.ToDate ?? orders.Max(o => o.CreatedAtUtc)
             };
 
-            return result.BuildSuccess(response, "Buyer spending statistics retrieved successfully");
+            var successResult = result.BuildSuccess(response, "Buyer spending statistics retrieved successfully");
+            await _redisService.SetAsync(cacheKey, successResult, CacheKeys.Expiration.BuyerStats);
+            return successResult;
         }
     }
 
@@ -115,13 +130,16 @@ namespace FoodConnect.Backend.Application.Features.Buyer.Queries
     {
         private readonly IOrderRepository _orderRepository;
         private readonly IUserRepository _userRepository;
+        private readonly IRedisService _redisService;
 
         public GetBuyerOrderActivityQueryHandler(
             IOrderRepository orderRepository,
-            IUserRepository userRepository)
+            IUserRepository userRepository,
+            IRedisService redisService)
         {
             _orderRepository = orderRepository;
             _userRepository = userRepository;
+            _redisService = redisService;
         }
 
         public async Task<BaseResponse<BuyerOrderActivityResponse>> Handle(
@@ -134,6 +152,14 @@ namespace FoodConnect.Backend.Application.Features.Buyer.Queries
             if (buyer == null)
             {
                 return result.BuildNotFound("Buyer not found");
+            }
+
+            // Check cache
+            var cacheKey = CacheKeys.BuyerActivity(request.BuyerId, request.TopProductsCount);
+            var cachedResponse = await _redisService.GetAsync<BaseResponse<BuyerOrderActivityResponse>>(cacheKey);
+            if (cachedResponse != null)
+            {
+                return cachedResponse;
             }
 
             var orders = await _orderRepository.GetAllQueryable()
@@ -219,7 +245,9 @@ namespace FoodConnect.Backend.Application.Features.Buyer.Queries
                 LastOrderDate = orders.Any() ? orders.Max(o => o.CreatedAtUtc) : null
             };
 
-            return result.BuildSuccess(response, "Buyer order activity retrieved successfully");
+            var successResult = result.BuildSuccess(response, "Buyer order activity retrieved successfully");
+            await _redisService.SetAsync(cacheKey, successResult, CacheKeys.Expiration.BuyerStats);
+            return successResult;
         }
     }
 }

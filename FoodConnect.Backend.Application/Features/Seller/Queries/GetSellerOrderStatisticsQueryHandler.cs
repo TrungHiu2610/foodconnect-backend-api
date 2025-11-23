@@ -1,5 +1,7 @@
 using FoodConnect.Backend.Application.Commons.DTOs.Responses;
 using FoodConnect.Backend.Application.Commons.DTOs.Responses.Seller;
+using FoodConnect.Backend.Application.Commons.Helpers;
+using FoodConnect.Backend.Application.Commons.Interfaces;
 using FoodConnect.Backend.Application.Interfaces.IRepositories;
 using FoodConnect.Backend.Domain.Enums;
 using MediatR;
@@ -11,13 +13,16 @@ namespace FoodConnect.Backend.Application.Features.Seller.Queries
     {
         private readonly IOrderRepository _orderRepository;
         private readonly IShopRepository _shopRepository;
+        private readonly IRedisService _redisService;
 
         public GetSellerOrderStatisticsQueryHandler(
             IOrderRepository orderRepository,
-            IShopRepository shopRepository)
+            IShopRepository shopRepository,
+            IRedisService redisService)
         {
             _orderRepository = orderRepository;
             _shopRepository = shopRepository;
+            _redisService = redisService;
         }
 
         public async Task<BaseResponse<SellerOrderStatisticsResponse>> Handle(
@@ -30,6 +35,14 @@ namespace FoodConnect.Backend.Application.Features.Seller.Queries
             if (shop == null)
             {
                 return result.BuildNotFound("Shop not found");
+            }
+
+            // Check cache
+            var cacheKey = CacheKeys.SellerOrderStats(request.ShopId, request.FromDate, request.ToDate);
+            var cachedResponse = await _redisService.GetAsync<BaseResponse<SellerOrderStatisticsResponse>>(cacheKey);
+            if (cachedResponse != null)
+            {
+                return cachedResponse;
             }
 
             var ordersQuery = _orderRepository.GetAllQueryable()
@@ -102,7 +115,9 @@ namespace FoodConnect.Backend.Application.Features.Seller.Queries
                 ToDate = request.ToDate
             };
 
-            return result.BuildSuccess(response, "Order statistics retrieved successfully");
+            var successResult = result.BuildSuccess(response, "Order statistics retrieved successfully");
+            await _redisService.SetAsync(cacheKey, successResult, CacheKeys.Expiration.SellerStats);
+            return successResult;
         }
     }
 }

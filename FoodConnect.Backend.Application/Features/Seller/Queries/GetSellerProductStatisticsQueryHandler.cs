@@ -1,5 +1,7 @@
 using FoodConnect.Backend.Application.Commons.DTOs.Responses;
 using FoodConnect.Backend.Application.Commons.DTOs.Responses.Seller;
+using FoodConnect.Backend.Application.Commons.Helpers;
+using FoodConnect.Backend.Application.Commons.Interfaces;
 using FoodConnect.Backend.Application.Interfaces.IRepositories;
 using FoodConnect.Backend.Domain.Enums;
 using MediatR;
@@ -11,13 +13,16 @@ namespace FoodConnect.Backend.Application.Features.Seller.Queries
     {
         private readonly IOrderRepository _orderRepository;
         private readonly IShopRepository _shopRepository;
+        private readonly IRedisService _redisService;
 
         public GetSellerProductStatisticsQueryHandler(
             IOrderRepository orderRepository,
-            IShopRepository shopRepository)
+            IShopRepository shopRepository,
+            IRedisService redisService)
         {
             _orderRepository = orderRepository;
             _shopRepository = shopRepository;
+            _redisService = redisService;
         }
 
         public async Task<BaseResponse<SellerProductStatisticsResponse>> Handle(
@@ -25,6 +30,14 @@ namespace FoodConnect.Backend.Application.Features.Seller.Queries
             CancellationToken cancellationToken)
         {
             var result = new BaseResponse<SellerProductStatisticsResponse>();
+
+            var cacheKey = CacheKeys.SellerProductStats(request.ShopId, request.FromDate, request.ToDate, request.TopN);
+            var cachedResponse = await _redisService.GetAsync<BaseResponse<SellerProductStatisticsResponse>>(cacheKey);
+
+            if (cachedResponse != null)
+            {
+                return cachedResponse;
+            }
 
             var shop = await _shopRepository.GetByIdAsync(request.ShopId);
             if (shop == null)
@@ -90,7 +103,10 @@ namespace FoodConnect.Backend.Application.Features.Seller.Queries
                 TotalQuantitySold = productSalesData.Sum(x => x.QuantitySold)
             };
 
-            return result.BuildSuccess(response, "Product statistics retrieved successfully");
+            var successResult = result.BuildSuccess(response, "Product statistics retrieved successfully");
+            await _redisService.SetAsync(cacheKey, successResult, CacheKeys.Expiration.SellerStats);
+
+            return successResult;
         }
     }
 }

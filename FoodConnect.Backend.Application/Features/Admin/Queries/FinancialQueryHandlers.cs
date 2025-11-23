@@ -1,5 +1,7 @@
 using FoodConnect.Backend.Application.Commons.DTOs.Responses;
 using FoodConnect.Backend.Application.Commons.DTOs.Responses.Admin;
+using FoodConnect.Backend.Application.Commons.Helpers;
+using FoodConnect.Backend.Application.Commons.Interfaces;
 using FoodConnect.Backend.Application.Interfaces.IRepositories;
 using FoodConnect.Backend.Domain.Enums;
 using MediatR;
@@ -11,13 +13,16 @@ namespace FoodConnect.Backend.Application.Features.Admin.Queries
     {
         private readonly IOrderRepository _orderRepository;
         private readonly ISystemConfigRepository _systemConfigRepository;
+        private readonly IRedisService _redisService;
 
         public GetSystemRevenueQueryHandler(
             IOrderRepository orderRepository,
-            ISystemConfigRepository systemConfigRepository)
+            ISystemConfigRepository systemConfigRepository,
+            IRedisService redisService)
         {
             _orderRepository = orderRepository;
             _systemConfigRepository = systemConfigRepository;
+            _redisService = redisService;
         }
 
         public async Task<BaseResponse<SystemRevenueResponse>> Handle(
@@ -25,6 +30,14 @@ namespace FoodConnect.Backend.Application.Features.Admin.Queries
             CancellationToken cancellationToken)
         {
             var result = new BaseResponse<SystemRevenueResponse>();
+
+            var cacheKey = CacheKeys.SystemRevenue(request.FromDate, request.ToDate, request.SellerId);
+            var cachedResponse = await _redisService.GetAsync<BaseResponse<SystemRevenueResponse>>(cacheKey);
+
+            if (cachedResponse != null)
+            {
+                return cachedResponse;
+            }
 
             var platformFeeConfig = await _systemConfigRepository.GetByKeyAsync("PLATFORM_FEE_PERCENTAGE");
             var platformFeePercentage = platformFeeConfig != null
@@ -71,7 +84,10 @@ namespace FoodConnect.Backend.Application.Features.Admin.Queries
                 RevenueComparison = CalculateComparison(previousRevenue, currentRevenue)
             };
 
-            return result.BuildSuccess(response, "System revenue retrieved successfully");
+            var successResult = result.BuildSuccess(response, "System revenue retrieved successfully");
+            await _redisService.SetAsync(cacheKey, successResult, CacheKeys.Expiration.AdminFinancial);
+
+            return successResult;
         }
 
         private ComparisonData CalculateComparison(decimal previousValue, decimal currentValue)
@@ -96,13 +112,16 @@ namespace FoodConnect.Backend.Application.Features.Admin.Queries
     {
         private readonly IOrderRepository _orderRepository;
         private readonly ISystemConfigRepository _systemConfigRepository;
+        private readonly IRedisService _redisService;
 
         public GetRevenueBySellerQueryHandler(
             IOrderRepository orderRepository,
-            ISystemConfigRepository systemConfigRepository)
+            ISystemConfigRepository systemConfigRepository,
+            IRedisService redisService)
         {
             _orderRepository = orderRepository;
             _systemConfigRepository = systemConfigRepository;
+            _redisService = redisService;
         }
 
         public async Task<BaseResponse<RevenueBySellerResponse>> Handle(
@@ -110,6 +129,14 @@ namespace FoodConnect.Backend.Application.Features.Admin.Queries
             CancellationToken cancellationToken)
         {
             var result = new BaseResponse<RevenueBySellerResponse>();
+
+            // Check cache
+            var cacheKey = CacheKeys.RevenueBySeller(request.FromDate, request.ToDate, request.TopN);
+            var cachedResponse = await _redisService.GetAsync<BaseResponse<RevenueBySellerResponse>>(cacheKey);
+            if (cachedResponse != null)
+            {
+                return cachedResponse;
+            }
 
             var platformFeeConfig = await _systemConfigRepository.GetByKeyAsync("PLATFORM_FEE_PERCENTAGE");
             var platformFeePercentage = platformFeeConfig != null
@@ -148,17 +175,23 @@ namespace FoodConnect.Backend.Application.Features.Admin.Queries
                 TotalPlatformFee = sellerRevenues.Sum(s => s.PlatformFee)
             };
 
-            return result.BuildSuccess(response, "Revenue by seller retrieved successfully");
+            var successResult = result.BuildSuccess(response, "Revenue by seller retrieved successfully");
+            await _redisService.SetAsync(cacheKey, successResult, CacheKeys.Expiration.AdminFinancial);
+            return successResult;
         }
     }
 
     public class GetRefundStatisticsQueryHandler : IRequestHandler<GetRefundStatisticsQuery, BaseResponse<RefundStatisticsResponse>>
     {
         private readonly IOrderRepository _orderRepository;
+        private readonly IRedisService _redisService;
 
-        public GetRefundStatisticsQueryHandler(IOrderRepository orderRepository)
+        public GetRefundStatisticsQueryHandler(
+            IOrderRepository orderRepository,
+            IRedisService redisService)
         {
             _orderRepository = orderRepository;
+            _redisService = redisService;
         }
 
         public async Task<BaseResponse<RefundStatisticsResponse>> Handle(
@@ -166,6 +199,14 @@ namespace FoodConnect.Backend.Application.Features.Admin.Queries
             CancellationToken cancellationToken)
         {
             var result = new BaseResponse<RefundStatisticsResponse>();
+
+            // Check cache
+            var cacheKey = CacheKeys.RefundStats(request.FromDate, request.ToDate, request.SellerId);
+            var cachedResponse = await _redisService.GetAsync<BaseResponse<RefundStatisticsResponse>>(cacheKey);
+            if (cachedResponse != null)
+            {
+                return cachedResponse;
+            }
 
             var ordersQuery = _orderRepository.GetAllQueryable()
                 .Include(o => o.Shop)
@@ -212,7 +253,9 @@ namespace FoodConnect.Backend.Application.Features.Admin.Queries
                 ToDate = request.ToDate
             };
 
-            return result.BuildSuccess(response, "Refund statistics retrieved successfully");
+            var successResult = result.BuildSuccess(response, "Refund statistics retrieved successfully");
+            await _redisService.SetAsync(cacheKey, successResult, CacheKeys.Expiration.AdminFinancial);
+            return successResult;
         }
     }
 }

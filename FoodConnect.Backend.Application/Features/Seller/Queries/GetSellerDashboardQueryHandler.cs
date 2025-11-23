@@ -1,5 +1,7 @@
 using FoodConnect.Backend.Application.Commons.DTOs.Responses;
 using FoodConnect.Backend.Application.Commons.DTOs.Responses.Seller;
+using FoodConnect.Backend.Application.Commons.Helpers;
+using FoodConnect.Backend.Application.Commons.Interfaces;
 using FoodConnect.Backend.Application.Interfaces.IRepositories;
 using FoodConnect.Backend.Domain.Enums;
 using MediatR;
@@ -11,13 +13,16 @@ namespace FoodConnect.Backend.Application.Features.Seller.Queries
     {
         private readonly IOrderRepository _orderRepository;
         private readonly IShopRepository _shopRepository;
+        private readonly IRedisService _redisService;
 
         public GetSellerDashboardQueryHandler(
             IOrderRepository orderRepository,
-            IShopRepository shopRepository)
+            IShopRepository shopRepository,
+            IRedisService redisService)
         {
             _orderRepository = orderRepository;
             _shopRepository = shopRepository;
+            _redisService = redisService;
         }
 
         public async Task<BaseResponse<SellerDashboardResponse>> Handle(
@@ -25,6 +30,14 @@ namespace FoodConnect.Backend.Application.Features.Seller.Queries
             CancellationToken cancellationToken)
         {
             var result = new BaseResponse<SellerDashboardResponse>();
+
+            var cacheKey = CacheKeys.SellerDashboard(request.ShopId, request.FromDate, request.ToDate, request.Period);
+            var cachedResponse = await _redisService.GetAsync<BaseResponse<SellerDashboardResponse>>(cacheKey);
+
+            if (cachedResponse != null)
+            {
+                return cachedResponse;
+            }
 
             var shop = await _shopRepository.GetByIdAsync(request.ShopId);
             if (shop == null)
@@ -73,7 +86,10 @@ namespace FoodConnect.Backend.Application.Features.Seller.Queries
                 ProductsSoldComparison = CalculateComparison(previousProductsSold, currentProductsSold)
             };
 
-            return result.BuildSuccess(response, "Dashboard data retrieved successfully");
+            var successResult = result.BuildSuccess(response, "Dashboard data retrieved successfully");
+            await _redisService.SetAsync(cacheKey, successResult, CacheKeys.Expiration.SellerDashboard);
+
+            return successResult;
         }
 
         private DateTime CalculatePreviousPeriodStart(DateTime fromDate, string period)

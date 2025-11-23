@@ -1,5 +1,7 @@
 using FoodConnect.Backend.Application.Commons.DTOs.Responses;
 using FoodConnect.Backend.Application.Commons.DTOs.Responses.Admin;
+using FoodConnect.Backend.Application.Commons.Helpers;
+using FoodConnect.Backend.Application.Commons.Interfaces;
 using FoodConnect.Backend.Application.Interfaces.IRepositories;
 using FoodConnect.Backend.Domain.Enums;
 using MediatR;
@@ -10,10 +12,14 @@ namespace FoodConnect.Backend.Application.Features.Admin.Queries
     public class GetOrderStatusOverviewQueryHandler : IRequestHandler<GetOrderStatusOverviewQuery, BaseResponse<OrderStatusOverviewResponse>>
     {
         private readonly IOrderRepository _orderRepository;
+        private readonly IRedisService _redisService;
 
-        public GetOrderStatusOverviewQueryHandler(IOrderRepository orderRepository)
+        public GetOrderStatusOverviewQueryHandler(
+            IOrderRepository orderRepository,
+            IRedisService redisService)
         {
             _orderRepository = orderRepository;
+            _redisService = redisService;
         }
 
         public async Task<BaseResponse<OrderStatusOverviewResponse>> Handle(
@@ -21,6 +27,14 @@ namespace FoodConnect.Backend.Application.Features.Admin.Queries
             CancellationToken cancellationToken)
         {
             var result = new BaseResponse<OrderStatusOverviewResponse>();
+
+            // Check cache
+            var cacheKey = CacheKeys.OrderStatusOverview(request.FromDate, request.ToDate);
+            var cachedResponse = await _redisService.GetAsync<BaseResponse<OrderStatusOverviewResponse>>(cacheKey);
+            if (cachedResponse != null)
+            {
+                return cachedResponse;
+            }
 
             var orders = await _orderRepository.GetAllQueryable()
                 .Where(o => o.CreatedAtUtc >= request.FromDate &&
@@ -59,17 +73,23 @@ namespace FoodConnect.Backend.Application.Features.Admin.Queries
                 ToDate = request.ToDate
             };
 
-            return result.BuildSuccess(response, "Order status overview retrieved successfully");
+            var successResult = result.BuildSuccess(response, "Order status overview retrieved successfully");
+            await _redisService.SetAsync(cacheKey, successResult, CacheKeys.Expiration.AdminOperational);
+            return successResult;
         }
     }
 
     public class GetCancellationRateQueryHandler : IRequestHandler<GetCancellationRateQuery, BaseResponse<CancellationRateResponse>>
     {
         private readonly IOrderRepository _orderRepository;
+        private readonly IRedisService _redisService;
 
-        public GetCancellationRateQueryHandler(IOrderRepository orderRepository)
+        public GetCancellationRateQueryHandler(
+            IOrderRepository orderRepository,
+            IRedisService redisService)
         {
             _orderRepository = orderRepository;
+            _redisService = redisService;
         }
 
         public async Task<BaseResponse<CancellationRateResponse>> Handle(
@@ -77,6 +97,14 @@ namespace FoodConnect.Backend.Application.Features.Admin.Queries
             CancellationToken cancellationToken)
         {
             var result = new BaseResponse<CancellationRateResponse>();
+
+            // Check cache
+            var cacheKey = CacheKeys.CancellationRate(request.FromDate, request.ToDate);
+            var cachedResponse = await _redisService.GetAsync<BaseResponse<CancellationRateResponse>>(cacheKey);
+            if (cachedResponse != null)
+            {
+                return cachedResponse;
+            }
 
             var currentOrders = await _orderRepository.GetAllQueryable()
                 .Include(o => o.Shop)
@@ -136,7 +164,9 @@ namespace FoodConnect.Backend.Application.Features.Admin.Queries
                 }
             };
 
-            return result.BuildSuccess(response, "Cancellation rate retrieved successfully");
+            var successResult = result.BuildSuccess(response, "Cancellation rate retrieved successfully");
+            await _redisService.SetAsync(cacheKey, successResult, CacheKeys.Expiration.AdminOperational);
+            return successResult;
         }
     }
 
@@ -144,13 +174,16 @@ namespace FoodConnect.Backend.Application.Features.Admin.Queries
     {
         private readonly IOrderRepository _orderRepository;
         private readonly ICategoryRepository _categoryRepository;
+        private readonly IRedisService _redisService;
 
         public GetTopProductsQueryHandler(
             IOrderRepository orderRepository,
-            ICategoryRepository categoryRepository)
+            ICategoryRepository categoryRepository,
+            IRedisService redisService)
         {
             _orderRepository = orderRepository;
             _categoryRepository = categoryRepository;
+            _redisService = redisService;
         }
 
         public async Task<BaseResponse<TopProductsResponse>> Handle(
@@ -158,6 +191,14 @@ namespace FoodConnect.Backend.Application.Features.Admin.Queries
             CancellationToken cancellationToken)
         {
             var result = new BaseResponse<TopProductsResponse>();
+
+            var cacheKey = CacheKeys.TopProducts(request.FromDate, request.ToDate, request.TopN, request.CategoryId);
+            var cachedResponse = await _redisService.GetAsync<BaseResponse<TopProductsResponse>>(cacheKey);
+
+            if (cachedResponse != null)
+            {
+                return cachedResponse;
+            }
 
             var ordersQuery = _orderRepository.GetAllQueryable()
                 .Include(o => o.OrderItems)
@@ -260,7 +301,10 @@ namespace FoodConnect.Backend.Application.Features.Admin.Queries
                 BestSellersByCategory = bestSellersByCategory
             };
 
-            return result.BuildSuccess(response, "Top products retrieved successfully");
+            var successResult = result.BuildSuccess(response, "Top products retrieved successfully");
+            await _redisService.SetAsync(cacheKey, successResult, CacheKeys.Expiration.AdminOperational);
+
+            return successResult;
         }
     }
 }

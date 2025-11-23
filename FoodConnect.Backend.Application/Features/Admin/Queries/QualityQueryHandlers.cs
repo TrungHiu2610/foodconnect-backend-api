@@ -1,5 +1,7 @@
 using FoodConnect.Backend.Application.Commons.DTOs.Responses;
 using FoodConnect.Backend.Application.Commons.DTOs.Responses.Admin;
+using FoodConnect.Backend.Application.Commons.Helpers;
+using FoodConnect.Backend.Application.Commons.Interfaces;
 using FoodConnect.Backend.Application.Interfaces.IRepositories;
 using FoodConnect.Backend.Domain.Enums;
 using MediatR;
@@ -10,10 +12,14 @@ namespace FoodConnect.Backend.Application.Features.Admin.Queries
     public class GetComplaintStatisticsQueryHandler : IRequestHandler<GetComplaintStatisticsQuery, BaseResponse<ComplaintStatisticsResponse>>
     {
         private readonly IOrderRepository _orderRepository;
+        private readonly IRedisService _redisService;
 
-        public GetComplaintStatisticsQueryHandler(IOrderRepository orderRepository)
+        public GetComplaintStatisticsQueryHandler(
+            IOrderRepository orderRepository,
+            IRedisService redisService)
         {
             _orderRepository = orderRepository;
+            _redisService = redisService;
         }
 
         public async Task<BaseResponse<ComplaintStatisticsResponse>> Handle(
@@ -21,6 +27,14 @@ namespace FoodConnect.Backend.Application.Features.Admin.Queries
             CancellationToken cancellationToken)
         {
             var result = new BaseResponse<ComplaintStatisticsResponse>();
+
+            // Check cache
+            var cacheKey = CacheKeys.ComplaintStats(request.FromDate, request.ToDate);
+            var cachedResponse = await _redisService.GetAsync<BaseResponse<ComplaintStatisticsResponse>>(cacheKey);
+            if (cachedResponse != null)
+            {
+                return cachedResponse;
+            }
 
             var ordersQuery = _orderRepository.GetAllQueryable()
                 .Include(o => o.Shop)
@@ -81,7 +95,9 @@ namespace FoodConnect.Backend.Application.Features.Admin.Queries
                 ComplaintStatusBreakdown = statusBreakdown
             };
 
-            return result.BuildSuccess(response, "Complaint statistics retrieved successfully");
+            var successResult = result.BuildSuccess(response, "Complaint statistics retrieved successfully");
+            await _redisService.SetAsync(cacheKey, successResult, CacheKeys.Expiration.AdminQuality);
+            return successResult;
         }
     }
 
@@ -89,13 +105,16 @@ namespace FoodConnect.Backend.Application.Features.Admin.Queries
     {
         private readonly IOrderRepository _orderRepository;
         private readonly IShopRepository _shopRepository;
+        private readonly IRedisService _redisService;
 
         public GetSellerHealthScoreQueryHandler(
             IOrderRepository orderRepository,
-            IShopRepository shopRepository)
+            IShopRepository shopRepository,
+            IRedisService redisService)
         {
             _orderRepository = orderRepository;
             _shopRepository = shopRepository;
+            _redisService = redisService;
         }
 
         public async Task<BaseResponse<List<SellerHealthScoreResponse>>> Handle(
@@ -103,6 +122,14 @@ namespace FoodConnect.Backend.Application.Features.Admin.Queries
             CancellationToken cancellationToken)
         {
             var result = new BaseResponse<List<SellerHealthScoreResponse>>();
+
+            // Check cache
+            var cacheKey = CacheKeys.SellerHealthScore(request.ShopId, request.TopN);
+            var cachedResponse = await _redisService.GetAsync<BaseResponse<List<SellerHealthScoreResponse>>>(cacheKey);
+            if (cachedResponse != null)
+            {
+                return cachedResponse;
+            }
 
             var shopsQuery = _shopRepository.GetAllQueryable();
 
@@ -201,7 +228,9 @@ namespace FoodConnect.Backend.Application.Features.Admin.Queries
 
             healthScores = healthScores.OrderByDescending(h => h.HealthScore).ToList();
 
-            return result.BuildSuccess(healthScores, "Seller health scores retrieved successfully");
+            var successResult = result.BuildSuccess(healthScores, "Seller health scores retrieved successfully");
+            await _redisService.SetAsync(cacheKey, successResult, CacheKeys.Expiration.AdminQuality);
+            return successResult;
         }
     }
 
@@ -209,13 +238,16 @@ namespace FoodConnect.Backend.Application.Features.Admin.Queries
     {
         private readonly IOrderRepository _orderRepository;
         private readonly IUserRepository _userRepository;
+        private readonly IRedisService _redisService;
 
         public GetBuyerRiskScoreQueryHandler(
             IOrderRepository orderRepository,
-            IUserRepository userRepository)
+            IUserRepository userRepository,
+            IRedisService redisService)
         {
             _orderRepository = orderRepository;
             _userRepository = userRepository;
+            _redisService = redisService;
         }
 
         public async Task<BaseResponse<List<BuyerRiskScoreResponse>>> Handle(
@@ -223,6 +255,14 @@ namespace FoodConnect.Backend.Application.Features.Admin.Queries
             CancellationToken cancellationToken)
         {
             var result = new BaseResponse<List<BuyerRiskScoreResponse>>();
+
+            // Check cache
+            var cacheKey = CacheKeys.BuyerRiskScore(request.BuyerId, request.TopN);
+            var cachedResponse = await _redisService.GetAsync<BaseResponse<List<BuyerRiskScoreResponse>>>(cacheKey);
+            if (cachedResponse != null)
+            {
+                return cachedResponse;
+            }
 
             var buyersQuery = _userRepository.GetAllQueryable()
                 .Include(u => u.UserRoles)
@@ -296,7 +336,9 @@ namespace FoodConnect.Backend.Application.Features.Admin.Queries
                 .Take(request.TopN)
                 .ToList();
 
-            return result.BuildSuccess(riskScores, "Buyer risk scores retrieved successfully");
+            var successResult = result.BuildSuccess(riskScores, "Buyer risk scores retrieved successfully");
+            await _redisService.SetAsync(cacheKey, successResult, CacheKeys.Expiration.AdminQuality);
+            return successResult;
         }
     }
 }
