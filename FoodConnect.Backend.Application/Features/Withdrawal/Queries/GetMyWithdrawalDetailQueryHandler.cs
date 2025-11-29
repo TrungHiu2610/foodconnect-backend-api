@@ -35,8 +35,8 @@ public class GetMyWithdrawalDetailQueryHandler : IRequestHandler<GetMyWithdrawal
         if (withdrawal == null)
             return result.BuildNotFound("Withdrawal request not found");
 
-        // Verify ownership
-        if (withdrawal.SellerId != userId.Value)
+        // Verify ownership through wallet
+        if (withdrawal.Wallet == null || withdrawal.Wallet.UserId != userId.Value)
             return result.BuildForbidden();
 
         var response = _mapper.Map<WithdrawalRequestResponse>(withdrawal);

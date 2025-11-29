@@ -12,14 +12,14 @@ namespace FoodConnect.Backend.Application.Features.Shop.Commands
     {
         private readonly IShopRepository _shopRepository;
         private readonly IUserRepository _userRepository;
-        private readonly ISellerWalletRepository _walletRepository;
+        private readonly IWalletRepository _walletRepository;
         private readonly IUnitOfWork _unitOfWork;
         private readonly ICurrentUserService _currentUserService;
 
         public ApproveShopCommandHandler(
             IShopRepository shopRepository,
             IUserRepository userRepository,
-            ISellerWalletRepository walletRepository,
+            IWalletRepository walletRepository,
             IUnitOfWork unitOfWork,
             ICurrentUserService currentUserService)
         {
@@ -73,17 +73,18 @@ namespace FoodConnect.Backend.Application.Features.Shop.Commands
                     _userRepository.Update(user);
                 }
 
-                var existingWallet = await _walletRepository.GetBySellerIdAsync(user.Id);
+                var existingWallet = await _walletRepository.GetByUserIdAndTypeAsync(user.Id, WalletTypeEnum.Seller);
                 if (existingWallet == null)
                 {
-                    var wallet = new SellerWallet
+                    var wallet = new Domain.Entities.Wallet
                     {
-                        SellerId = user.Id,
+                        UserId = user.Id,
+                        WalletType = WalletTypeEnum.Seller,
                         Balance = 0,
                         TotalEarned = 0,
                         TotalWithdrawn = 0,
                         PendingBalance = 0,
-                        Status = SellerWalletStatusEnum.Active
+                        Status = WalletStatusEnum.Active
                     };
                     await _walletRepository.AddAsync(wallet);
                 }

@@ -35,8 +35,6 @@ namespace FoodConnect.Backend.Infrastructure.Persistence
         public DbSet<ProductReview> ProductReviews { get; set; }
         public DbSet<ProductReviewAsset> ProductReviewAssets { get; set; }
         public DbSet<SystemConfig> SystemConfigs { get; set; }
-        public DbSet<SellerWallet> SellerWallets { get; set; }
-        public DbSet<SellerWalletTransaction> SellerWalletTransactions { get; set; }
         public DbSet<Wallet> Wallets { get; set; }
         public DbSet<WalletTransaction> WalletTransactions { get; set; }
         public DbSet<WithdrawalRequest> WithdrawalRequests { get; set; }

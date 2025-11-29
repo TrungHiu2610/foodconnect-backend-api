@@ -7,9 +7,10 @@ public class WalletResponse
     public int WalletType { get; set; }
     public string WalletTypeName { get; set; } = string.Empty;
     public decimal Balance { get; set; }
+    public decimal PendingBalance { get; set; }
+    public decimal AvailableBalance { get; set; }
     public decimal TotalEarned { get; set; }
     public decimal TotalWithdrawn { get; set; }
-    public decimal PendingBalance { get; set; }
     public decimal TotalSpent { get; set; }
     public int Status { get; set; }
     public string StatusName { get; set; } = string.Empty;
