@@ -16,6 +16,7 @@ namespace FoodConnect.Backend.Application.Interfaces.IRepositories
         params Expression<Func<T, object>>[] includes);
         Task<IEnumerable<T>> GetByIdsAsync(IEnumerable<Guid> ids);
         Task<IEnumerable<T>> GetAllAsync();
+        IQueryable<T> GetAllQueryable();
         Task AddAsync(T entity);
         Task AddRangeAsync(IEnumerable<T> entities);
         void Update(T entity);
