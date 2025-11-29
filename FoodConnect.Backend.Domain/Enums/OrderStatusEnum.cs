@@ -16,9 +16,10 @@ namespace FoodConnect.Backend.Domain.Enums
         OutForDelivery = 5,    // Đang giao hàng (Standard)
         Delivered = 6,         // Đã giao hàng (chờ buyer xác nhận)
         Completed = 7,         // Buyer đã xác nhận nhận hàng
-        Cancelled = 8,         // Đã hủy
+        Cancelled = 8,         // Buyer đã hủy đơn (seller KHÔNG thấy)
         Returned = 9,          // Đã trả hàng
         AwaitingPayment = 10,  // Chờ thanh toán online (VNPay/MoMo)
-        Disputing = 11         // Đang trong quá trình khiếu nại
+        Disputing = 11,        // Đang trong quá trình khiếu nại
+        Rejected = 12          // Seller từ chối đơn hàng
     }
 }
