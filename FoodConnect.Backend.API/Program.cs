@@ -179,6 +179,7 @@ services.AddScoped<IWalletRepository, WalletRepository>();
 services.AddScoped<IWalletTransactionRepository, WalletTransactionRepository>();
 services.AddScoped<IWithdrawalRequestRepository, WithdrawalRequestRepository>();
 services.AddScoped<IPaymentTransactionRepository, PaymentTransactionRepository>();
+services.AddScoped<IUserStatusAuditLogRepository, UserStatusAuditLogRepository>();
 services.AddScoped<IOrderComplaintRepository, OrderComplaintRepository>();
 services.AddScoped<IOrderComplaintAssetRepository, OrderComplaintAssetRepository>();
 services.AddScoped<IConversationRepository, ConversationRepository>();
