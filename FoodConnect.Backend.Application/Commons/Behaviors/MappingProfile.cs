@@ -221,22 +221,10 @@ namespace FoodConnect.Backend.Application.Commons.Behaviors
 
             #region wallet mappings
 
-            CreateMap<SellerWallet, Application.Commons.DTOs.Responses.Wallet.SellerWalletResponse>()
-                .ForMember(dest => dest.Status, opt => opt.MapFrom(src => (int)src.Status))
-                .ForMember(dest => dest.StatusName, opt => opt.MapFrom(src => src.Status.ToString()))
-                .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(src => src.CreatedAtUtc));
-
-            CreateMap<SellerWalletTransaction, Application.Commons.DTOs.Responses.Wallet.WalletTransactionResponse>()
-                .ForMember(dest => dest.OrderCode, opt => opt.MapFrom(src => src.Order != null ? src.Order.OrderCode : null))
-                .ForMember(dest => dest.TransactionType, opt => opt.MapFrom(src => (int)src.TransactionType))
-                .ForMember(dest => dest.TransactionTypeName, opt => opt.MapFrom(src => src.TransactionType.ToString()))
-                .ForMember(dest => dest.Status, opt => opt.MapFrom(src => (int)src.Status))
-                .ForMember(dest => dest.StatusName, opt => opt.MapFrom(src => src.Status.ToString()))
-                .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(src => src.CreatedAtUtc));
-
             CreateMap<Domain.Entities.Wallet, Application.Commons.DTOs.Responses.Wallet.WalletResponse>()
                 .ForMember(dest => dest.WalletType, opt => opt.MapFrom(src => (int)src.WalletType))
                 .ForMember(dest => dest.WalletTypeName, opt => opt.MapFrom(src => src.WalletType.ToString()))
+                .ForMember(dest => dest.AvailableBalance, opt => opt.MapFrom(src => src.AvailableBalance))
                 .ForMember(dest => dest.Status, opt => opt.MapFrom(src => (int)src.Status))
                 .ForMember(dest => dest.StatusName, opt => opt.MapFrom(src => src.Status.ToString()))
                 .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(src => src.CreatedAtUtc));
@@ -327,7 +315,7 @@ namespace FoodConnect.Backend.Application.Commons.Behaviors
             #region withdrawal mappings
 
             CreateMap<WithdrawalRequest, WithdrawalRequestListResponse>()
-                .ForMember(dest => dest.SellerName, opt => opt.MapFrom(src => src.Seller != null ? src.Seller.FullName : string.Empty))
+                .ForMember(dest => dest.SellerName, opt => opt.MapFrom(src => src.Wallet != null && src.Wallet.User != null ? src.Wallet.User.FullName : string.Empty))
                 .ForMember(dest => dest.Status, opt => opt.MapFrom(src => (int)src.Status))
                 .ForMember(dest => dest.StatusName, opt => opt.MapFrom(src => src.Status.ToString()))
                 .ForMember(dest => dest.PaymentMethod, opt => opt.MapFrom(src => (int)src.PaymentMethod))
@@ -336,7 +324,7 @@ namespace FoodConnect.Backend.Application.Commons.Behaviors
                 .ForMember(dest => dest.CompletedAt, opt => opt.MapFrom(src => src.CompletedAt));
 
             CreateMap<WithdrawalRequest, WithdrawalRequestResponse>()
-                .ForMember(dest => dest.SellerName, opt => opt.MapFrom(src => src.Seller != null ? src.Seller.FullName : string.Empty))
+                .ForMember(dest => dest.SellerName, opt => opt.MapFrom(src => src.Wallet != null && src.Wallet.User != null ? src.Wallet.User.FullName : string.Empty))
                 .ForMember(dest => dest.Status, opt => opt.MapFrom(src => (int)src.Status))
                 .ForMember(dest => dest.StatusName, opt => opt.MapFrom(src => src.Status.ToString()))
                 .ForMember(dest => dest.PaymentMethod, opt => opt.MapFrom(src => (int)src.PaymentMethod))

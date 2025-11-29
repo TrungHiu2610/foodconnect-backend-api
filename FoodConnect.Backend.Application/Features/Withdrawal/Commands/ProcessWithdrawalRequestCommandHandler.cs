@@ -11,8 +11,8 @@ namespace FoodConnect.Backend.Application.Features.Withdrawal.Commands;
 public class ProcessWithdrawalRequestCommandHandler : IRequestHandler<ProcessWithdrawalRequestCommand, BaseResponse<CreateOrUpdateResponse>>
 {
     private readonly IWithdrawalRequestRepository _withdrawalRepository;
-    private readonly ISellerWalletRepository _walletRepository;
-    private readonly ISellerWalletTransactionRepository _transactionRepository;
+    private readonly IWalletRepository _walletRepository;
+    private readonly IWalletTransactionRepository _transactionRepository;
     private readonly IUnitOfWork _unitOfWork;
     private readonly ICurrentUserService _currentUserService;
     private readonly IFileStorageService _fileStorageService;
@@ -20,8 +20,8 @@ public class ProcessWithdrawalRequestCommandHandler : IRequestHandler<ProcessWit
 
     public ProcessWithdrawalRequestCommandHandler(
         IWithdrawalRequestRepository withdrawalRepository,
-        ISellerWalletRepository walletRepository,
-        ISellerWalletTransactionRepository transactionRepository,
+        IWalletRepository walletRepository,
+        IWalletTransactionRepository transactionRepository,
         IUnitOfWork unitOfWork,
         ICurrentUserService currentUserService,
         IFileStorageService fileStorageService,
@@ -89,7 +89,6 @@ public class ProcessWithdrawalRequestCommandHandler : IRequestHandler<ProcessWit
 
                 var balanceBefore = wallet.Balance;
 
-                wallet.Balance -= withdrawal.RequestedAmount;
                 wallet.PendingBalance -= withdrawal.RequestedAmount;
                 wallet.TotalWithdrawn += withdrawal.ActualAmount;
 
@@ -127,6 +126,8 @@ public class ProcessWithdrawalRequestCommandHandler : IRequestHandler<ProcessWit
                 var wallet = await _walletRepository.GetByIdAsync(withdrawal.WalletId);
                 if (wallet != null)
                 {
+                    // Restore Balance and deduct from PendingBalance
+                    wallet.Balance += withdrawal.RequestedAmount;
                     wallet.PendingBalance -= withdrawal.RequestedAmount;
                     _walletRepository.Update(wallet);
                 }
@@ -147,12 +148,16 @@ public class ProcessWithdrawalRequestCommandHandler : IRequestHandler<ProcessWit
                     ? WithdrawalNotificationMessages.SELLER_APPROVED_MESSAGE
                     : WithdrawalNotificationMessages.SellerRejectedMessage(request.RejectionReason!);
 
-                await _notificationService.NotifySellerWithdrawalProcessedAsync(
-                    withdrawal.SellerId,
-                    withdrawal.Id,
-                    request.IsApproved,
-                    notificationMessage
-                );
+                var wallet = await _walletRepository.GetByIdAsync(withdrawal.WalletId);
+                if (wallet != null)
+                {
+                    await _notificationService.NotifySellerWithdrawalProcessedAsync(
+                        wallet.UserId,
+                        withdrawal.Id,
+                        request.IsApproved,
+                        notificationMessage
+                    );
+                }
             }
             catch (Exception ex)
             {

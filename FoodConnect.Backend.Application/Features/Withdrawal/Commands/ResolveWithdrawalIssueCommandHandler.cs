@@ -85,11 +85,14 @@ public class ResolveWithdrawalIssueCommandHandler : IRequestHandler<ResolveWithd
             // Notify seller about issue resolution
             try
             {
-                await _notificationService.NotifySellerWithdrawalResolvedAsync(
-                    withdrawal.SellerId,
-                    withdrawal.Id,
-                    WithdrawalNotificationMessages.SELLER_ISSUE_RESOLVED_MESSAGE
-                );
+                if (withdrawal.Wallet != null)
+                {
+                    await _notificationService.NotifySellerWithdrawalResolvedAsync(
+                        withdrawal.Wallet.UserId,
+                        withdrawal.Id,
+                        WithdrawalNotificationMessages.SELLER_ISSUE_RESOLVED_MESSAGE
+                    );
+                }
             }
             catch (Exception ex)
             {

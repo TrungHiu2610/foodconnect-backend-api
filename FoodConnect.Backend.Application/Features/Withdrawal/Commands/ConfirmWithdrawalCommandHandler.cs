@@ -35,7 +35,8 @@ public class ConfirmWithdrawalCommandHandler : IRequestHandler<ConfirmWithdrawal
         if (withdrawal == null)
             return result.BuildNotFound("Withdrawal request not found");
 
-        if (withdrawal.SellerId != userId.Value)
+        // Verify ownership through wallet
+        if (withdrawal.Wallet == null || withdrawal.Wallet.UserId != userId.Value)
             return result.BuildFail("You are not authorized to confirm this withdrawal request");
 
         if (withdrawal.Status != WithdrawalStatusEnum.Completed)

@@ -11,18 +11,18 @@ namespace FoodConnect.Backend.Application.Features.Withdrawal.Commands;
 
 public class CreateWithdrawalRequestCommandHandler : IRequestHandler<CreateWithdrawalRequestCommand, BaseResponse<CreateOrUpdateResponse>>
 {
-    private readonly ISellerWalletRepository _walletRepository;
+    private readonly IWalletRepository _walletRepository;
     private readonly IWithdrawalRequestRepository _withdrawalRepository;
-    private readonly ISellerWalletTransactionRepository _transactionRepository;
+    private readonly IWalletTransactionRepository _transactionRepository;
     private readonly ISystemConfigRepository _systemConfigRepository;
     private readonly IUnitOfWork _unitOfWork;
     private readonly ICurrentUserService _currentUserService;
     private readonly INotificationService _notificationService;
 
     public CreateWithdrawalRequestCommandHandler(
-        ISellerWalletRepository walletRepository,
+        IWalletRepository walletRepository,
         IWithdrawalRequestRepository withdrawalRepository,
-        ISellerWalletTransactionRepository transactionRepository,
+        IWalletTransactionRepository transactionRepository,
         ISystemConfigRepository systemConfigRepository,
         IUnitOfWork unitOfWork,
         ICurrentUserService currentUserService,
@@ -45,18 +45,20 @@ public class CreateWithdrawalRequestCommandHandler : IRequestHandler<CreateWithd
         if (userId == null)
             return result.BuildUnauthorized();
 
-        var wallet = await _walletRepository.GetBySellerIdAsync(userId.Value);
+        // Get wallet (supports both buyer and seller wallets)
+        var wallet = await _walletRepository.GetByUserIdAndTypeAsync(userId.Value, WalletTypeEnum.Seller);
         if (wallet == null)
             return result.BuildNotFound("Không tìm thấy ví");
 
-        if (wallet.Status != SellerWalletStatusEnum.Active)
+        if (wallet.Status != WalletStatusEnum.Active)
             return result.BuildFail("Ví chưa kích hoạt");
 
         var minWithdrawAmount = await _systemConfigRepository.GetMinWithdrawAmountAsync();
         if (request.RequestedAmount < minWithdrawAmount)
             return result.BuildFail($"Số tiền rút tối thiểu là {minWithdrawAmount:N0} VND");
 
-        var availableBalance = wallet.Balance - wallet.PendingBalance;
+        // Check available balance (Balance - PendingBalance)
+        var availableBalance = wallet.AvailableBalance;
         if (availableBalance < request.RequestedAmount)
             return result.BuildFail($"Số dư không đủ. Số dư khả dùng: {availableBalance:N0} VND");
 
@@ -73,7 +75,6 @@ public class CreateWithdrawalRequestCommandHandler : IRequestHandler<CreateWithd
             var withdrawalRequest = new WithdrawalRequest
             {
                 WalletId = wallet.Id,
-                SellerId = userId.Value,
                 RequestedAmount = request.RequestedAmount,
                 ActualAmount = actualAmount,
                 ProcessingFee = processingFee,
@@ -89,20 +90,22 @@ public class CreateWithdrawalRequestCommandHandler : IRequestHandler<CreateWithd
             await _unitOfWork.SaveChangesAsync(cancellationToken);
 
             var balanceBefore = wallet.Balance;
-            var walletTransaction = new SellerWalletTransaction
+            var walletTransaction = new WalletTransaction
             {
                 WalletId = wallet.Id,
                 WithdrawalRequestId = withdrawalRequest.Id,
                 TransactionType = TransactionTypeEnum.Withdraw,
                 Amount = -request.RequestedAmount,
                 BalanceBefore = balanceBefore,
-                BalanceAfter = balanceBefore,
+                BalanceAfter = balanceBefore - request.RequestedAmount, // Balance will be deducted
                 Status = TransactionStatusEnum.Pending,
                 Description = TransactionDescriptions.WithdrawalPending(withdrawalRequest.Id.ToString())
             };
 
             await _transactionRepository.AddAsync(walletTransaction);
 
+            // Per user's requirement: deduct from Balance and add to PendingBalance
+            wallet.Balance -= request.RequestedAmount;
             wallet.PendingBalance += request.RequestedAmount;
             _walletRepository.Update(wallet);
 

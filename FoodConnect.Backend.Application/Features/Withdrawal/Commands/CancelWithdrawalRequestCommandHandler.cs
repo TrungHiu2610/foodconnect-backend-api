@@ -11,15 +11,15 @@ namespace FoodConnect.Backend.Application.Features.Withdrawal.Commands;
 public class CancelWithdrawalRequestCommandHandler : IRequestHandler<CancelWithdrawalRequestCommand, BaseResponse<CreateOrUpdateResponse>>
 {
     private readonly IWithdrawalRequestRepository _withdrawalRepository;
-    private readonly ISellerWalletRepository _walletRepository;
-    private readonly ISellerWalletTransactionRepository _transactionRepository;
+    private readonly IWalletRepository _walletRepository;
+    private readonly IWalletTransactionRepository _transactionRepository;
     private readonly IUnitOfWork _unitOfWork;
     private readonly ICurrentUserService _currentUserService;
 
     public CancelWithdrawalRequestCommandHandler(
         IWithdrawalRequestRepository withdrawalRepository,
-        ISellerWalletRepository walletRepository,
-        ISellerWalletTransactionRepository transactionRepository,
+        IWalletRepository walletRepository,
+        IWalletTransactionRepository transactionRepository,
         IUnitOfWork unitOfWork,
         ICurrentUserService currentUserService)
     {
@@ -42,7 +42,8 @@ public class CancelWithdrawalRequestCommandHandler : IRequestHandler<CancelWithd
         if (withdrawal == null)
             return result.BuildNotFound(WithdrawalValidationMessages.WITHDRAWAL_NOT_FOUND);
 
-        if (withdrawal.SellerId != userId.Value)
+        var wallet = await _walletRepository.GetByIdAsync(withdrawal.WalletId);
+        if (wallet == null || wallet.UserId != userId.Value)
             return result.BuildForbidden(WithdrawalValidationMessages.UNAUTHORIZED);
 
         if (withdrawal.Status != WithdrawalStatusEnum.Pending)
@@ -62,12 +63,10 @@ public class CancelWithdrawalRequestCommandHandler : IRequestHandler<CancelWithd
                 _transactionRepository.Update(pendingTransaction);
             }
 
-            var wallet = await _walletRepository.GetByIdAsync(withdrawal.WalletId);
-            if (wallet != null)
-            {
-                wallet.PendingBalance -= withdrawal.RequestedAmount;
-                _walletRepository.Update(wallet);
-            }
+            // Restore Balance and deduct from PendingBalance
+            wallet.Balance += withdrawal.RequestedAmount;
+            wallet.PendingBalance -= withdrawal.RequestedAmount;
+            _walletRepository.Update(wallet);
 
             await _unitOfWork.SaveChangesAsync(cancellationToken);
             await transaction.CommitAsync(cancellationToken);
