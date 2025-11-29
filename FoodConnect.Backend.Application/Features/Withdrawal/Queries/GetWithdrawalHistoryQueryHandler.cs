@@ -11,13 +11,13 @@ namespace FoodConnect.Backend.Application.Features.Withdrawal.Queries;
 
 public class GetWithdrawalHistoryQueryHandler : IRequestHandler<GetWithdrawalHistoryQuery, BaseResponse<PaginatedList<WithdrawalRequestListResponse>>>
 {
-    private readonly ISellerWalletRepository _walletRepository;
+    private readonly IWalletRepository _walletRepository;
     private readonly IWithdrawalRequestRepository _withdrawalRepository;
     private readonly ICurrentUserService _currentUserService;
     private readonly IMapper _mapper;
 
     public GetWithdrawalHistoryQueryHandler(
-        ISellerWalletRepository walletRepository,
+        IWalletRepository walletRepository,
         IWithdrawalRequestRepository withdrawalRepository,
         ICurrentUserService currentUserService,
         IMapper mapper)
@@ -36,7 +36,7 @@ public class GetWithdrawalHistoryQueryHandler : IRequestHandler<GetWithdrawalHis
         if (userId == null)
             return result.BuildUnauthorized();
 
-        var wallet = await _walletRepository.GetBySellerIdAsync(userId.Value);
+        var wallet = await _walletRepository.GetByUserIdAndTypeAsync(userId.Value, WalletTypeEnum.Seller);
         if (wallet == null)
             return result.BuildNotFound("Wallet not found");
 

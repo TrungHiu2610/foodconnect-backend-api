@@ -5,7 +5,6 @@ namespace FoodConnect.Backend.Domain.Entities;
 public class WithdrawalRequest : BaseEntity
 {
     public Guid WalletId { get; set; }
-    public Guid SellerId { get; set; }
     public decimal RequestedAmount { get; set; }
     public decimal ActualAmount { get; set; }
     public decimal ProcessingFee { get; set; } = 0;
@@ -25,11 +24,7 @@ public class WithdrawalRequest : BaseEntity
     public string? ProofImageUrl { get; set; }
     public string? IssueImageUrl { get; set; }
     
-    // Support both old SellerWallet and new Wallet
-    public virtual SellerWallet? SellerWallet { get; set; }
-    public virtual Wallet? Wallet { get; set; }
-    public virtual User Seller { get; set; } = null!;
+    public virtual Wallet Wallet { get; set; } = null!;
     public virtual User? ProcessedByAdmin { get; set; }
-    public virtual ICollection<SellerWalletTransaction> SellerWalletTransactions { get; set; } = new List<SellerWalletTransaction>();
     public virtual ICollection<WalletTransaction> WalletTransactions { get; set; } = new List<WalletTransaction>();
 }

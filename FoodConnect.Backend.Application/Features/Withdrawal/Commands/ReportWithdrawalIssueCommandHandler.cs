@@ -39,8 +39,8 @@ public class ReportWithdrawalIssueCommandHandler : IRequestHandler<ReportWithdra
         if (withdrawal == null)
             return result.BuildNotFound(WithdrawalValidationMessages.WITHDRAWAL_NOT_FOUND);
 
-        // Verify ownership
-        if (withdrawal.SellerId != userId.Value)
+        // Verify ownership through wallet
+        if (withdrawal.Wallet == null || withdrawal.Wallet.UserId != userId.Value)
             return result.BuildForbidden();
 
         // Can only report issue for completed withdrawals

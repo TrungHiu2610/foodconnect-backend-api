@@ -18,16 +18,16 @@ namespace FoodConnect.Backend.Application.Commons.Services
             _unitOfWork = unitOfWork;
         }
 
-        public async Task<Wallet> GetOrCreateBuyerWalletAsync(Guid userId, CancellationToken cancellationToken = default)
+        public async Task<Wallet> GetOrCreateWalletAsync(Guid userId, WalletTypeEnum walletType, CancellationToken cancellationToken = default)
         {
-            var wallet = await _walletRepository.GetByUserIdAndTypeAsync(userId, WalletTypeEnum.Buyer);
+            var wallet = await _walletRepository.GetByUserIdAndTypeAsync(userId, walletType);
 
             if (wallet == null)
             {
                 wallet = new Wallet
                 {
                     UserId = userId,
-                    WalletType = WalletTypeEnum.Buyer,
+                    WalletType = walletType,
                     Balance = 0,
                     TotalEarned = 0,
                     TotalWithdrawn = 0,
@@ -41,6 +41,16 @@ namespace FoodConnect.Backend.Application.Commons.Services
             }
 
             return wallet;
+        }
+
+        public async Task<Wallet> GetOrCreateBuyerWalletAsync(Guid userId, CancellationToken cancellationToken = default)
+        {
+            return await GetOrCreateWalletAsync(userId, WalletTypeEnum.Buyer, cancellationToken);
+        }
+
+        public async Task<Wallet> GetOrCreateSellerWalletAsync(Guid userId, CancellationToken cancellationToken = default)
+        {
+            return await GetOrCreateWalletAsync(userId, WalletTypeEnum.Seller, cancellationToken);
         }
     }
 }

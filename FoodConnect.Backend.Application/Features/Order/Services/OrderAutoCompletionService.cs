@@ -10,8 +10,8 @@ namespace FoodConnect.Backend.Application.Features.Order.Services
     public class OrderAutoCompletionService
     {
         private readonly IOrderRepository _orderRepository;
-        private readonly ISellerWalletRepository _walletRepository;
-        private readonly ISellerWalletTransactionRepository _transactionRepository;
+        private readonly IWalletRepository _walletRepository;
+        private readonly IWalletTransactionRepository _transactionRepository;
         private readonly ISystemConfigRepository _systemConfigRepository;
         private readonly IUnitOfWork _unitOfWork;
         private readonly OrderNotificationService _orderNotificationService;
@@ -19,8 +19,8 @@ namespace FoodConnect.Backend.Application.Features.Order.Services
 
         public OrderAutoCompletionService(
             IOrderRepository orderRepository,
-            ISellerWalletRepository walletRepository,
-            ISellerWalletTransactionRepository transactionRepository,
+            IWalletRepository walletRepository,
+            IWalletTransactionRepository transactionRepository,
             ISystemConfigRepository systemConfigRepository,
             IUnitOfWork unitOfWork,
             OrderNotificationService orderNotificationService,
@@ -63,18 +63,19 @@ namespace FoodConnect.Backend.Application.Features.Order.Services
 
                     // Get or create seller wallet
                     var sellerId = order.Shop.UserId;
-                    var wallet = await _walletRepository.GetBySellerIdAsync(sellerId);
+                    var wallet = await _walletRepository.GetByUserIdAndTypeAsync(sellerId, WalletTypeEnum.Seller);
 
                     if (wallet == null)
                     {
-                        wallet = new SellerWallet
+                        wallet = new Domain.Entities.Wallet
                         {
-                            SellerId = sellerId,
+                            UserId = sellerId,
+                            WalletType = WalletTypeEnum.Seller,
                             Balance = 0,
                             TotalEarned = 0,
                             TotalWithdrawn = 0,
                             PendingBalance = 0,
-                            Status = SellerWalletStatusEnum.Active
+                            Status = WalletStatusEnum.Active
                         };
                         await _walletRepository.AddAsync(wallet);
                         await _unitOfWork.SaveChangesAsync(cancellationToken);
@@ -89,7 +90,7 @@ namespace FoodConnect.Backend.Application.Features.Order.Services
                     var balanceBefore = wallet.Balance;
 
                     // Create earning transaction
-                    var earningTransaction = new SellerWalletTransaction
+                    var earningTransaction = new WalletTransaction
                     {
                         WalletId = wallet.Id,
                         OrderId = order.Id,
@@ -108,7 +109,7 @@ namespace FoodConnect.Backend.Application.Features.Order.Services
                     var balanceAfterEarning = wallet.Balance;
 
                     // Create commission deduction transaction
-                    var commissionTransaction = new SellerWalletTransaction
+                    var commissionTransaction = new WalletTransaction
                     {
                         WalletId = wallet.Id,
                         OrderId = order.Id,
