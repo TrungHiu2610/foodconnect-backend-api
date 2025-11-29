@@ -116,7 +116,6 @@ namespace FoodConnect.Backend.Application.Features.Admin.Queries
                                 ? ((decimal)returnedOrders / totalOrders) * 100
                                 : 0;
 
-                            // Calculate health score using same logic as GetSellerHealthScoreQuery
                             var processingTimes = shopOrders
                                 .Where(o => o.AcceptedAt.HasValue && o.Status == OrderStatusEnum.Completed)
                                 .Select(o => (o.CompletedAt ?? DateTime.UtcNow) - o.AcceptedAt!.Value)

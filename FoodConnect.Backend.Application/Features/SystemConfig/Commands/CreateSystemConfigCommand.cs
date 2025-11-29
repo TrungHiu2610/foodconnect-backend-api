@@ -6,7 +6,7 @@ namespace FoodConnect.Backend.Application.Features.SystemConfig.Commands;
 
 public class CreateSystemConfigCommand : IRequest<BaseResponse<CreateOrUpdateResponse>>
 {
-    public string ConfigKey { get; set; } = string.Empty;
+    public string? ConfigKey { get; set; }
     public string? ConfigValue { get; set; } 
     public string? Description { get; set; }
     public string DataType { get; set; } = "String";

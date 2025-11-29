@@ -76,6 +76,7 @@ namespace FoodConnect.Backend.Application.Features.Admin.Queries
                     AvatarUrl = u.AvatarUrl,
                     Roles = u.UserRoles.Select(ur => ur.Role.Name).ToList(),
                     Status = u.Status,
+                    Provider = u.Provider,
                     CreatedAtUtc = u.CreatedAtUtc
                 })
                 .ToListAsync(cancellationToken);

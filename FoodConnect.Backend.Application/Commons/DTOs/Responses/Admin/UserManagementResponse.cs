@@ -11,6 +11,7 @@ namespace FoodConnect.Backend.Application.Commons.DTOs.Responses.Admin
         public string? AvatarUrl { get; set; }
         public List<string> Roles { get; set; } = new();
         public UserStatusEnum Status { get; set; }
+        public AuthProviderEnum Provider { get; set; }
         public DateTime CreatedAtUtc { get; set; }
     }
 
