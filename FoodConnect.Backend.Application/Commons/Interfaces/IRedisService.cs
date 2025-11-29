@@ -6,5 +6,6 @@ namespace FoodConnect.Backend.Application.Commons.Interfaces
         Task<T?> GetAsync<T>(string key);
         Task<bool> DeleteAsync(string key);
         Task<bool> ExistsAsync(string key);
+        Task<long> DeleteByPatternAsync(string pattern);
     }
 }

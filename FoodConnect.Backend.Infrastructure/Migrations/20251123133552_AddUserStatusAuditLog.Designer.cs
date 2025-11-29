@@ -3,6 +3,7 @@ using System;
 using FoodConnect.Backend.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace FoodConnect.Backend.Infrastructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251123133552_AddUserStatusAuditLog")]
+    partial class AddUserStatusAuditLog
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -239,93 +242,6 @@ namespace FoodConnect.Backend.Infrastructure.Migrations
                     b.ToTable("Categories");
                 });
 
-            modelBuilder.Entity("FoodConnect.Backend.Domain.Entities.Conversation", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("BuyerId")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime>("CreatedAtUtc")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid?>("CreatedBy")
-                        .HasColumnType("uuid");
-
-                    b.Property<bool>("IsDeleted")
-                        .HasColumnType("boolean");
-
-                    b.Property<DateTime?>("LastMessageAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid>("SellerId")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime?>("UpdatedAtUtc")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid?>("UpdatedBy")
-                        .HasColumnType("uuid");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("BuyerId");
-
-                    b.HasIndex("SellerId");
-
-                    b.ToTable("Conversations");
-                });
-
-            modelBuilder.Entity("FoodConnect.Backend.Domain.Entities.Message", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("Content")
-                        .HasColumnType("text");
-
-                    b.Property<Guid>("ConversationId")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime>("CreatedAtUtc")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid?>("CreatedBy")
-                        .HasColumnType("uuid");
-
-                    b.Property<bool>("IsDeleted")
-                        .HasColumnType("boolean");
-
-                    b.Property<bool>("IsRead")
-                        .HasColumnType("boolean");
-
-                    b.Property<string>("MediaUrl")
-                        .HasColumnType("text");
-
-                    b.Property<int>("MessageType")
-                        .HasColumnType("integer");
-
-                    b.Property<Guid>("SenderId")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime?>("UpdatedAtUtc")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid?>("UpdatedBy")
-                        .HasColumnType("uuid");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("ConversationId");
-
-                    b.HasIndex("SenderId");
-
-                    b.ToTable("Messages");
-                });
-
             modelBuilder.Entity("FoodConnect.Backend.Domain.Entities.Notification", b =>
                 {
                     b.Property<Guid>("Id")
@@ -448,9 +364,6 @@ namespace FoodConnect.Backend.Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<Guid?>("OrderComplaintId")
-                        .HasColumnType("uuid");
-
                     b.Property<int>("PaymentMethod")
                         .HasColumnType("integer");
 
@@ -507,132 +420,6 @@ namespace FoodConnect.Backend.Infrastructure.Migrations
                     b.HasIndex("ShopId");
 
                     b.ToTable("Orders", (string)null);
-                });
-
-            modelBuilder.Entity("FoodConnect.Backend.Domain.Entities.OrderComplaint", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime?>("AdminDecidedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("AdminDecisionReason")
-                        .HasMaxLength(2000)
-                        .HasColumnType("character varying(2000)");
-
-                    b.Property<Guid?>("AdminId")
-                        .HasColumnType("uuid");
-
-                    b.Property<decimal?>("ApprovedRefundAmount")
-                        .HasColumnType("decimal(18,2)");
-
-                    b.Property<Guid>("BuyerId")
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("BuyerReason")
-                        .IsRequired()
-                        .HasMaxLength(2000)
-                        .HasColumnType("character varying(2000)");
-
-                    b.Property<DateTime?>("CompletedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<DateTime>("CreatedAtUtc")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid?>("CreatedBy")
-                        .HasColumnType("uuid");
-
-                    b.Property<bool>("IsApproved")
-                        .HasColumnType("boolean");
-
-                    b.Property<bool>("IsDeleted")
-                        .HasColumnType("boolean");
-
-                    b.Property<bool>("IsSellerRefundFixedAmount")
-                        .HasColumnType("boolean");
-
-                    b.Property<Guid>("OrderId")
-                        .HasColumnType("uuid");
-
-                    b.Property<decimal?>("SellerDesiredRefundAmount")
-                        .HasColumnType("decimal(18,2)");
-
-                    b.Property<decimal?>("SellerDesiredRefundPercentage")
-                        .HasColumnType("decimal(5,2)");
-
-                    b.Property<Guid>("SellerId")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime?>("SellerRespondedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("SellerResponse")
-                        .HasMaxLength(2000)
-                        .HasColumnType("character varying(2000)");
-
-                    b.Property<int>("Status")
-                        .HasColumnType("integer");
-
-                    b.Property<DateTime?>("UpdatedAtUtc")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid?>("UpdatedBy")
-                        .HasColumnType("uuid");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("AdminId");
-
-                    b.HasIndex("BuyerId");
-
-                    b.HasIndex("OrderId")
-                        .IsUnique();
-
-                    b.HasIndex("SellerId");
-
-                    b.ToTable("OrderComplaints");
-                });
-
-            modelBuilder.Entity("FoodConnect.Backend.Domain.Entities.OrderComplaintAsset", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<int>("AssetType")
-                        .HasColumnType("integer");
-
-                    b.Property<string>("AssetUrl")
-                        .IsRequired()
-                        .HasMaxLength(2048)
-                        .HasColumnType("character varying(2048)");
-
-                    b.Property<DateTime>("CreatedAtUtc")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid?>("CreatedBy")
-                        .HasColumnType("uuid");
-
-                    b.Property<bool>("IsDeleted")
-                        .HasColumnType("boolean");
-
-                    b.Property<Guid>("OrderComplaintId")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime?>("UpdatedAtUtc")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid?>("UpdatedBy")
-                        .HasColumnType("uuid");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("OrderComplaintId");
-
-                    b.ToTable("OrderComplaintAssets");
                 });
 
             modelBuilder.Entity("FoodConnect.Backend.Domain.Entities.OrderItem", b =>
@@ -1657,9 +1444,6 @@ namespace FoodConnect.Backend.Infrastructure.Migrations
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("boolean");
 
-                    b.Property<DateTime?>("LastPasswordChangedAt")
-                        .HasColumnType("timestamp with time zone");
-
                     b.Property<string>("PasswordHash")
                         .HasColumnType("text");
 
@@ -2015,44 +1799,6 @@ namespace FoodConnect.Backend.Infrastructure.Migrations
                     b.Navigation("Parent");
                 });
 
-            modelBuilder.Entity("FoodConnect.Backend.Domain.Entities.Conversation", b =>
-                {
-                    b.HasOne("FoodConnect.Backend.Domain.Entities.User", "Buyer")
-                        .WithMany()
-                        .HasForeignKey("BuyerId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("FoodConnect.Backend.Domain.Entities.User", "Seller")
-                        .WithMany()
-                        .HasForeignKey("SellerId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Buyer");
-
-                    b.Navigation("Seller");
-                });
-
-            modelBuilder.Entity("FoodConnect.Backend.Domain.Entities.Message", b =>
-                {
-                    b.HasOne("FoodConnect.Backend.Domain.Entities.Conversation", "Conversation")
-                        .WithMany("Messages")
-                        .HasForeignKey("ConversationId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("FoodConnect.Backend.Domain.Entities.User", "Sender")
-                        .WithMany()
-                        .HasForeignKey("SenderId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Conversation");
-
-                    b.Navigation("Sender");
-                });
-
             modelBuilder.Entity("FoodConnect.Backend.Domain.Entities.Notification", b =>
                 {
                     b.HasOne("FoodConnect.Backend.Domain.Entities.Order", "Order")
@@ -2100,51 +1846,6 @@ namespace FoodConnect.Backend.Infrastructure.Migrations
                     b.Navigation("Promotion");
 
                     b.Navigation("Shop");
-                });
-
-            modelBuilder.Entity("FoodConnect.Backend.Domain.Entities.OrderComplaint", b =>
-                {
-                    b.HasOne("FoodConnect.Backend.Domain.Entities.User", "Admin")
-                        .WithMany()
-                        .HasForeignKey("AdminId")
-                        .OnDelete(DeleteBehavior.Restrict);
-
-                    b.HasOne("FoodConnect.Backend.Domain.Entities.User", "Buyer")
-                        .WithMany()
-                        .HasForeignKey("BuyerId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("FoodConnect.Backend.Domain.Entities.Order", "Order")
-                        .WithOne("OrderComplaint")
-                        .HasForeignKey("FoodConnect.Backend.Domain.Entities.OrderComplaint", "OrderId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("FoodConnect.Backend.Domain.Entities.User", "Seller")
-                        .WithMany()
-                        .HasForeignKey("SellerId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("Admin");
-
-                    b.Navigation("Buyer");
-
-                    b.Navigation("Order");
-
-                    b.Navigation("Seller");
-                });
-
-            modelBuilder.Entity("FoodConnect.Backend.Domain.Entities.OrderComplaintAsset", b =>
-                {
-                    b.HasOne("FoodConnect.Backend.Domain.Entities.OrderComplaint", "OrderComplaint")
-                        .WithMany("Assets")
-                        .HasForeignKey("OrderComplaintId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("OrderComplaint");
                 });
 
             modelBuilder.Entity("FoodConnect.Backend.Domain.Entities.OrderItem", b =>
@@ -2520,25 +2221,13 @@ namespace FoodConnect.Backend.Infrastructure.Migrations
                     b.Navigation("Products");
                 });
 
-            modelBuilder.Entity("FoodConnect.Backend.Domain.Entities.Conversation", b =>
-                {
-                    b.Navigation("Messages");
-                });
-
             modelBuilder.Entity("FoodConnect.Backend.Domain.Entities.Order", b =>
                 {
-                    b.Navigation("OrderComplaint");
-
                     b.Navigation("OrderItems");
 
                     b.Navigation("PaymentTransactions");
 
                     b.Navigation("ProductReviews");
-                });
-
-            modelBuilder.Entity("FoodConnect.Backend.Domain.Entities.OrderComplaint", b =>
-                {
-                    b.Navigation("Assets");
                 });
 
             modelBuilder.Entity("FoodConnect.Backend.Domain.Entities.Product", b =>
