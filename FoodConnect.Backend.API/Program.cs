@@ -26,11 +26,15 @@ using StackExchange.Redis;
 using Resend;
 using FoodConnect.Backend.Infrastructure.Hubs;
 using FoodConnect.Backend.Application.Features.Notification.Services;
+using FoodConnect.Backend.Application.Features.Complaint.Services;
 using FoodConnect.Backend.Application.Commons.Services;
 using Hangfire;
 using Hangfire.PostgreSql;
 using FoodConnect.Backend.Application.Features.Promotion.Jobs;
 using FoodConnect.Backend.Application.Features.Promotion.Services;
+using FoodConnect.Backend.Application.Features.Complaint.Jobs;
+using FoodConnect.Backend.Application.Features.Order.Jobs;
+using FoodConnect.Backend.Application.Features.Order.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -54,7 +58,7 @@ services.AddCors(options =>
                               policy.WithOrigins(allowedOrigins)
                                     .AllowAnyHeader()
                                     .AllowAnyMethod()
-                                    .AllowCredentials(); 
+                                    .AllowCredentials();
                           }
                       });
 });
@@ -175,6 +179,10 @@ services.AddScoped<IWalletRepository, WalletRepository>();
 services.AddScoped<IWalletTransactionRepository, WalletTransactionRepository>();
 services.AddScoped<IWithdrawalRequestRepository, WithdrawalRequestRepository>();
 services.AddScoped<IPaymentTransactionRepository, PaymentTransactionRepository>();
+services.AddScoped<IOrderComplaintRepository, OrderComplaintRepository>();
+services.AddScoped<IOrderComplaintAssetRepository, OrderComplaintAssetRepository>();
+services.AddScoped<IConversationRepository, ConversationRepository>();
+services.AddScoped<IMessageRepository, MessageRepository>();
 services.AddScoped<IUnitOfWork, UnitOfWork>();
 
 // Application Services  
@@ -184,6 +192,7 @@ services.AddScoped<ICurrentUserService, CurrentUserService>();
 services.AddScoped<IDistanceCalculatorService, DistanceCalculatorService>();
 services.AddScoped<IShippingFeeCalculatorService, ShippingFeeCalculatorService>();
 services.AddScoped<IVNPayService, VNPayService>();
+services.AddScoped<WalletService>();
 
 // SignalR & Notification Services
 services.AddSignalR(options =>
@@ -194,8 +203,10 @@ services.AddSignalR(options =>
     options.HandshakeTimeout = TimeSpan.FromSeconds(15);
 });
 services.AddScoped<INotificationService, NotificationService>();
+services.AddScoped<IChatNotificationService, ChatNotificationService>();
 services.AddScoped<OrderNotificationService>();
 services.AddScoped<PromotionNotificationService>();
+services.AddScoped<ComplaintNotificationService>();
 
 // Hangfire
 services.AddHangfire(config => config
@@ -207,6 +218,9 @@ services.AddHangfire(config => config
 
 services.AddHangfireServer();
 services.AddScoped<PromotionStatusJob>();
+services.AddScoped<ComplaintEscalationJob>();
+services.AddScoped<OrderAutoCompletionService>();
+services.AddScoped<OrderStatusJob>();
 
 // MediatR  
 services.AddMediatR(cfg =>
@@ -266,8 +280,24 @@ RecurringJob.AddOrUpdate<PromotionStatusJob>(
     job => job.AutoExpirePromotionsAsync(),
     Cron.Minutely);
 
+RecurringJob.AddOrUpdate<ComplaintEscalationJob>(
+    "escalate-expired-complaints",
+    job => job.EscalateExpiredComplaintsAsync(),
+    Cron.Hourly);
+// Order management jobs
+RecurringJob.AddOrUpdate<OrderStatusJob>(
+    "auto-cancel-unconfirmed-orders",
+    job => job.AutoCancelUnconfirmedOrdersAsync(),
+    Cron.Minutely);
+
+RecurringJob.AddOrUpdate<OrderStatusJob>(
+    "auto-complete-delivered-orders",
+    job => job.AutoCompleteDeliveredOrdersAsync(),
+    Cron.Minutely);
+
 app.MapControllers();
 app.MapHub<NotificationHub>("/hubs/notifications");
+app.MapHub<ChatHub>("/hubs/chat");
 
 app.Run();
 public partial class Program { }

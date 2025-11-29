@@ -333,6 +333,24 @@ namespace FoodConnect.Backend.Application.Commons.Behaviors
                 .ForMember(dest => dest.ProcessedByName, opt => opt.MapFrom(src => src.ProcessedByAdmin != null ? src.ProcessedByAdmin.FullName : null));
 
             #endregion
+
+            #region chat mappings
+
+            CreateMap<Conversation, Application.Commons.DTOs.Responses.Chat.ConversationResponse>()
+                .ForMember(dest => dest.BuyerName, opt => opt.MapFrom(src => src.Buyer.FullName))
+                .ForMember(dest => dest.BuyerAvatar, opt => opt.MapFrom(src => src.Buyer.AvatarUrl))
+                .ForMember(dest => dest.SellerName, opt => opt.MapFrom(src => src.Seller.FullName))
+                .ForMember(dest => dest.SellerAvatar, opt => opt.MapFrom(src => src.Seller.AvatarUrl))
+                .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(src => src.CreatedAtUtc));
+
+            CreateMap<Message, Application.Commons.DTOs.Responses.Chat.MessageResponse>()
+                .ForMember(dest => dest.SenderName, opt => opt.MapFrom(src => src.Sender.FullName))
+                .ForMember(dest => dest.SenderAvatar, opt => opt.MapFrom(src => src.Sender.AvatarUrl))
+                .ForMember(dest => dest.MessageType, opt => opt.MapFrom(src => (int)src.MessageType))
+                .ForMember(dest => dest.MessageTypeName, opt => opt.MapFrom(src => src.MessageType.ToString()))
+                .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(src => src.CreatedAtUtc));
+
+            #endregion
         }
     }
     public class StringToEnumConverter<TEnum> : IValueConverter<string, TEnum> where TEnum : struct

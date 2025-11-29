@@ -18,6 +18,7 @@ namespace FoodConnect.Backend.Domain.Entities
         public string? Gender { get; set; } // "Male", "Female", "Other"
         public UserStatusEnum Status { get; set; } = UserStatusEnum.Pending;
         public AuthProviderEnum Provider { get; set; } = AuthProviderEnum.Local;
+        public DateTime? LastPasswordChangedAt { get; set; }
 
         public virtual ICollection<UserRole> UserRoles { get; set; } = new List<UserRole>();
         public virtual ICollection<RefreshToken> RefreshTokens { get; set; } = new List<RefreshToken>();

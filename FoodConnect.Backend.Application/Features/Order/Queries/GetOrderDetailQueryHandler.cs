@@ -43,8 +43,9 @@ namespace FoodConnect.Backend.Application.Features.Order.Queries
             var userId = _currentUserService.UserId.Value;
             var isBuyer = order.BuyerId == userId;
             var isSeller = order.Shop?.UserId == userId;
+            var isAdmin = _currentUserService.Role == "Admin";
 
-            if (!isBuyer && !isSeller)
+            if (!isBuyer && !isSeller && !isAdmin)
             {
                 return result.BuildForbidden("You don't have permission to view this order");
             }

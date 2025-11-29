@@ -1,4 +1,5 @@
 ﻿using FoodConnect.Backend.Application.Commons.DTOs;
+using FoodConnect.Backend.Application.Features.Auth.Commands.ChangePassword;
 using FoodConnect.Backend.Application.Features.Auth.Commands.EmailRegister;
 using FoodConnect.Backend.Application.Features.Auth.Commands.FirebasePhoneLogin;
 using FoodConnect.Backend.Application.Features.Auth.Commands.ForgotPassword;
@@ -117,6 +118,23 @@ namespace FoodConnect.Backend.API.Controllers
         [HttpPost]
         public async Task<IActionResult> ResetPassword(ResetPasswordCommand command)
         {
+            var result = await Mediator.Send(command);
+            return result != null ? (result.Success ? Ok(result) : BadRequest(result)) : BadRequest();
+        }
+
+        [HttpPost]
+        [Authorize]
+        public async Task<IActionResult> ChangePassword(ChangePasswordCommand command)
+        {
+            // Get user ID from JWT token
+            var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userIdClaim) || !Guid.TryParse(userIdClaim, out var userId))
+            {
+                return Unauthorized(new { message = "Invalid or missing user authentication" });
+            }
+
+            command.UserId = userId;
+
             var result = await Mediator.Send(command);
             return result != null ? (result.Success ? Ok(result) : BadRequest(result)) : BadRequest();
         }

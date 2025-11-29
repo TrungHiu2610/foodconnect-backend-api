@@ -11,12 +11,25 @@ namespace FoodConnect.Backend.Infrastructure.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
+            // Step 1: Drop existing foreign key constraint
             migrationBuilder.DropForeignKey(
                 name: "FK_WithdrawalRequests_SellerWallets_WalletId",
                 table: "WithdrawalRequests");
 
+            // Step 2: Rename existing WalletId column to SellerWalletId
+            migrationBuilder.RenameColumn(
+                name: "WalletId",
+                table: "WithdrawalRequests",
+                newName: "SellerWalletId");
+
+            migrationBuilder.RenameIndex(
+                name: "IX_WithdrawalRequests_WalletId",
+                table: "WithdrawalRequests",
+                newName: "IX_WithdrawalRequests_SellerWalletId");
+
+            // Step 3: Add new nullable WalletId column for new Wallet system
             migrationBuilder.AddColumn<Guid>(
-                name: "SellerWalletId",
+                name: "WalletId",
                 table: "WithdrawalRequests",
                 type: "uuid",
                 nullable: true);
@@ -94,9 +107,9 @@ namespace FoodConnect.Backend.Infrastructure.Migrations
                 });
 
             migrationBuilder.CreateIndex(
-                name: "IX_WithdrawalRequests_SellerWalletId",
+                name: "IX_WithdrawalRequests_WalletId",
                 table: "WithdrawalRequests",
-                column: "SellerWalletId");
+                column: "WalletId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Wallets_UserId",
@@ -118,25 +131,28 @@ namespace FoodConnect.Backend.Infrastructure.Migrations
                 table: "WalletTransactions",
                 column: "WithdrawalRequestId");
 
+            // Step 4: Re-add foreign key for SellerWalletId (old system)
             migrationBuilder.AddForeignKey(
                 name: "FK_WithdrawalRequests_SellerWallets_SellerWalletId",
                 table: "WithdrawalRequests",
                 column: "SellerWalletId",
                 principalTable: "SellerWallets",
-                principalColumn: "Id");
+                principalColumn: "Id",
+                onDelete: ReferentialAction.Cascade);
 
+            // Step 5: Add foreign key for new WalletId (new system) - nullable, no cascade
             migrationBuilder.AddForeignKey(
                 name: "FK_WithdrawalRequests_Wallets_WalletId",
                 table: "WithdrawalRequests",
                 column: "WalletId",
                 principalTable: "Wallets",
-                principalColumn: "Id",
-                onDelete: ReferentialAction.Cascade);
+                principalColumn: "Id");
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
+            // Reverse Step 5: Drop new foreign keys
             migrationBuilder.DropForeignKey(
                 name: "FK_WithdrawalRequests_SellerWallets_SellerWalletId",
                 table: "WithdrawalRequests");
@@ -145,20 +161,34 @@ namespace FoodConnect.Backend.Infrastructure.Migrations
                 name: "FK_WithdrawalRequests_Wallets_WalletId",
                 table: "WithdrawalRequests");
 
+            // Reverse Step 4: Drop new tables
             migrationBuilder.DropTable(
                 name: "WalletTransactions");
 
             migrationBuilder.DropTable(
                 name: "Wallets");
 
+            // Reverse Step 3: Drop new WalletId column
             migrationBuilder.DropIndex(
-                name: "IX_WithdrawalRequests_SellerWalletId",
+                name: "IX_WithdrawalRequests_WalletId",
                 table: "WithdrawalRequests");
 
             migrationBuilder.DropColumn(
-                name: "SellerWalletId",
+                name: "WalletId",
                 table: "WithdrawalRequests");
 
+            // Reverse Step 2: Rename SellerWalletId back to WalletId
+            migrationBuilder.RenameColumn(
+                name: "SellerWalletId",
+                table: "WithdrawalRequests",
+                newName: "WalletId");
+
+            migrationBuilder.RenameIndex(
+                name: "IX_WithdrawalRequests_SellerWalletId",
+                table: "WithdrawalRequests",
+                newName: "IX_WithdrawalRequests_WalletId");
+
+            // Reverse Step 1: Re-add original foreign key
             migrationBuilder.AddForeignKey(
                 name: "FK_WithdrawalRequests_SellerWallets_WalletId",
                 table: "WithdrawalRequests",
