@@ -71,8 +71,8 @@ namespace FoodConnect.Backend.Application.Features.Order.Commands
                 return result.BuildFail("Rejection reason is required");
             }
 
-            // Update order status
-            order.Status = OrderStatusEnum.Cancelled;
+            // Update order status to Rejected (seller rejection)
+            order.Status = OrderStatusEnum.Rejected;
             order.CancelReason = request.RejectionReason;
             order.CancelledAt = DateTime.UtcNow;
 
