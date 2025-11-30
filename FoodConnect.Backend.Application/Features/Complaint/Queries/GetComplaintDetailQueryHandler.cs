@@ -42,7 +42,10 @@ namespace FoodConnect.Backend.Application.Features.Complaint.Queries
             // Check if user has permission to view this complaint
             if (complaint.BuyerId != userId && complaint.SellerId != userId)
             {
-                return result.BuildForbidden("You don't have permission to view this complaint");
+                if(_currentUserService.Role != "Admin")
+                {
+                    return result.BuildForbidden("You don't have permission to view this complaint");
+                }
             }
 
             var complaintDto = ComplaintMapper.MapToDetailDto(complaint);

@@ -49,7 +49,7 @@ namespace FoodConnect.Backend.Application.Commons.Behaviors
                 .ForMember(dest => dest.DeliveryType,
                            opt => opt.MapFrom(src => src.Category.DeliveryType.ToString()))
                 .ForMember(dest => dest.ProductAssets,
-                           opt => opt.MapFrom(src => src.ProductAssets))
+                           opt => opt.MapFrom(src => src.ProductAssets.OrderByDescending(pa => pa.IsThumbnail)))
                 .ForMember(dest => dest.ShopName,
                            opt => opt.MapFrom(src => src.Shop.ShopName))
                 .ForMember(dest => dest.ShopId,
@@ -126,9 +126,9 @@ namespace FoodConnect.Backend.Application.Commons.Behaviors
                 .ForMember(dest => dest.StatusName, opt => opt.MapFrom(src => src.Status.ToString()))
                 .ForMember(dest => dest.PayoutMethod, opt => opt.MapFrom(src => (int)src.PayoutMethod))
                 .ForMember(dest => dest.PayoutMethodName, opt => opt.MapFrom(src => src.PayoutMethod.ToString()))
-                .ForMember(dest => dest.OwnerName, opt => opt.MapFrom(src => src.User.FullName))
-                .ForMember(dest => dest.Phone, opt => opt.MapFrom(src => src.User.PhoneNumber))
-                .ForMember(dest => dest.Email, opt => opt.MapFrom(src => src.User.Email))
+                .ForMember(dest => dest.OwnerName, opt => opt.MapFrom(src => string.IsNullOrEmpty(src.SellerFullName) ? src.User.FullName : src.SellerFullName))
+                .ForMember(dest => dest.Phone, opt => opt.MapFrom(src => string.IsNullOrEmpty(src.SellerPhone) ? src.User.PhoneNumber : src.SellerPhone))
+                .ForMember(dest => dest.Email, opt => opt.MapFrom(src => string.IsNullOrEmpty(src.SellerEmail) ? src.User.Email : src.SellerEmail))
                 .ForMember(dest => dest.Address, opt => opt.MapFrom(src => 
                     string.Join(", ", new[] { src.Street, src.Ward, src.District, src.City, src.Country }
                         .Where(s => !string.IsNullOrWhiteSpace(s)))))
@@ -151,8 +151,9 @@ namespace FoodConnect.Backend.Application.Commons.Behaviors
             CreateMap<Domain.Entities.Shop, ShopListResponse>()
                 .ForMember(dest => dest.Status, opt => opt.MapFrom(src => (int)src.Status))
                 .ForMember(dest => dest.StatusName, opt => opt.MapFrom(src => src.Status.ToString()))
-                .ForMember(dest => dest.OwnerName, opt => opt.MapFrom(src => src.User.FullName))
-                .ForMember(dest => dest.Phone, opt => opt.MapFrom(src => src.User.PhoneNumber))
+                .ForMember(dest => dest.OwnerName, opt => opt.MapFrom(src => string.IsNullOrEmpty(src.SellerFullName) ? src.User.FullName : src.SellerFullName))
+                .ForMember(dest => dest.Phone, opt => opt.MapFrom(src => string.IsNullOrEmpty(src.SellerPhone) ? src.User.PhoneNumber : src.SellerPhone))
+                .ForMember(dest=>dest.Email, opt => opt.MapFrom(src => string.IsNullOrEmpty(src.SellerEmail) ? src.User.Email : src.SellerEmail))
                 .ForMember(dest => dest.Address, opt => opt.MapFrom(src => 
                     string.Join(", ", new[] { src.Street, src.Ward, src.District, src.City, src.Country }
                         .Where(s => !string.IsNullOrWhiteSpace(s)))));

@@ -63,6 +63,15 @@ namespace FoodConnect.Backend.API.Controllers
             return result != null ? (result.Success ? Ok(result) : BadRequest(result)) : BadRequest();
         }
 
+        [HttpGet]
+        [Authorize]
+        public async Task<IActionResult> GetAllMyShops()
+        {
+            var query = new GetAllMyShopsQuery();
+            var result = await Mediator.Send(query);
+            return result != null ? (result.Success ? Ok(result) : BadRequest(result)) : BadRequest();
+        }
+
         [HttpPost]
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> GetListShops([FromBody] GetListShopsQuery query)

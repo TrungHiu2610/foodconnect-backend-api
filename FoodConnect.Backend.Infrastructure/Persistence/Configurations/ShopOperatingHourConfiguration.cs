@@ -29,7 +29,7 @@ namespace FoodConnect.Backend.Infrastructure.Persistence.Configurations
             builder.HasOne(oh => oh.Shop)
                 .WithMany(s => s.OperatingHours)
                 .HasForeignKey(oh => oh.ShopId)
-                .IsRequired()  // ShopId is required - OperatingHour must belong to a Shop
+                .IsRequired()
                 .OnDelete(DeleteBehavior.Cascade);
         }
     }

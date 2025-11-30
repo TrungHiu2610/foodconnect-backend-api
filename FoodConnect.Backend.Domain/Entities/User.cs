@@ -19,10 +19,14 @@ namespace FoodConnect.Backend.Domain.Entities
         public UserStatusEnum Status { get; set; } = UserStatusEnum.Pending;
         public AuthProviderEnum Provider { get; set; } = AuthProviderEnum.Local;
         public DateTime? LastPasswordChangedAt { get; set; }
-
+        
+        // Navigation property - Shop owns the relationship via Shop.UserId
+        public virtual Shop? Shop { get; set; }
+        
         public virtual ICollection<UserRole> UserRoles { get; set; } = new List<UserRole>();
         public virtual ICollection<RefreshToken> RefreshTokens { get; set; } = new List<RefreshToken>();
         public virtual ICollection<Address> Addresses { get; set; } = new List<Address>();
         public virtual ICollection<Wallet> Wallets { get; set; } = new List<Wallet>();
+        public virtual Cart? Cart { get; set; }
     }
 }

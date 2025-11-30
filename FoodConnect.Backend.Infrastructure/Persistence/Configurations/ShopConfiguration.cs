@@ -73,8 +73,10 @@ namespace FoodConnect.Backend.Infrastructure.Persistence.Configurations
             // Ignore calculated fields (not mapped to database)
             builder.Ignore(s => s.CalculatedDistance);
 
+            // 1-1 Relationship: User (Principal) ← Shop (Dependent)
+            // Shop.UserId is the foreign key
             builder.HasOne(s => s.User)
-                .WithOne() 
+                .WithOne(u => u.Shop)  // Bidirectional navigation
                 .HasForeignKey<Shop>(s => s.UserId)
                 .IsRequired()
                 .OnDelete(DeleteBehavior.Restrict);

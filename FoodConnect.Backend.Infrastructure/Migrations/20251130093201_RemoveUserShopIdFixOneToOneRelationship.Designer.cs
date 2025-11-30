@@ -3,6 +3,7 @@ using System;
 using FoodConnect.Backend.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace FoodConnect.Backend.Infrastructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251130093201_RemoveUserShopIdFixOneToOneRelationship")]
+    partial class RemoveUserShopIdFixOneToOneRelationship
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -1867,7 +1870,7 @@ namespace FoodConnect.Backend.Infrastructure.Migrations
             modelBuilder.Entity("FoodConnect.Backend.Domain.Entities.Cart", b =>
                 {
                     b.HasOne("FoodConnect.Backend.Domain.Entities.User", "User")
-                        .WithOne("Cart")
+                        .WithOne()
                         .HasForeignKey("FoodConnect.Backend.Domain.Entities.Cart", "UserId")
                         .OnDelete(DeleteBehavior.SetNull);
 
@@ -2419,8 +2422,6 @@ namespace FoodConnect.Backend.Infrastructure.Migrations
             modelBuilder.Entity("FoodConnect.Backend.Domain.Entities.User", b =>
                 {
                     b.Navigation("Addresses");
-
-                    b.Navigation("Cart");
 
                     b.Navigation("RefreshTokens");
 

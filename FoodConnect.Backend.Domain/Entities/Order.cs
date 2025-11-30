@@ -23,7 +23,9 @@ namespace FoodConnect.Backend.Domain.Entities
         public decimal? PromotionDiscountAmount { get; set; }
         public string? PromotionCode { get; set; }
         
-        public string? DeliveryProofImageUrl { get; set; }
+        public string? PackagePhotoUrl { get; set; } // Standard: Ảnh kiện hàng trước khi giao shipper
+        public string? TrackingCode { get; set; } // Standard: Mã vận đơn
+        public string? DeliveryProofImageUrl { get; set; } // Ảnh minh chứng giao hàng thành công
         
         public DateTime? AcceptedAt { get; set; }
         public DateTime? PreparedAt { get; set; }

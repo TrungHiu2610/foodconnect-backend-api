@@ -1,0 +1,104 @@
+using FoodConnect.Backend.Application.Commons.DTOs.Responses;
+using FoodConnect.Backend.Application.Commons.Interfaces;
+using FoodConnect.Backend.Application.Features.Order.DTOs;
+using FoodConnect.Backend.Application.Features.Order.Mappers;
+using FoodConnect.Backend.Application.Interfaces;
+using FoodConnect.Backend.Application.Interfaces.IRepositories;
+using FoodConnect.Backend.Domain.Enums;
+using MediatR;
+
+namespace FoodConnect.Backend.Application.Features.Order.Commands
+{
+    public class HandoverToShipperCommandHandler : IRequestHandler<HandoverToShipperCommand, BaseResponse<OrderDetailDto>>
+    {
+        private readonly IOrderRepository _orderRepository;
+        private readonly IUnitOfWork _unitOfWork;
+        private readonly ICurrentUserService _currentUserService;
+        private readonly IFileStorageService _fileStorageService;
+
+        public HandoverToShipperCommandHandler(
+            IOrderRepository orderRepository,
+            IUnitOfWork unitOfWork,
+            ICurrentUserService currentUserService,
+            IFileStorageService fileStorageService)
+        {
+            _orderRepository = orderRepository;
+            _unitOfWork = unitOfWork;
+            _currentUserService = currentUserService;
+            _fileStorageService = fileStorageService;
+        }
+
+        public async Task<BaseResponse<OrderDetailDto>> Handle(HandoverToShipperCommand request, CancellationToken cancellationToken)
+        {
+            var result = new BaseResponse<OrderDetailDto>();
+            string? uploadedImageUrl = null;
+
+            await using var transaction = await _unitOfWork.BeginTransactionAsync();
+            try
+            {
+                if (!_currentUserService.UserId.HasValue)
+                {
+                    return result.BuildUnauthorized("User must be logged in");
+                }
+
+                var userId = _currentUserService.UserId.Value;
+
+                var order = await _orderRepository.GetOrderWithDetailsAsync(request.OrderId);
+                if (order == null)
+                {
+                    return result.BuildNotFound("Order not found");
+                }
+
+                if (order.Shop?.UserId != userId)
+                {
+                    return result.BuildForbidden("You don't have permission to update this order");
+                }
+
+                if (order.DeliveryType != DeliveryTypeEnum.Standard)
+                {
+                    return result.BuildFail("Only Standard delivery orders can be handed over to shipper");
+                }
+
+                if (order.Status != OrderStatusEnum.Prepared)
+                {
+                    return result.BuildFail($"Only Prepared orders can be handed to shipper. Current status: {order.Status}");
+                }
+
+                if (string.IsNullOrWhiteSpace(request.TrackingCode))
+                {
+                    return result.BuildFail("Tracking code is required");
+                }
+
+                uploadedImageUrl = await _fileStorageService.UploadFileAsync(
+                    request.PackagePhoto,
+                    $"Orders/{order.OrderCode}/PackagePhoto"
+                );
+
+                order.PackagePhotoUrl = uploadedImageUrl;
+                order.TrackingCode = request.TrackingCode;
+                order.Status = OrderStatusEnum.OutForDelivery;
+                order.DeliveryStartedAt = DateTime.UtcNow;
+
+                _orderRepository.Update(order);
+                await _unitOfWork.SaveChangesAsync(cancellationToken);
+                await _unitOfWork.CommitTransactionAsync(transaction);
+
+                order = await _orderRepository.GetOrderWithDetailsAsync(request.OrderId);
+                var orderDto = OrderMapper.MapToDetailDto(order!);
+
+                return result.BuildSuccess(orderDto, "Order handed over to shipper successfully");
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+
+                if (!string.IsNullOrEmpty(uploadedImageUrl))
+                {
+                    await _fileStorageService.DeleteFileAsync(uploadedImageUrl);
+                }
+
+                return result.BuildFail($"Failed to handover to shipper: {ex.Message}");
+            }
+        }
+    }
+}

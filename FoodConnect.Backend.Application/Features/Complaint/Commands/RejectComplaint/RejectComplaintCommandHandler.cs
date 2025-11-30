@@ -5,6 +5,7 @@ using FoodConnect.Backend.Application.Features.Complaint.Mappers;
 using FoodConnect.Backend.Application.Features.Complaint.Services;
 using FoodConnect.Backend.Application.Interfaces;
 using FoodConnect.Backend.Application.Interfaces.IRepositories;
+using FoodConnect.Backend.Domain.Entities;
 using FoodConnect.Backend.Domain.Enums;
 using MediatR;
 
@@ -13,17 +14,26 @@ namespace FoodConnect.Backend.Application.Features.Complaint.Commands.RejectComp
 public class RejectComplaintCommandHandler : IRequestHandler<RejectComplaintCommand, BaseResponse<ComplaintDetailDto>>
 {
     private readonly IOrderComplaintRepository _complaintRepository;
+    private readonly IWalletRepository _walletRepository;
+    private readonly IWalletTransactionRepository _walletTransactionRepository;
+    private readonly ISystemConfigRepository _systemConfigRepository;
     private readonly IUnitOfWork _unitOfWork;
     private readonly ICurrentUserService _currentUserService;
     private readonly ComplaintNotificationService _notificationService;
 
     public RejectComplaintCommandHandler(
         IOrderComplaintRepository complaintRepository,
+        IWalletRepository walletRepository,
+        IWalletTransactionRepository walletTransactionRepository,
+        ISystemConfigRepository systemConfigRepository,
         IUnitOfWork unitOfWork,
         ICurrentUserService currentUserService,
         ComplaintNotificationService notificationService)
     {
         _complaintRepository = complaintRepository;
+        _walletRepository = walletRepository;
+        _walletTransactionRepository = walletTransactionRepository;
+        _systemConfigRepository = systemConfigRepository;
         _unitOfWork = unitOfWork;
         _currentUserService = currentUserService;
         _notificationService = notificationService;
@@ -64,6 +74,74 @@ public class RejectComplaintCommandHandler : IRequestHandler<RejectComplaintComm
         await using var transaction = await _unitOfWork.BeginTransactionAsync();
         try
         {
+            // Get seller wallet
+            var sellerWallet = await _walletRepository.GetByUserIdAndTypeAsync(complaint.SellerId, WalletTypeEnum.Seller);
+            if (sellerWallet == null)
+            {
+                return result.BuildFail("Seller wallet not found");
+            }
+
+            // Get commission rate from system config
+            var commissionRate = await _systemConfigRepository.GetCommissionRateAsync();
+            var orderTotal = (decimal)complaint.Order.Total;
+            var shippingFee = (decimal)complaint.Order.ShippingFee;
+            var commissionableAmount = orderTotal - shippingFee;
+            var commissionAmount = commissionableAmount * (commissionRate / 100);
+
+            // Different logic for COD vs Online Payment
+            if (complaint.Order.PaymentMethod == PaymentMethodEnum.COD)
+            {
+                // COD: Seller already received cash, now must pay commission only
+                // 1. Release pending balance
+                sellerWallet.PendingBalance -= orderTotal;
+
+                // 2. Deduct commission from wallet balance
+                var sellerBalanceBefore = sellerWallet.Balance;
+                sellerWallet.Balance -= commissionAmount;
+
+                var commissionTransaction = new WalletTransaction
+                {
+                    WalletId = sellerWallet.Id,
+                    OrderId = complaint.OrderId,
+                    TransactionType = TransactionTypeEnum.CommissionDeduction,
+                    Amount = -commissionAmount,
+                    BalanceBefore = sellerBalanceBefore,
+                    BalanceAfter = sellerWallet.Balance,
+                    Status = TransactionStatusEnum.Completed,
+                    Description = $"Commission for COD order {complaint.Order.OrderCode} after complaint rejected",
+                    Metadata = $"ComplaintId:{complaint.Id}|OrderTotal:{orderTotal}|CommissionRate:{commissionRate}%|CommissionAmount:{commissionAmount}|PaymentMethod:COD"
+                };
+
+                _walletRepository.Update(sellerWallet);
+                await _walletTransactionRepository.AddAsync(commissionTransaction);
+            }
+            else
+            {
+                // ONLINE PAYMENT: Money is still with Admin
+                // Complaint rejected → Seller gets full order amount minus commission
+                var sellerEarning = commissionableAmount - commissionAmount;
+
+                var sellerBalanceBefore = sellerWallet.Balance;
+                sellerWallet.Balance += sellerEarning;
+                sellerWallet.TotalEarned += sellerEarning;
+
+                var sellerTransaction = new WalletTransaction
+                {
+                    WalletId = sellerWallet.Id,
+                    OrderId = complaint.OrderId,
+                    TransactionType = TransactionTypeEnum.OrderEarning,
+                    Amount = sellerEarning,
+                    BalanceBefore = sellerBalanceBefore,
+                    BalanceAfter = sellerWallet.Balance,
+                    Status = TransactionStatusEnum.Completed,
+                    Description = $"Full payout for order {complaint.Order.OrderCode} after complaint rejected",
+                    Metadata = $"ComplaintId:{complaint.Id}|OrderTotal:{orderTotal}|CommissionRate:{commissionRate}%|CommissionAmount:{commissionAmount}|SellerEarning:{sellerEarning}|PaymentMethod:OnlinePayment"
+                };
+
+                _walletRepository.Update(sellerWallet);
+                await _walletTransactionRepository.AddAsync(sellerTransaction);
+            }
+
             // Update complaint
             complaint.Status = OrderComplaintStatusEnum.Rejected;
             complaint.IsApproved = false;

@@ -2,10 +2,12 @@ using FoodConnect.Backend.Application.Commons.DTOs.Responses;
 using FoodConnect.Backend.Application.Commons.Interfaces;
 using FoodConnect.Backend.Application.Features.Notification.Services;
 using FoodConnect.Backend.Application.Features.Order.DTOs;
+using FoodConnect.Backend.Application.Features.Order.Jobs;
 using FoodConnect.Backend.Application.Features.Order.Mappers;
 using FoodConnect.Backend.Application.Interfaces;
 using FoodConnect.Backend.Application.Interfaces.IRepositories;
 using FoodConnect.Backend.Domain.Enums;
+using Hangfire;
 using MediatR;
 
 namespace FoodConnect.Backend.Application.Features.Order.Commands
@@ -14,6 +16,7 @@ namespace FoodConnect.Backend.Application.Features.Order.Commands
     {
         private readonly IOrderRepository _orderRepository;
         private readonly IProductRepository _productRepository;
+        private readonly IWalletRepository _walletRepository;
         private readonly IUnitOfWork _unitOfWork;
         private readonly ICurrentUserService _currentUserService;
         private readonly OrderNotificationService _orderNotificationService;
@@ -23,6 +26,7 @@ namespace FoodConnect.Backend.Application.Features.Order.Commands
         public AcceptOrderCommandHandler(
             IOrderRepository orderRepository,
             IProductRepository productRepository,
+            IWalletRepository walletRepository,
             IUnitOfWork unitOfWork,
             ICurrentUserService currentUserService,
             OrderNotificationService orderNotificationService,
@@ -31,6 +35,7 @@ namespace FoodConnect.Backend.Application.Features.Order.Commands
         {
             _orderRepository = orderRepository;
             _productRepository = productRepository;
+            _walletRepository = walletRepository;
             _unitOfWork = unitOfWork;
             _currentUserService = currentUserService;
             _orderNotificationService = orderNotificationService;
@@ -72,6 +77,46 @@ namespace FoodConnect.Backend.Application.Features.Order.Commands
                 return result.BuildFail("Only pending orders can be accepted");
             }
 
+            // For COD orders, check seller wallet balance and hold pending balance
+            if (order.PaymentMethod == PaymentMethodEnum.COD)
+            {
+                var sellerWallet = await _walletRepository.GetByUserIdAndTypeAsync(userId, WalletTypeEnum.Seller);
+                
+                if (sellerWallet == null)
+                {
+                    // Create seller wallet if not exists
+                    sellerWallet = new Domain.Entities.Wallet
+                    {
+                        UserId = userId,
+                        WalletType = WalletTypeEnum.Seller,
+                        Balance = 0,
+                        TotalEarned = 0,
+                        TotalWithdrawn = 0,
+                        PendingBalance = 0,
+                        Status = WalletStatusEnum.Active
+                    };
+                    await _walletRepository.AddAsync(sellerWallet);
+                    await _unitOfWork.SaveChangesAsync(cancellationToken);
+                }
+
+                var availableBalance = sellerWallet.Balance - sellerWallet.PendingBalance;
+                var orderTotal = (decimal)order.Total;
+
+                // Seller must have sufficient available balance to accept COD orders
+                if (availableBalance < orderTotal)
+                {
+                    return result.BuildFail(
+                        $"Không đủ số dư trong ví để chấp nhận đơn COD. " +
+                        $"Cần: {orderTotal:N0} VNĐ, Có: {availableBalance:N0} VNĐ. " +
+                        $"Vui lòng nạp thêm tiền vào ví trước khi chấp nhận đơn hàng."
+                    );
+                }
+
+                // Hold the order amount in pending balance
+                sellerWallet.PendingBalance += orderTotal;
+                _walletRepository.Update(sellerWallet);
+            }
+
             // Check stock availability and reserve stock
             foreach (var orderItem in order.OrderItems)
             {
@@ -108,6 +153,19 @@ namespace FoodConnect.Backend.Application.Features.Order.Commands
 
             _orderRepository.Update(order);
             await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+            if (order.DeliveryType == DeliveryTypeEnum.Express)
+            {
+                var timeSinceCreated = DateTime.UtcNow - order.CreatedAtUtc;
+                var remainingTime = TimeSpan.FromHours(3) - timeSinceCreated;
+                
+                if (remainingTime > TimeSpan.Zero)
+                {                    
+                    BackgroundJob.Schedule<ExpressDeliveryTimeoutJob>(
+                        job => job.CheckAndCancelExpiredOrderAsync(order.Id),
+                        remainingTime);
+                }
+            }
 
             // Reload order with full details
             order = await _orderRepository.GetOrderWithDetailsAsync(request.OrderId);

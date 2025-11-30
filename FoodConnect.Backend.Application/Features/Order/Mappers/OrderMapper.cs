@@ -29,6 +29,10 @@ namespace FoodConnect.Backend.Application.Features.Order.Mappers
                 DeliveredAt = order.DeliveredAt,
                 CompletedAt = order.CompletedAt,
                 CancelledAt = order.CancelledAt,
+                // Standard Delivery fields
+                PackagePhotoUrl = order.PackagePhotoUrl,
+                TrackingCode = order.TrackingCode,
+                DeliveryProofImageUrl = order.DeliveryProofImageUrl,
                 BuyerId = order.BuyerId,
                 BuyerName = order.Buyer?.FullName ?? string.Empty,
                 BuyerEmail = order.Buyer?.Email,

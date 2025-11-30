@@ -3,6 +3,7 @@ using FoodConnect.Backend.Application.Interfaces;
 using FoodConnect.Backend.Application.Interfaces.IRepositories;
 using FoodConnect.Backend.Domain.Enums;
 using Microsoft.Extensions.Logging;
+using Hangfire;
 
 namespace FoodConnect.Backend.Application.Features.Complaint.Jobs
 {
@@ -25,6 +26,7 @@ namespace FoodConnect.Backend.Application.Features.Complaint.Jobs
             _logger = logger;
         }
 
+        [DisableConcurrentExecution(timeoutInSeconds: 1800)] // Prevent concurrent runs, 30 min timeout
         public async Task EscalateExpiredComplaintsAsync()
         {
             try

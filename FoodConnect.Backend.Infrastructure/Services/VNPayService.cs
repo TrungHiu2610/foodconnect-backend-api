@@ -25,7 +25,7 @@ public class VNPayService : IVNPayService
     {
         var tmnCode = _configuration["VNPay:TmnCode"];
         var hashSecret = _configuration["VNPay:HashSecret"];
-        var vnpUrl = _configuration["VNPay:Url"];
+        var vnpUrl = _configuration["VNPay:Url"] ?? "https://sandbox.vnpayment.vn/paymentv2/vpcpay.html";
         var locale = _configuration["VNPay:Locale"] ?? "vn";
         var currency = _configuration["VNPay:Currency"] ?? "VND";
         var orderType = _configuration["VNPay:OrderType"] ?? "other";
@@ -33,7 +33,7 @@ public class VNPayService : IVNPayService
         var command = _configuration["VNPay:Command"] ?? "pay";
         // VNPay Return URL - User redirected here after payment
         // This URL must process payment AND redirect to frontend
-        var returnUrl = _configuration["VNPay:ReturnUrl"] ?? "https://localhost:7297/api/Payment/VNPayCallback";
+        var returnUrl = _configuration["VNPay:ReturnUrl"] ?? "https://glossemic-jarrett-irreverent.ngrok-free.dev/api/Payment/VNPayCallback";
         
         var createDate = DateTime.Now.ToString("yyyyMMddHHmmss", CultureInfo.InvariantCulture);
         var txnRef = DateTime.Now.Ticks.ToString();

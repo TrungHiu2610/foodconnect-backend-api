@@ -3,6 +3,7 @@ using System;
 using FoodConnect.Backend.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace FoodConnect.Backend.Infrastructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251130101752_FixCartUserRelationshipOneToMany")]
+    partial class FixCartUserRelationshipOneToMany
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -140,8 +143,7 @@ namespace FoodConnect.Backend.Infrastructure.Migrations
 
                     b.HasIndex("SessionId");
 
-                    b.HasIndex("UserId")
-                        .IsUnique();
+                    b.HasIndex("UserId");
 
                     b.ToTable("Carts");
                 });
@@ -1867,8 +1869,8 @@ namespace FoodConnect.Backend.Infrastructure.Migrations
             modelBuilder.Entity("FoodConnect.Backend.Domain.Entities.Cart", b =>
                 {
                     b.HasOne("FoodConnect.Backend.Domain.Entities.User", "User")
-                        .WithOne("Cart")
-                        .HasForeignKey("FoodConnect.Backend.Domain.Entities.Cart", "UserId")
+                        .WithMany("Carts")
+                        .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.SetNull);
 
                     b.Navigation("User");
@@ -2420,7 +2422,7 @@ namespace FoodConnect.Backend.Infrastructure.Migrations
                 {
                     b.Navigation("Addresses");
 
-                    b.Navigation("Cart");
+                    b.Navigation("Carts");
 
                     b.Navigation("RefreshTokens");
 
