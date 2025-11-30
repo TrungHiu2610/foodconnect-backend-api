@@ -6,6 +6,7 @@ using FoodConnect.Backend.Application.Features.Order.Mappers;
 using FoodConnect.Backend.Application.Interfaces;
 using FoodConnect.Backend.Application.Interfaces.IRepositories;
 using FoodConnect.Backend.Domain.Enums;
+using Hangfire;
 using MediatR;
 
 namespace FoodConnect.Backend.Application.Features.Order.Commands

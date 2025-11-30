@@ -11,15 +11,17 @@ namespace FoodConnect.Backend.Infrastructure.Persistence.Configurations
             builder.Property(c => c.SessionId)
                 .HasMaxLength(100);
 
-            builder.HasIndex(c => c.UserId)
-                .IsUnique();
-            
             builder.HasIndex(c => c.SessionId);
 
+            // 1-1 relationship: User → Cart (unique constraint)
             builder.HasOne(c => c.User)
-                .WithOne()
+                .WithOne(u => u.Cart)
                 .HasForeignKey<Cart>(c => c.UserId)
-                .OnDelete(DeleteBehavior.SetNull); 
+                .OnDelete(DeleteBehavior.SetNull);
+
+            // Unique index: one user can only have one cart
+            builder.HasIndex(c => c.UserId)
+                .IsUnique(); 
 
             builder.HasMany(c => c.CartItems)
                 .WithOne(ci => ci.Cart)

@@ -4,6 +4,7 @@ using FoodConnect.Backend.Application.Commons.Services;
 using FoodConnect.Backend.Application.Features.Complaint.DTOs;
 using FoodConnect.Backend.Application.Features.Complaint.Mappers;
 using FoodConnect.Backend.Application.Features.Complaint.Services;
+using FoodConnect.Backend.Application.Features.Wallet.Queries;
 using FoodConnect.Backend.Application.Interfaces;
 using FoodConnect.Backend.Application.Interfaces.IRepositories;
 using FoodConnect.Backend.Domain.Entities;
@@ -18,6 +19,7 @@ public class ApproveComplaintCommandHandler : IRequestHandler<ApproveComplaintCo
     private readonly IOrderRepository _orderRepository;
     private readonly IWalletRepository _walletRepository;
     private readonly IWalletTransactionRepository _walletTransactionRepository;
+    private readonly ISystemConfigRepository _systemConfigRepository;
     private readonly IUnitOfWork _unitOfWork;
     private readonly ICurrentUserService _currentUserService;
     private readonly ComplaintNotificationService _notificationService;
@@ -28,6 +30,7 @@ public class ApproveComplaintCommandHandler : IRequestHandler<ApproveComplaintCo
         IOrderRepository orderRepository,
         IWalletRepository walletRepository,
         IWalletTransactionRepository walletTransactionRepository,
+        ISystemConfigRepository systemConfigRepository,
         IUnitOfWork unitOfWork,
         ICurrentUserService currentUserService,
         ComplaintNotificationService notificationService,
@@ -37,6 +40,7 @@ public class ApproveComplaintCommandHandler : IRequestHandler<ApproveComplaintCo
         _orderRepository = orderRepository;
         _walletRepository = walletRepository;
         _walletTransactionRepository = walletTransactionRepository;
+        _systemConfigRepository = systemConfigRepository;
         _unitOfWork = unitOfWork;
         _currentUserService = currentUserService;
         _notificationService = notificationService;
@@ -94,57 +98,130 @@ public class ApproveComplaintCommandHandler : IRequestHandler<ApproveComplaintCo
                 return result.BuildFail("Seller wallet not found");
             }
 
-            // Check seller has sufficient balance (considering pending balance)
-            var availableBalance = sellerWallet.Balance - sellerWallet.PendingBalance;
-            if (availableBalance < request.RefundAmount)
-            {
-                return result.BuildFail($"Seller does not have sufficient balance. Available: {availableBalance:N0} VND, Required: {request.RefundAmount:N0} VND");
-            }
+            // Get commission rate from system config
+            var commissionRate = await _systemConfigRepository.GetCommissionRateAsync();
+            var orderTotal = (decimal)complaint.Order.Total;
+            var shippingFee = (decimal)complaint.Order.ShippingFee;
+            var commissionableAmount = orderTotal - shippingFee;
+            var commissionAmount = commissionableAmount * (commissionRate / 100);
 
-            // Process refund only if amount > 0
-            if (request.RefundAmount > 0)
+            // Different logic for COD vs Online Payment
+            if (complaint.Order.PaymentMethod == PaymentMethodEnum.COD)
             {
-                // Create buyer transaction - ComplaintRefund (+)
-                var buyerBalanceBefore = buyerWallet.Balance;
-                buyerWallet.Balance += request.RefundAmount;
-
-                var buyerTransaction = new WalletTransaction
+                // COD: Seller already received cash, must refund buyer + pay commission
+                // Check seller has sufficient available balance
+                var availableBalance = sellerWallet.Balance - sellerWallet.PendingBalance;
+                if (availableBalance < request.RefundAmount)
                 {
-                    WalletId = buyerWallet.Id,
-                    OrderId = complaint.OrderId,
-                    TransactionType = TransactionTypeEnum.ComplaintRefund,
-                    Amount = request.RefundAmount,
-                    BalanceBefore = buyerBalanceBefore,
-                    BalanceAfter = buyerWallet.Balance,
-                    Status = TransactionStatusEnum.Completed,
-                    Description = $"Refund from complaint #{complaint.Id}",
-                    Metadata = $"ComplaintId:{complaint.Id}|OrderId:{complaint.OrderId}"
-                };
+                    return result.BuildFail($"Seller không đủ số dư để hoàn tiền. Cần: {request.RefundAmount:N0} VNĐ, Có: {availableBalance:N0} VNĐ");
+                }
 
-                // Create seller transaction - ComplaintDeduction (-)
+                // 1. Release pending balance
+                sellerWallet.PendingBalance -= orderTotal;
+
+                // 2. Deduct refund amount + commission from seller wallet
                 var sellerBalanceBefore = sellerWallet.Balance;
-                sellerWallet.Balance -= request.RefundAmount;
+                sellerWallet.Balance -= (request.RefundAmount + commissionAmount);
 
+                // 3. Refund buyer
+                if (request.RefundAmount > 0)
+                {
+                    var buyerBalanceBefore = buyerWallet.Balance;
+                    buyerWallet.Balance += request.RefundAmount;
+
+                    var buyerTransaction = new WalletTransaction
+                    {
+                        WalletId = buyerWallet.Id,
+                        OrderId = complaint.OrderId,
+                        TransactionType = TransactionTypeEnum.ComplaintRefund,
+                        Amount = request.RefundAmount,
+                        BalanceBefore = buyerBalanceBefore,
+                        BalanceAfter = buyerWallet.Balance,
+                        Status = TransactionStatusEnum.Completed,
+                        Description = $"Refund for COD order {complaint.Order.OrderCode} after complaint approved",
+                        Metadata = $"ComplaintId:{complaint.Id}|OrderId:{complaint.OrderId}|RefundAmount:{request.RefundAmount}|PaymentMethod:COD"
+                    };
+                    await _walletTransactionRepository.AddAsync(buyerTransaction);
+                }
+
+                // Record seller deduction (refund + commission)
+                var sellerDeduction = request.RefundAmount + commissionAmount;
                 var sellerTransaction = new WalletTransaction
                 {
                     WalletId = sellerWallet.Id,
                     OrderId = complaint.OrderId,
                     TransactionType = TransactionTypeEnum.ComplaintDeduction,
-                    Amount = request.RefundAmount,
+                    Amount = -sellerDeduction,
                     BalanceBefore = sellerBalanceBefore,
                     BalanceAfter = sellerWallet.Balance,
                     Status = TransactionStatusEnum.Completed,
-                    Description = $"Deduction for complaint #{complaint.Id}",
-                    Metadata = $"ComplaintId:{complaint.Id}|OrderId:{complaint.OrderId}"
+                    Description = $"Refund + Commission for COD complaint #{complaint.Id}",
+                    Metadata = $"ComplaintId:{complaint.Id}|OrderTotal:{orderTotal}|RefundAmount:{request.RefundAmount}|CommissionRate:{commissionRate}%|CommissionAmount:{commissionAmount}|PaymentMethod:COD"
                 };
+                await _walletTransactionRepository.AddAsync(sellerTransaction);
 
-                // Update wallets
                 _walletRepository.Update(buyerWallet);
                 _walletRepository.Update(sellerWallet);
+            }
+            else
+            {
+                // ONLINE PAYMENT: Money is still with Admin, distribute to buyer and seller
+                // Buyer gets refundAmount, Seller gets (orderTotal - shippingFee - refundAmount - commission)
+                
+                // 1. Refund buyer
+                if (request.RefundAmount > 0)
+                {
+                    var buyerBalanceBefore = buyerWallet.Balance;
+                    buyerWallet.Balance += request.RefundAmount;
 
-                // Add transactions
-                await _walletTransactionRepository.AddAsync(buyerTransaction);
-                await _walletTransactionRepository.AddAsync(sellerTransaction);
+                    var buyerTransaction = new WalletTransaction
+                    {
+                        WalletId = buyerWallet.Id,
+                        OrderId = complaint.OrderId,
+                        TransactionType = TransactionTypeEnum.ComplaintRefund,
+                        Amount = request.RefundAmount,
+                        BalanceBefore = buyerBalanceBefore,
+                        BalanceAfter = buyerWallet.Balance,
+                        Status = TransactionStatusEnum.Completed,
+                        Description = $"Refund for approved complaint #{complaint.Id}",
+                        Metadata = $"ComplaintId:{complaint.Id}|OrderId:{complaint.OrderId}|RefundAmount:{request.RefundAmount}|PaymentMethod:OnlinePayment"
+                    };
+
+                    _walletRepository.Update(buyerWallet);
+                    await _walletTransactionRepository.AddAsync(buyerTransaction);
+                }
+
+                // 2. Pay seller the remaining amount (after refund and commission deduction)
+                var sellerPayout = commissionableAmount - request.RefundAmount - commissionAmount;
+                
+                if (sellerPayout > 0)
+                {
+                    var sellerBalanceBefore = sellerWallet.Balance;
+                    sellerWallet.Balance += sellerPayout;
+                    sellerWallet.TotalEarned += sellerPayout;
+
+                    var sellerTransaction = new WalletTransaction
+                    {
+                        WalletId = sellerWallet.Id,
+                        OrderId = complaint.OrderId,
+                        TransactionType = TransactionTypeEnum.OrderEarning,
+                        Amount = sellerPayout,
+                        BalanceBefore = sellerBalanceBefore,
+                        BalanceAfter = sellerWallet.Balance,
+                        Status = TransactionStatusEnum.Completed,
+                        Description = $"Payout for order {complaint.Order.OrderCode} after complaint approved (partial refund to buyer)",
+                        Metadata = $"ComplaintId:{complaint.Id}|OrderTotal:{orderTotal}|RefundAmount:{request.RefundAmount}|CommissionRate:{commissionRate}%|CommissionAmount:{commissionAmount}|SellerPayout:{sellerPayout}|PaymentMethod:OnlinePayment"
+                    };
+
+                    _walletRepository.Update(sellerWallet);
+                    await _walletTransactionRepository.AddAsync(sellerTransaction);
+                }
+                else if (sellerPayout < 0)
+                {
+                    // If refund > (subtotal - commission), seller owes money
+                    // This should be validated before, but handle gracefully
+                    return result.BuildFail($"Invalid refund amount. Refund cannot exceed order total minus commission. Maximum refundable: {commissionableAmount - commissionAmount:N0} VND");
+                }
             }
 
             // Update complaint

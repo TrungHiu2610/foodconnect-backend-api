@@ -4,6 +4,7 @@ using FoodConnect.Backend.Application.Interfaces.IRepositories;
 using FoodConnect.Backend.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using Hangfire;
 
 namespace FoodConnect.Backend.Application.Features.Order.Jobs
 {
@@ -26,6 +27,7 @@ namespace FoodConnect.Backend.Application.Features.Order.Jobs
             _logger = logger;
         }
 
+        [DisableConcurrentExecution(timeoutInSeconds: 900)] // Prevent concurrent runs, 15 min timeout
         public async Task AutoCancelUnconfirmedOrdersAsync()
         {
             try
@@ -91,6 +93,7 @@ namespace FoodConnect.Backend.Application.Features.Order.Jobs
             }
         }
 
+        [DisableConcurrentExecution(timeoutInSeconds: 900)] // Prevent concurrent runs, 15 min timeout
         public async Task AutoCompleteDeliveredOrdersAsync()
         {
             try

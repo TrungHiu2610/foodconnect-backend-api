@@ -10,6 +10,7 @@ namespace FoodConnect.Backend.Application.Interfaces.IRepositories
     public interface IShopRepository : IBaseRepository<Shop>
     {
         Task<Shop?> GetByUserIdAsync(Guid userId);
+        Task<List<Shop>> GetAllByUserIdAsync(Guid userId);
         Task<Shop?> GetDetailByIdAsync(Guid id);
         Task<(IEnumerable<Shop> Items, int TotalCount)> GetPagedAsync(
             int pageNumber, 

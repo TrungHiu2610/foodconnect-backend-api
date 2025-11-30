@@ -16,6 +16,19 @@ namespace FoodConnect.Backend.Infrastructure.Repositories
             return await _context.Shops.Include(s=>s.User).FirstOrDefaultAsync(s => s.UserId == userId);
         }
 
+        public async Task<List<Shop>> GetAllByUserIdAsync(Guid userId)
+        {
+            return await _context.Shops
+                .Include(s => s.User)
+                .Include(s => s.Assets)
+                .Include(s => s.ShopCategories)
+                    .ThenInclude(sc => sc.Category)
+                .Include(s => s.OperatingHours)
+                .Where(s => s.UserId == userId)
+                .OrderByDescending(s => s.CreatedAtUtc)
+                .ToListAsync();
+        }
+
         public async Task<Shop?> GetDetailByIdAsync(Guid id)
         {
             return await _context.Shops

@@ -105,40 +105,74 @@ namespace FoodConnect.Backend.Application.Features.Order.Commands
                 var commissionAmount = commissionableAmount * (commissionRate / 100);
                 var sellerEarning = commissionableAmount - commissionAmount;
 
-                var balanceBefore = wallet.Balance;
-
-                var earningTransaction = new WalletTransaction
+                // Different logic for COD vs Online Payment
+                if (order.PaymentMethod == PaymentMethodEnum.COD)
                 {
-                    WalletId = wallet.Id,
-                    OrderId = order.Id,
-                    TransactionType = TransactionTypeEnum.OrderEarning,
-                    Amount = commissionableAmount,
-                    BalanceBefore = balanceBefore,
-                    BalanceAfter = balanceBefore + commissionableAmount,
-                    Status = TransactionStatusEnum.Completed,
-                    Description = $"Order earning from order {order.OrderCode}"
-                };
-                await _transactionRepository.AddAsync(earningTransaction);
+                    // COD: Seller already received cash, now must pay commission and release pending
+                    var orderTotal = (decimal)order.Total;
+                    
+                    // Deduct commission from wallet balance
+                    var balanceBefore = wallet.Balance;
+                    wallet.Balance -= commissionAmount;
+                    
+                    // Release pending balance
+                    wallet.PendingBalance -= orderTotal;
 
-                wallet.Balance += commissionableAmount;
-                wallet.TotalEarned += sellerEarning;
-
-                var balanceAfterEarning = wallet.Balance;
-
-                var commissionTransaction = new WalletTransaction
+                    var commissionTransaction = new WalletTransaction
+                    {
+                        WalletId = wallet.Id,
+                        OrderId = order.Id,
+                        TransactionType = TransactionTypeEnum.CommissionDeduction,
+                        Amount = -commissionAmount,
+                        BalanceBefore = balanceBefore,
+                        BalanceAfter = wallet.Balance,
+                        Status = TransactionStatusEnum.Completed,
+                        Description = $"Commission deduction ({commissionRate}%) from COD order {order.OrderCode}",
+                        Metadata = $"OrderTotal:{orderTotal}|CommissionRate:{commissionRate}%|CommissionAmount:{commissionAmount}|PaymentMethod:COD"
+                    };
+                    await _transactionRepository.AddAsync(commissionTransaction);
+                }
+                else
                 {
-                    WalletId = wallet.Id,
-                    OrderId = order.Id,
-                    TransactionType = TransactionTypeEnum.CommissionDeduction,
-                    Amount = -commissionAmount,
-                    BalanceBefore = balanceAfterEarning,
-                    BalanceAfter = balanceAfterEarning - commissionAmount,
-                    Status = TransactionStatusEnum.Completed,
-                    Description = $"Commission deduction ({commissionRate}%) from order {order.OrderCode}"
-                };
-                await _transactionRepository.AddAsync(commissionTransaction);
+                    // Online Payment: Money from Admin, add to seller wallet
+                    var balanceBefore = wallet.Balance;
 
-                wallet.Balance -= commissionAmount;
+                    var earningTransaction = new WalletTransaction
+                    {
+                        WalletId = wallet.Id,
+                        OrderId = order.Id,
+                        TransactionType = TransactionTypeEnum.OrderEarning,
+                        Amount = commissionableAmount,
+                        BalanceBefore = balanceBefore,
+                        BalanceAfter = balanceBefore + commissionableAmount,
+                        Status = TransactionStatusEnum.Completed,
+                        Description = $"Order earning from order {order.OrderCode}",
+                        Metadata = $"OrderTotal:{order.Total}|CommissionableAmount:{commissionableAmount}|PaymentMethod:OnlinePayment"
+                    };
+                    await _transactionRepository.AddAsync(earningTransaction);
+
+                    wallet.Balance += commissionableAmount;
+                    wallet.TotalEarned += sellerEarning;
+
+                    var balanceAfterEarning = wallet.Balance;
+
+                    var commissionTransaction = new WalletTransaction
+                    {
+                        WalletId = wallet.Id,
+                        OrderId = order.Id,
+                        TransactionType = TransactionTypeEnum.CommissionDeduction,
+                        Amount = -commissionAmount,
+                        BalanceBefore = balanceAfterEarning,
+                        BalanceAfter = balanceAfterEarning - commissionAmount,
+                        Status = TransactionStatusEnum.Completed,
+                        Description = $"Commission deduction ({commissionRate}%) from order {order.OrderCode}",
+                        Metadata = $"CommissionRate:{commissionRate}%|CommissionAmount:{commissionAmount}|PaymentMethod:OnlinePayment"
+                    };
+                    await _transactionRepository.AddAsync(commissionTransaction);
+
+                    wallet.Balance -= commissionAmount;
+                }
+
                 _walletRepository.Update(wallet);
 
                 await _unitOfWork.SaveChangesAsync(cancellationToken);

@@ -48,7 +48,7 @@ namespace FoodConnect.Backend.Application.Features.Order.Commands
             }
 
             // Validate status transition
-            if (order.Status != OrderStatusEnum.Preparing)
+            if (order.Status != OrderStatusEnum.Prepared && order.Status != OrderStatusEnum.Preparing)
             {
                 return result.BuildFail($"Cannot mark order as ready. Current status is {order.Status}");
             }

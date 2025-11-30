@@ -4,11 +4,13 @@ using FoodConnect.Backend.Application.Commons.Interfaces;
 using FoodConnect.Backend.Application.Commons.Services;
 using FoodConnect.Backend.Application.Features.Notification.Services;
 using FoodConnect.Backend.Application.Features.Order.DTOs;
+using FoodConnect.Backend.Application.Features.Order.Jobs;
 using FoodConnect.Backend.Application.Features.Order.Mappers;
 using FoodConnect.Backend.Application.Interfaces;
 using FoodConnect.Backend.Application.Interfaces.IRepositories;
 using FoodConnect.Backend.Domain.Entities;
 using FoodConnect.Backend.Domain.Enums;
+using Hangfire;
 using MediatR;
 using System.Text.Json;
 
@@ -301,10 +303,6 @@ namespace FoodConnect.Backend.Application.Features.Order.Commands
                         shopNote = note;
                     }
 
-                    // Create order
-                    // Set status based on payment method:
-                    // - Online payment (VNPay/MoMo): AwaitingPayment (must pay first)
-                    // - COD: Pending (seller sees immediately)
                     var initialStatus = request.PaymentMethod == PaymentMethodEnum.COD
                         ? OrderStatusEnum.Pending
                         : OrderStatusEnum.AwaitingPayment;
@@ -331,6 +329,22 @@ namespace FoodConnect.Backend.Application.Features.Order.Commands
                     };
 
                     await _orderRepository.AddAsync(order);
+
+                    if (initialStatus == OrderStatusEnum.Pending)
+                    {
+                        if (deliveryType == DeliveryTypeEnum.Express)
+                        {
+                            BackgroundJob.Schedule<ExpressDeliveryTimeoutJob>(
+                                job => job.CheckAndCancelExpiredOrderAsync(order.Id),
+                                TimeSpan.FromMinutes(30));
+                        }
+                        else if (deliveryType == DeliveryTypeEnum.Standard)
+                        {
+                            BackgroundJob.Schedule<ExpressDeliveryTimeoutJob>(
+                                job => job.CheckAndCancelExpiredOrderAsync(order.Id),
+                                TimeSpan.FromHours(3));
+                        }
+                    }
 
                     // Create order items
                     foreach (var cartItem in groupItems)

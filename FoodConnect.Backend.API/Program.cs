@@ -30,6 +30,7 @@ using FoodConnect.Backend.Application.Features.Complaint.Services;
 using FoodConnect.Backend.Application.Commons.Services;
 using Hangfire;
 using Hangfire.PostgreSql;
+using Hangfire.Storage;
 using FoodConnect.Backend.Application.Features.Promotion.Jobs;
 using FoodConnect.Backend.Application.Features.Promotion.Services;
 using FoodConnect.Backend.Application.Features.Complaint.Jobs;
@@ -215,9 +216,40 @@ services.AddHangfire(config => config
     .UseSimpleAssemblyNameTypeSerializer()
     .UseRecommendedSerializerSettings()
     .UsePostgreSqlStorage(options => 
-        options.UseNpgsqlConnection(configuration.GetConnectionString("DefaultConnection"))));
+        options.UseNpgsqlConnection(configuration.GetConnectionString("DefaultConnection")),
+        new PostgreSqlStorageOptions
+        {
+            // Distributed lock configuration to prevent timeout errors
+            DistributedLockTimeout = TimeSpan.FromMinutes(2), // Increase from default 10s
+            
+            // Connection pool settings
+            PrepareSchemaIfNecessary = true,
+            
+            // Job expiration settings - CRITICAL for database cleanup
+            JobExpirationCheckInterval = TimeSpan.FromHours(1), // Check every hour
+            
+            // Queue poll interval
+            QueuePollInterval = TimeSpan.FromSeconds(15),
+            
+            // Invisible timeout for jobs
+            InvisibilityTimeout = TimeSpan.FromMinutes(30)
+        }));
 
-services.AddHangfireServer();
+// Hangfire Server with optimized settings
+services.AddHangfireServer(options =>
+{   
+    // Worker configuration
+    options.WorkerCount = Math.Max(Environment.ProcessorCount, 2); // At least 2 workers
+    
+    // Prevent multiple instances from conflicting
+    options.ServerName = $"{Environment.MachineName}:{Guid.NewGuid()}";
+    
+    // Poll interval for queues
+    options.SchedulePollingInterval = TimeSpan.FromSeconds(15);
+    
+    // Queues to process (default queue)
+    options.Queues = new[] { "default" };
+});
 services.AddScoped<PromotionStatusJob>();
 services.AddScoped<ComplaintEscalationJob>();
 services.AddScoped<OrderAutoCompletionService>();
@@ -270,35 +302,88 @@ app.UseHangfireDashboard("/hangfire", new DashboardOptions
     Authorization = new[] { new HangfireAuthorizationFilter() }
 });
 
-// Schedule recurring jobs
+// Schedule recurring jobs with optimized intervals
 RecurringJob.AddOrUpdate<PromotionStatusJob>(
     "auto-activate-promotions",
     job => job.AutoActivatePromotionsAsync(),
-    Cron.Minutely);
+    "*/5 * * * *"); // Every 5 minutes (reduced from every minute)
 
 RecurringJob.AddOrUpdate<PromotionStatusJob>(
     "auto-expire-promotions",
     job => job.AutoExpirePromotionsAsync(),
-    Cron.Minutely);
+    "*/5 * * * *"); // Every 5 minutes (reduced from every minute)
 
 RecurringJob.AddOrUpdate<ComplaintEscalationJob>(
     "escalate-expired-complaints",
     job => job.EscalateExpiredComplaintsAsync(),
-    Cron.Hourly);
+    Cron.Hourly); // Keep hourly - appropriate for escalations
+
 // Order management jobs
 RecurringJob.AddOrUpdate<OrderStatusJob>(
     "auto-cancel-unconfirmed-orders",
     job => job.AutoCancelUnconfirmedOrdersAsync(),
-    Cron.Minutely);
+    "*/10 * * * *"); // Every 10 minutes (reduced from every minute)
 
 RecurringJob.AddOrUpdate<OrderStatusJob>(
     "auto-complete-delivered-orders",
     job => job.AutoCompleteDeliveredOrdersAsync(),
-    Cron.Minutely);
+    "*/10 * * * *"); // Every 10 minutes (reduced from every minute)
+
+// Hangfire cleanup job - CRITICAL: Remove old succeeded/deleted jobs
+RecurringJob.AddOrUpdate(
+    "hangfire-cleanup-old-jobs",
+    () => HangfireCleanupService.CleanupOldJobs(),
+    Cron.Daily); // Run once per day at midnight
 
 app.MapControllers();
 app.MapHub<NotificationHub>("/hubs/notifications");
 app.MapHub<ChatHub>("/hubs/chat");
 
 app.Run();
+
 public partial class Program { }
+
+// Hangfire cleanup service - deletes old jobs to prevent database bloat
+public static class HangfireCleanupService
+{
+    public static void CleanupOldJobs()
+    {
+        var monitor = JobStorage.Current.GetMonitoringApi();
+        
+        // Delete succeeded jobs older than 7 days
+        var succeededJobs = monitor.SucceededJobs(0, int.MaxValue)
+            .Where(j => j.Value != null && j.Value.SucceededAt.HasValue 
+                        && j.Value.SucceededAt.Value < DateTime.UtcNow.AddDays(-7))
+            .Select(j => j.Key)
+            .ToList();
+        
+        foreach (var jobId in succeededJobs)
+        {
+            BackgroundJob.Delete(jobId);
+        }
+        
+        // Delete failed jobs older than 30 days
+        var failedJobs = monitor.FailedJobs(0, int.MaxValue)
+            .Where(j => j.Value != null && j.Value.FailedAt.HasValue 
+                        && j.Value.FailedAt.Value < DateTime.UtcNow.AddDays(-30))
+            .Select(j => j.Key)
+            .ToList();
+        
+        foreach (var jobId in failedJobs)
+        {
+            BackgroundJob.Delete(jobId);
+        }
+        
+        // Delete deleted jobs older than 1 day
+        var deletedJobs = monitor.DeletedJobs(0, int.MaxValue)
+            .Where(j => j.Value != null && j.Value.DeletedAt.HasValue 
+                        && j.Value.DeletedAt.Value < DateTime.UtcNow.AddDays(-1))
+            .Select(j => j.Key)
+            .ToList();
+        
+        foreach (var jobId in deletedJobs)
+        {
+            BackgroundJob.Delete(jobId);
+        }
+    }
+}

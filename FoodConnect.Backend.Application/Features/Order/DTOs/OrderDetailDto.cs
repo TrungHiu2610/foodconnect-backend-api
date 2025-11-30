@@ -19,6 +19,11 @@ namespace FoodConnect.Backend.Application.Features.Order.DTOs
         public string? CancelReason { get; set; }
         public string? RejectionReason { get; set; }
         
+        // Delivery Images & Tracking
+        public string? PackagePhotoUrl { get; set; }
+        public string? TrackingCode { get; set; }
+        public string? DeliveryProofImageUrl { get; set; }
+        
         // Timestamps
         public DateTime CreatedAt { get; set; }
         public DateTime? AcceptedAt { get; set; }

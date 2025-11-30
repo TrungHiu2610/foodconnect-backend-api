@@ -3,6 +3,7 @@ using System;
 using FoodConnect.Backend.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace FoodConnect.Backend.Infrastructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251130091919_ModifyUserShopRelationship")]
+    partial class ModifyUserShopRelationship
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -1567,6 +1570,9 @@ namespace FoodConnect.Backend.Infrastructure.Migrations
                     b.Property<int>("Provider")
                         .HasColumnType("integer");
 
+                    b.Property<Guid?>("ShopId")
+                        .HasColumnType("uuid");
+
                     b.Property<int>("Status")
                         .HasColumnType("integer");
 
@@ -1579,6 +1585,9 @@ namespace FoodConnect.Backend.Infrastructure.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("Email")
+                        .IsUnique();
+
+                    b.HasIndex("ShopId")
                         .IsUnique();
 
                     b.ToTable("Users");
@@ -1867,7 +1876,7 @@ namespace FoodConnect.Backend.Infrastructure.Migrations
             modelBuilder.Entity("FoodConnect.Backend.Domain.Entities.Cart", b =>
                 {
                     b.HasOne("FoodConnect.Backend.Domain.Entities.User", "User")
-                        .WithOne("Cart")
+                        .WithOne()
                         .HasForeignKey("FoodConnect.Backend.Domain.Entities.Cart", "UserId")
                         .OnDelete(DeleteBehavior.SetNull);
 
@@ -2209,17 +2218,6 @@ namespace FoodConnect.Backend.Infrastructure.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("FoodConnect.Backend.Domain.Entities.Shop", b =>
-                {
-                    b.HasOne("FoodConnect.Backend.Domain.Entities.User", "User")
-                        .WithOne("Shop")
-                        .HasForeignKey("FoodConnect.Backend.Domain.Entities.Shop", "UserId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("User");
-                });
-
             modelBuilder.Entity("FoodConnect.Backend.Domain.Entities.ShopAsset", b =>
                 {
                     b.HasOne("FoodConnect.Backend.Domain.Entities.Shop", "Shop")
@@ -2257,6 +2255,16 @@ namespace FoodConnect.Backend.Infrastructure.Migrations
                         .HasForeignKey("ShopId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("Shop");
+                });
+
+            modelBuilder.Entity("FoodConnect.Backend.Domain.Entities.User", b =>
+                {
+                    b.HasOne("FoodConnect.Backend.Domain.Entities.Shop", "Shop")
+                        .WithOne("User")
+                        .HasForeignKey("FoodConnect.Backend.Domain.Entities.User", "ShopId")
+                        .OnDelete(DeleteBehavior.SetNull);
 
                     b.Navigation("Shop");
                 });
@@ -2414,17 +2422,16 @@ namespace FoodConnect.Backend.Infrastructure.Migrations
                     b.Navigation("Products");
 
                     b.Navigation("ShopCategories");
+
+                    b.Navigation("User")
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("FoodConnect.Backend.Domain.Entities.User", b =>
                 {
                     b.Navigation("Addresses");
 
-                    b.Navigation("Cart");
-
                     b.Navigation("RefreshTokens");
-
-                    b.Navigation("Shop");
 
                     b.Navigation("UserRoles");
 

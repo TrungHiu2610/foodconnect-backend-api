@@ -39,25 +39,6 @@ public class GetWalletQueryHandler : IRequestHandler<GetWalletQuery, BaseRespons
         var walletType = (WalletTypeEnum)request.WalletType;
         var wallet = await _walletRepository.GetByUserIdAndTypeAsync(userId.Value, walletType);
         
-        if (wallet == null)
-        {
-            // Auto-create wallet if not exists
-            wallet = new Domain.Entities.Wallet
-            {
-                UserId = userId.Value,
-                WalletType = walletType,
-                Balance = 0,
-                TotalEarned = 0,
-                TotalWithdrawn = 0,
-                PendingBalance = 0,
-                TotalSpent = 0,
-                Status = WalletStatusEnum.Active
-            };
-
-            await _walletRepository.AddAsync(wallet);
-            await _unitOfWork.SaveChangesAsync();
-        }
-
         var response = _mapper.Map<WalletResponse>(wallet);
         return result.BuildSuccess(response, "Wallet retrieved successfully");
     }

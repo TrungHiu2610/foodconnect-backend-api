@@ -59,9 +59,16 @@ namespace FoodConnect.Backend.Application.Features.Order.Commands
                 return result.BuildFail("Only preparing orders can be marked as prepared");
             }
 
-            // Update order status - OutForDelivery since we're simulating delivery
-            order.Status = OrderStatusEnum.OutForDelivery;
-            order.PreparedAt = DateTime.UtcNow;
+            if (order.DeliveryType == DeliveryTypeEnum.Express)
+            {
+                order.Status = OrderStatusEnum.ReadyForPickup;
+                order.ReadyForPickupAt = DateTime.UtcNow;
+            }
+            else
+            {
+                order.Status = OrderStatusEnum.Prepared;
+                order.PreparedAt = DateTime.UtcNow;
+            }
 
             _orderRepository.Update(order);
             await _unitOfWork.SaveChangesAsync(cancellationToken);

@@ -3,6 +3,7 @@ using FoodConnect.Backend.Application.Interfaces.IRepositories;
 using FoodConnect.Backend.Application.Features.Promotion.Services;
 using FoodConnect.Backend.Domain.Enums;
 using Microsoft.Extensions.Logging;
+using Hangfire;
 
 namespace FoodConnect.Backend.Application.Features.Promotion.Jobs
 {
@@ -24,6 +25,8 @@ namespace FoodConnect.Backend.Application.Features.Promotion.Jobs
             _logger = logger;
             _promotionNotificationService = promotionNotificationService;
         }
+        
+        [DisableConcurrentExecution(timeoutInSeconds: 600)] // Prevent concurrent runs, 10 min timeout
         public async Task AutoActivatePromotionsAsync()
         {
             try
@@ -34,31 +37,42 @@ namespace FoodConnect.Backend.Application.Features.Promotion.Jobs
                 // Find all Approved promotions where StartDate has passed
                 var promotionsToActivate = await _promotionRepository.GetPromotionsByStatusAsync(PromotionStatusEnum.Approved);
                 
-                var activatedCount = 0;
-                foreach (var promotion in promotionsToActivate.Where(p => p.StartDate <= now))
+                var toActivate = promotionsToActivate.Where(p => p.StartDate <= now).ToList();
+                
+                if (toActivate.Count == 0)
+                {
+                    _logger.LogInformation("[PromotionStatusJob] No promotions to activate");
+                    return;
+                }
+
+                // Step 1: Update promotion status in database
+                foreach (var promotion in toActivate)
                 {
                     promotion.Status = PromotionStatusEnum.Active;
                     promotion.UpdatedAtUtc = now;
                     _promotionRepository.Update(promotion);
-                    activatedCount++;
                     
                     _logger.LogInformation(
                         "[PromotionStatusJob] Auto-activated promotion {PromotionId} - {PromotionName}", 
                         promotion.Id, 
                         promotion.PromotionName);
-
-                    // Send notification (async but don't wait)
-                    _ = _promotionNotificationService.NotifyPromotionActivatedAsync(promotion);
                 }
 
-                if (activatedCount > 0)
+                // Step 2: Save changes to database first
+                await _unitOfWork.SaveChangesAsync();
+                _logger.LogInformation("[PromotionStatusJob] Auto-activated {Count} promotions", toActivate.Count);
+
+                // Step 3: Send notifications AFTER database save completes (prevents DbContext concurrency)
+                foreach (var promotion in toActivate)
                 {
-                    await _unitOfWork.SaveChangesAsync();
-                    _logger.LogInformation("[PromotionStatusJob] Auto-activated {Count} promotions", activatedCount);
-                }
-                else
-                {
-                    _logger.LogInformation("[PromotionStatusJob] No promotions to activate");
+                    try
+                    {
+                        await _promotionNotificationService.NotifyPromotionActivatedAsync(promotion);
+                    }
+                    catch (Exception notifEx)
+                    {
+                        _logger.LogError(notifEx, "[PromotionStatusJob] Failed to send notification for promotion {PromotionId}", promotion.Id);
+                    }
                 }
             }
             catch (Exception ex)
@@ -67,6 +81,7 @@ namespace FoodConnect.Backend.Application.Features.Promotion.Jobs
             }
         }
 
+        [DisableConcurrentExecution(timeoutInSeconds: 600)] // Prevent concurrent runs, 10 min timeout
         public async Task AutoExpirePromotionsAsync()
         {
             try
@@ -77,31 +92,42 @@ namespace FoodConnect.Backend.Application.Features.Promotion.Jobs
                 // Find all Active promotions where EndDate has passed
                 var activePromotions = await _promotionRepository.GetPromotionsByStatusAsync(PromotionStatusEnum.Active);
                 
-                var expiredCount = 0;
-                foreach (var promotion in activePromotions.Where(p => p.EndDate <= now))
+                var toExpire = activePromotions.Where(p => p.EndDate <= now).ToList();
+                
+                if (toExpire.Count == 0)
+                {
+                    _logger.LogInformation("[PromotionStatusJob] No promotions to expire");
+                    return;
+                }
+
+                // Step 1: Update promotion status in database
+                foreach (var promotion in toExpire)
                 {
                     promotion.Status = PromotionStatusEnum.Expired;
                     promotion.UpdatedAtUtc = now;
                     _promotionRepository.Update(promotion);
-                    expiredCount++;
                     
                     _logger.LogInformation(
                         "[PromotionStatusJob] Auto-expired promotion {PromotionId} - {PromotionName}", 
                         promotion.Id, 
                         promotion.PromotionName);
-
-                    // Send notification (async but don't wait)
-                    _ = _promotionNotificationService.NotifyPromotionExpiredAsync(promotion);
                 }
 
-                if (expiredCount > 0)
+                // Step 2: Save changes to database first
+                await _unitOfWork.SaveChangesAsync();
+                _logger.LogInformation("[PromotionStatusJob] Auto-expired {Count} promotions", toExpire.Count);
+
+                // Step 3: Send notifications AFTER database save completes (prevents DbContext concurrency)
+                foreach (var promotion in toExpire)
                 {
-                    await _unitOfWork.SaveChangesAsync();
-                    _logger.LogInformation("[PromotionStatusJob] Auto-expired {Count} promotions", expiredCount);
-                }
-                else
-                {
-                    _logger.LogInformation("[PromotionStatusJob] No promotions to expire");
+                    try
+                    {
+                        await _promotionNotificationService.NotifyPromotionExpiredAsync(promotion);
+                    }
+                    catch (Exception notifEx)
+                    {
+                        _logger.LogError(notifEx, "[PromotionStatusJob] Failed to send notification for promotion {PromotionId}", promotion.Id);
+                    }
                 }
             }
             catch (Exception ex)

@@ -1,3 +1,4 @@
+using FoodConnect.Backend.Application.Interfaces;
 using FoodConnect.Backend.Application.Interfaces.IRepositories;
 using FoodConnect.Backend.Domain.Entities;
 using FoodConnect.Backend.Domain.Enums;
@@ -14,8 +15,26 @@ public class WalletRepository : BaseRepository<Wallet>, IWalletRepository
 
     public async Task<Wallet?> GetByUserIdAndTypeAsync(Guid userId, WalletTypeEnum walletType)
     {
-        return await _context.Wallets
+        var wallet = await _context.Wallets
             .FirstOrDefaultAsync(w => w.UserId == userId && w.WalletType == walletType);
+        if (wallet == null)
+        {
+            // Auto-create wallet if not exists
+            wallet = new Domain.Entities.Wallet
+            {
+                UserId = userId,
+                WalletType = walletType,
+                Balance = 0,
+                TotalEarned = 0,
+                TotalWithdrawn = 0,
+                PendingBalance = 0,
+                TotalSpent = 0,
+                Status = WalletStatusEnum.Active
+            };
+            await _context.Wallets.AddAsync(wallet);
+            await _context.SaveChangesAsync();
+        }
+        return wallet;
     }
 
     public async Task<Wallet?> GetWalletWithTransactionsAsync(Guid walletId)
