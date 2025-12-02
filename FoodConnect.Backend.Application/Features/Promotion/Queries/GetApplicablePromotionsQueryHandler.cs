@@ -12,15 +12,18 @@ namespace FoodConnect.Backend.Application.Features.Promotion.Queries
     public class GetApplicablePromotionsQueryHandler : IRequestHandler<GetApplicablePromotionsQuery, BaseResponse<List<ApplicablePromotionResponse>>>
     {
         private readonly IPromotionRepository _promotionRepository;
+        private readonly IOrderRepository _orderRepository;
         private readonly ICurrentUserService _currentUserService;
         private readonly IMapper _mapper;
 
         public GetApplicablePromotionsQueryHandler(
             IPromotionRepository promotionRepository,
+            IOrderRepository orderRepository,
             ICurrentUserService currentUserService,
             IMapper mapper)
         {
             _promotionRepository = promotionRepository;
+            _orderRepository = orderRepository;
             _currentUserService = currentUserService;
             _mapper = mapper;
         }
@@ -74,7 +77,10 @@ namespace FoodConnect.Backend.Application.Features.Promotion.Queries
 
                 if (canApply && userId.HasValue)
                 {
-                    var userUsageCount = await _promotionRepository.GetUserUsageCountAsync(promotion.Id, userId.Value);
+                    // Count how many times user has used this promotion via orders
+                    var userOrders = await _orderRepository.GetOrdersByBuyerAsync(userId.Value, null);
+                    var userUsageCount = userOrders.Count(o => o.PromotionId == promotion.Id);
+                    
                     if (userUsageCount >= promotion.UsagePerCustomer)
                     {
                         canApply = false;

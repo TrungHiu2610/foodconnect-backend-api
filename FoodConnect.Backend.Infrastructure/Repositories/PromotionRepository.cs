@@ -111,17 +111,5 @@ namespace FoodConnect.Backend.Infrastructure.Repositories
                         .ThenInclude(p => p.ProductAssets)
                 .FirstOrDefaultAsync(p => p.Id == promotionId && !p.IsDeleted);
         }
-
-        public async Task<int> GetUserUsageCountAsync(Guid promotionId, Guid userId)
-        {
-            return await _context.PromotionUsages
-                .CountAsync(pu => pu.PromotionId == promotionId && pu.UserId == userId && !pu.IsDeleted);
-        }
-
-        public async Task<bool> HasUserUsedPromotionAsync(Guid promotionId, Guid userId)
-        {
-            return await _context.PromotionUsages
-                .AnyAsync(pu => pu.PromotionId == promotionId && pu.UserId == userId && !pu.IsDeleted);
-        }
     }
 }
