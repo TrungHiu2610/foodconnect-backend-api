@@ -31,6 +31,5 @@ namespace FoodConnect.Backend.Domain.Entities
         public DateTime? ReviewedAt { get; set; }
 
         public virtual ICollection<PromotionProduct> PromotionProducts { get; set; } = new List<PromotionProduct>();
-        public virtual ICollection<PromotionUsage> PromotionUsages { get; set; } = new List<PromotionUsage>();
     }
 }

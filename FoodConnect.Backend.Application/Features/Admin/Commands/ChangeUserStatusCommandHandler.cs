@@ -14,18 +14,15 @@ namespace FoodConnect.Backend.Application.Features.Admin.Commands
         private readonly IUserRepository _userRepository;
         private readonly IUnitOfWork _unitOfWork;
         private readonly ICurrentUserService _currentUserService;
-        private readonly IUserStatusAuditLogRepository _auditLogRepository;
 
         public ChangeUserStatusCommandHandler(
             IUserRepository userRepository,
             IUnitOfWork unitOfWork,
-            ICurrentUserService currentUserService,
-            IUserStatusAuditLogRepository auditLogRepository)
+            ICurrentUserService currentUserService)
         {
             _userRepository = userRepository;
             _unitOfWork = unitOfWork;
             _currentUserService = currentUserService;
-            _auditLogRepository = auditLogRepository;
         }
 
         public async Task<BaseResponse<UserStatusChangeResponse>> Handle(
@@ -58,26 +55,13 @@ namespace FoodConnect.Backend.Application.Features.Admin.Commands
                 return result.BuildUnauthorized("Admin user not found");
             }
 
-            using var transaction = await _unitOfWork.BeginTransactionAsync();
             try
             {
                 user.Status = request.NewStatus;
                 user.UpdatedAtUtc = DateTime.UtcNow;
                 _userRepository.Update(user);
 
-                var auditLog = new UserStatusAuditLog
-                {
-                    UserId = user.Id,
-                    OldStatus = oldStatus,
-                    NewStatus = request.NewStatus,
-                    ChangedByUserId = adminUserId.Value,
-                    Reason = request.Reason,
-                    ChangedAtUtc = DateTime.UtcNow
-                };
-
-                await _auditLogRepository.AddAsync(auditLog);
                 await _unitOfWork.SaveChangesAsync(cancellationToken);
-                await _unitOfWork.CommitTransactionAsync(transaction);
 
                 var response = new UserStatusChangeResponse
                 {
@@ -85,16 +69,15 @@ namespace FoodConnect.Backend.Application.Features.Admin.Commands
                     OldStatus = oldStatus,
                     NewStatus = request.NewStatus,
                     ChangedBy = adminUser.FullName,
-                    ChangedAt = auditLog.ChangedAtUtc,
+                    ChangedAt = DateTime.UtcNow,
                     Reason = request.Reason
                 };
 
                 return result.BuildSuccess(response, "User status changed successfully");
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                await _unitOfWork.RollbackTransactionAsync(transaction);
-                throw;
+                return result.BuildFail($"Failed to change user status: {ex.Message}");
             }
         }
     }

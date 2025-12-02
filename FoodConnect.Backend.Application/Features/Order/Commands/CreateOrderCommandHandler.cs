@@ -24,7 +24,6 @@ namespace FoodConnect.Backend.Application.Features.Order.Commands
         private readonly IProductRepository _productRepository;
         private readonly IShopRepository _shopRepository;
         private readonly IPromotionRepository _promotionRepository;
-        private readonly IPromotionUsageRepository _promotionUsageRepository;
         private readonly IUnitOfWork _unitOfWork;
         private readonly ICurrentUserService _currentUserService;
         private readonly OrderNotificationService _orderNotificationService;
@@ -38,7 +37,6 @@ namespace FoodConnect.Backend.Application.Features.Order.Commands
             IProductRepository productRepository,
             IShopRepository shopRepository,
             IPromotionRepository promotionRepository,
-            IPromotionUsageRepository promotionUsageRepository,
             IUnitOfWork unitOfWork,
             ICurrentUserService currentUserService,
             OrderNotificationService orderNotificationService,
@@ -51,7 +49,6 @@ namespace FoodConnect.Backend.Application.Features.Order.Commands
             _productRepository = productRepository;
             _shopRepository = shopRepository;
             _promotionRepository = promotionRepository;
-            _promotionUsageRepository = promotionUsageRepository;
             _unitOfWork = unitOfWork;
             _currentUserService = currentUserService;
             _orderNotificationService = orderNotificationService;
@@ -171,7 +168,9 @@ namespace FoodConnect.Backend.Application.Features.Order.Commands
                 }
 
                 // Check user usage limit
-                var userUsageCount = await _promotionRepository.GetUserUsageCountAsync(promotion.Id, buyerId);
+                var buyerOrders = await _orderRepository.GetOrdersByBuyerAsync(buyerId, null);
+                var userUsageCount = buyerOrders.Count(o => o.PromotionId == promotion.Id);
+                
                 if (userUsageCount >= promotion.UsagePerCustomer)
                 {
                     return result.BuildFail($"You have already used this promotion {promotion.UsagePerCustomer} time(s)");
@@ -370,26 +369,11 @@ namespace FoodConnect.Backend.Application.Features.Order.Commands
                         _cartItemRepository.Remove(cartItem);
                     }
 
-                    // Record promotion usage if applicable
-                    if (applicablePromotionId.HasValue)
+                    // Update promotion total used count if applicable
+                    if (applicablePromotionId.HasValue && promotion != null)
                     {
-                        var promotionUsage = new PromotionUsage
-                        {
-                            Id = Guid.NewGuid(),
-                            PromotionId = applicablePromotionId.Value,
-                            UserId = buyerId,
-                            OrderId = order.Id,
-                            DiscountAmount = promotionDiscountAmount ?? 0,
-                            UsedAt = DateTime.UtcNow
-                        };
-                        await _promotionUsageRepository.AddAsync(promotionUsage);
-
-                        // Update promotion total used count
-                        if (promotion != null)
-                        {
-                            promotion.TotalUsedCount += 1;
-                            _promotionRepository.Update(promotion);
-                        }
+                        promotion.TotalUsedCount += 1;
+                        _promotionRepository.Update(promotion);
                     }
                 }
 

@@ -50,11 +50,6 @@ namespace FoodConnect.Backend.Infrastructure.Persistence.Configurations
                 .WithOne(pp => pp.Promotion)
                 .HasForeignKey(pp => pp.PromotionId)
                 .OnDelete(DeleteBehavior.Cascade);
-
-            builder.HasMany(p => p.PromotionUsages)
-                .WithOne(pu => pu.Promotion)
-                .HasForeignKey(pu => pu.PromotionId)
-                .OnDelete(DeleteBehavior.Cascade);
         }
     }
 }
