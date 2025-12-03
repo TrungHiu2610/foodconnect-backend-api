@@ -39,19 +39,16 @@ namespace FoodConnect.Backend.Application.Features.Order.Queries
 
             var orderDtos = orders.Select(o => OrderMapper.MapToSummaryDto(o)).ToList();
             
-            // Calculate review status for completed orders
             foreach (var orderDto in orderDtos.Where(o => o.Status == OrderStatusEnum.Completed))
             {
                 orderDto.ReviewStatus = await CalculateReviewStatusAsync(orderDto.Id, buyerId);
             }
             
-            // Apply review status filter if specified
             if (request.ReviewStatus.HasValue)
             {
                 orderDtos = orderDtos.Where(o => o.ReviewStatus == request.ReviewStatus.Value).ToList();
             }
 
-            // Apply pagination
             var totalCount = orderDtos.Count;
             var paginatedOrders = orderDtos
                 .Skip((request.PageNumber - 1) * request.PageSize)
@@ -70,18 +67,15 @@ namespace FoodConnect.Backend.Application.Features.Order.Queries
         
         private async Task<OrderReviewStatusEnum> CalculateReviewStatusAsync(Guid orderId, Guid buyerId)
         {
-            // Get all reviews for this order by this buyer
             var reviews = await _reviewRepository.GetAllAsync();
             var orderReviews = reviews.Where(r => r.OrderId == orderId && r.BuyerId == buyerId).ToList();
             
-            // Get order to check total items
             var order = await _orderRepository.GetOrderWithDetailsAsync(orderId);
             if (order == null)
             {
                 return OrderReviewStatusEnum.NotReviewed;
             }
             
-            // Check if all products have been reviewed
             var totalProducts = order.OrderItems.Count;
             var reviewedProducts = orderReviews.Count;
             

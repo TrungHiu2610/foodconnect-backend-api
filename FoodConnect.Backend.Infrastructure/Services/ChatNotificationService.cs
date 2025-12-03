@@ -44,7 +44,6 @@ public class ChatNotificationService : IChatNotificationService
 
     public async Task NotifyNewMessageAsync(Guid conversationId, Guid messageId, Guid recipientUserId, string messagePreview)
     {
-        // Send to user's personal group (for notifications even when not in conversation)
         await _hubContext.Clients
             .Group($"user_{recipientUserId}")
             .ReceiveError($"New message: {messagePreview}");

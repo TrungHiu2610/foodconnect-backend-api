@@ -31,15 +31,12 @@ public class VNPayService : IVNPayService
         var orderType = _configuration["VNPay:OrderType"] ?? "other";
         var version = _configuration["VNPay:Version"] ?? "2.1.0";
         var command = _configuration["VNPay:Command"] ?? "pay";
-        // VNPay Return URL - User redirected here after payment
-        // This URL must process payment AND redirect to frontend
         var returnUrl = _configuration["VNPay:ReturnUrl"] ?? "https://glossemic-jarrett-irreverent.ngrok-free.dev/api/Payment/VNPayCallback";
         
         var createDate = DateTime.Now.ToString("yyyyMMddHHmmss", CultureInfo.InvariantCulture);
         var txnRef = DateTime.Now.Ticks.ToString();
         var amount = ((long)(request.Amount * 100)).ToString();
 
-        // Build parameters dictionary with all required fields
         var vnpay = new Dictionary<string, string>
         {
             { "vnp_Version", version },
@@ -56,16 +53,12 @@ public class VNPayService : IVNPayService
             { "vnp_TxnRef", txnRef }
         };
 
-        // Build raw data (URL encoded) for signature
         var rawData = VNPayHelper.BuildRawData(vnpay);
         
-        // Generate HMAC-SHA512 signature
         var vnpSecureHash = VNPayHelper.HmacSHA512(hashSecret, rawData);
 
-        // Build query string (URL encoded) - same as rawData
         var queryString = rawData;
         
-        // Final payment URL with signature appended
         var paymentUrl = $"{vnpUrl}?{queryString}&vnp_SecureHash={vnpSecureHash}";
 
         return new VNPayPaymentUrlResponse
@@ -101,12 +94,10 @@ public class VNPayService : IVNPayService
     {
         var hashSecret = _configuration["VNPay:HashSecret"];
 
-        // Filter vnp_ parameters excluding vnp_SecureHash
         var filteredData = vnpayData
             .Where(kv => kv.Key.StartsWith("vnp_") && kv.Key != "vnp_SecureHash")
             .ToDictionary(kv => kv.Key, kv => kv.Value);
 
-        // Use VNPayHelper.BuildRawData to ensure URL encoding matches payment URL creation
         var rawData = VNPayHelper.BuildRawData(filteredData);
         var checksum = VNPayHelper.HmacSHA512(hashSecret, rawData);
 

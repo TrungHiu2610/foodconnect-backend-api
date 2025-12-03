@@ -40,20 +40,17 @@ namespace FoodConnect.Backend.Application.Features.Order.Commands
 
             var userId = _currentUserService.UserId.Value;
 
-            // Get order
             var order = await _orderRepository.GetOrderWithDetailsAsync(request.OrderId);
             if (order == null)
             {
                 return result.BuildNotFound("Order not found");
             }
 
-            // Check if order belongs to seller's shop
             if (order.Shop?.UserId != userId)
             {
                 return result.BuildForbidden("You don't have permission to update this order");
             }
 
-            // Check if order is being prepared
             if (order.Status != OrderStatusEnum.Preparing)
             {
                 return result.BuildFail("Only preparing orders can be marked as prepared");
@@ -73,11 +70,9 @@ namespace FoodConnect.Backend.Application.Features.Order.Commands
             _orderRepository.Update(order);
             await _unitOfWork.SaveChangesAsync(cancellationToken);
 
-            // Reload order with full details
             order = await _orderRepository.GetOrderWithDetailsAsync(request.OrderId);
             var orderDto = OrderMapper.MapToDetailDto(order!);
 
-            // Send notification to buyer
             await _orderNotificationService.NotifyOrderPreparingAsync(order!, cancellationToken);
 
             return result.BuildSuccess(orderDto, "Order marked as prepared and ready for delivery");

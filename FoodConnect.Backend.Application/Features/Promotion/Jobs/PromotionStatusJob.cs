@@ -34,7 +34,6 @@ namespace FoodConnect.Backend.Application.Features.Promotion.Jobs
                 var now = DateTime.UtcNow;
                 _logger.LogInformation("[PromotionStatusJob] Running auto-activate job at {Time}", now);
 
-                // Find all Approved promotions where StartDate has passed
                 var promotionsToActivate = await _promotionRepository.GetPromotionsByStatusAsync(PromotionStatusEnum.Approved);
                 
                 var toActivate = promotionsToActivate.Where(p => p.StartDate <= now).ToList();
@@ -45,7 +44,6 @@ namespace FoodConnect.Backend.Application.Features.Promotion.Jobs
                     return;
                 }
 
-                // Step 1: Update promotion status in database
                 foreach (var promotion in toActivate)
                 {
                     promotion.Status = PromotionStatusEnum.Active;
@@ -58,11 +56,9 @@ namespace FoodConnect.Backend.Application.Features.Promotion.Jobs
                         promotion.PromotionName);
                 }
 
-                // Step 2: Save changes to database first
                 await _unitOfWork.SaveChangesAsync();
                 _logger.LogInformation("[PromotionStatusJob] Auto-activated {Count} promotions", toActivate.Count);
 
-                // Step 3: Send notifications AFTER database save completes (prevents DbContext concurrency)
                 foreach (var promotion in toActivate)
                 {
                     try
@@ -89,7 +85,6 @@ namespace FoodConnect.Backend.Application.Features.Promotion.Jobs
                 var now = DateTime.UtcNow;
                 _logger.LogInformation("[PromotionStatusJob] Running auto-expire job at {Time}", now);
 
-                // Find all Active promotions where EndDate has passed
                 var activePromotions = await _promotionRepository.GetPromotionsByStatusAsync(PromotionStatusEnum.Active);
                 
                 var toExpire = activePromotions.Where(p => p.EndDate <= now).ToList();
@@ -100,7 +95,6 @@ namespace FoodConnect.Backend.Application.Features.Promotion.Jobs
                     return;
                 }
 
-                // Step 1: Update promotion status in database
                 foreach (var promotion in toExpire)
                 {
                     promotion.Status = PromotionStatusEnum.Expired;
@@ -113,11 +107,9 @@ namespace FoodConnect.Backend.Application.Features.Promotion.Jobs
                         promotion.PromotionName);
                 }
 
-                // Step 2: Save changes to database first
                 await _unitOfWork.SaveChangesAsync();
                 _logger.LogInformation("[PromotionStatusJob] Auto-expired {Count} promotions", toExpire.Count);
 
-                // Step 3: Send notifications AFTER database save completes (prevents DbContext concurrency)
                 foreach (var promotion in toExpire)
                 {
                     try

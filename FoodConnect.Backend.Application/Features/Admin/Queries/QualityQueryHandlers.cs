@@ -28,7 +28,6 @@ namespace FoodConnect.Backend.Application.Features.Admin.Queries
         {
             var result = new BaseResponse<ComplaintStatisticsResponse>();
 
-            // Check cache
             var cacheKey = CacheKeys.ComplaintStats(request.FromDate, request.ToDate);
             var cachedResponse = await _redisService.GetAsync<BaseResponse<ComplaintStatisticsResponse>>(cacheKey);
             if (cachedResponse != null)
@@ -123,7 +122,6 @@ namespace FoodConnect.Backend.Application.Features.Admin.Queries
         {
             var result = new BaseResponse<List<SellerHealthScoreResponse>>();
 
-            // Check cache
             var cacheKey = CacheKeys.SellerHealthScore(request.ShopId, request.TopN);
             var cachedResponse = await _redisService.GetAsync<BaseResponse<List<SellerHealthScoreResponse>>>(cacheKey);
             if (cachedResponse != null)
@@ -256,7 +254,6 @@ namespace FoodConnect.Backend.Application.Features.Admin.Queries
         {
             var result = new BaseResponse<List<BuyerRiskScoreResponse>>();
 
-            // Check cache
             var cacheKey = CacheKeys.BuyerRiskScore(request.BuyerId, request.TopN);
             var cachedResponse = await _redisService.GetAsync<BaseResponse<List<BuyerRiskScoreResponse>>>(cacheKey);
             if (cachedResponse != null)

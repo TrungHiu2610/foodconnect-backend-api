@@ -1,4 +1,4 @@
-﻿using FoodConnect.Backend.Domain.Enums;
+using FoodConnect.Backend.Domain.Enums;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -49,10 +49,8 @@ namespace FoodConnect.Backend.Domain.Entities
         public virtual ICollection<ShopAsset> Assets { get; set; } = new List<ShopAsset>();
         public virtual ICollection<ShopCategory> ShopCategories { get; set; } = new List<ShopCategory>();
 
-        // Calculated fields (not mapped to database)
         public double? CalculatedDistance { get; set; }
 
-        // Helper methods
         public string GetFullAddress()
         {
             return string.Join(", ", new[] { Street, Ward, District, City, Country }

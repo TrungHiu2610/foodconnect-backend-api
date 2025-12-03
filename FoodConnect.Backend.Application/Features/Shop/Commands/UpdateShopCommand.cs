@@ -8,7 +8,6 @@ namespace FoodConnect.Backend.Application.Features.Shop.Commands
     {
         public Guid ShopId { get; set; }
         
-        // Basic info - All nullable for partial update
         public string? ShopName { get; set; }
         public string? Description { get; set; }
 
@@ -16,7 +15,6 @@ namespace FoodConnect.Backend.Application.Features.Shop.Commands
         public string? SellerEmail { get; set; } 
         public string? SellerPhone { get; set; }
 
-        // Address
         public string? Street { get; set; }
         public string? Ward { get; set; }
         public string? District { get; set; }
@@ -25,18 +23,14 @@ namespace FoodConnect.Backend.Application.Features.Shop.Commands
         public double? Latitude { get; set; }
         public double? Longitude { get; set; }
         
-        // Payout info
         public int? PayoutMethod { get; set; }
         public string? PayoutAccountInfo { get; set; }
         public string? PayoutAccountName { get; set; }
         
-        // Categories
         public List<Guid>? CategoryIds { get; set; }
         
-        // Asset IDs to delete (optional)
         public List<Guid>? AssetIdsToDelete { get; set; }
         
-        // New assets to upload (optional)
         public IFormFile? IdCardFront { get; set; }
         public IFormFile? IdCardBack { get; set; }
         public IFormFile? PortraitPhoto { get; set; }
@@ -44,7 +38,6 @@ namespace FoodConnect.Backend.Application.Features.Shop.Commands
         public IFormFile? Logo { get; set; }
         public IFormFile? CoverImage { get; set; }
         
-        // Operating hours (JSON string)
         public string? OperatingHoursJson { get; set; }
     }
 }

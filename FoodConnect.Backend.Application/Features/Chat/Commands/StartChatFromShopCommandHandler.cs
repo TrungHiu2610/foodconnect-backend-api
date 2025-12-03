@@ -39,7 +39,6 @@ public class StartChatFromShopCommandHandler : IRequestHandler<StartChatFromShop
         if (userId == null)
             return result.BuildUnauthorized();
 
-        // Verify shop exists
         var shop = await _shopRepository.GetByIdAsync(request.ShopId);
         if (shop == null)
             return result.BuildNotFound("Shop not found");
@@ -47,11 +46,9 @@ public class StartChatFromShopCommandHandler : IRequestHandler<StartChatFromShop
         var buyerId = userId.Value;
         var sellerId = shop.UserId;
 
-        // Prevent seller from chatting with themselves
         if (buyerId == sellerId)
             return result.BuildFail("Cannot start chat with yourself");
 
-        // Check if conversation already exists
         var conversation = await _conversationRepository.GetByBuyerAndSellerAsync(buyerId, sellerId);
         var isNewConversation = false;
 

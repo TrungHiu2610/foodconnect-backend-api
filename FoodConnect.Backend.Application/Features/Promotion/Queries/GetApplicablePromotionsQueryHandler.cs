@@ -55,7 +55,6 @@ namespace FoodConnect.Backend.Application.Features.Promotion.Queries
                     if (!isAnyProductApplicable)
                     {
                         canApply = false;
-                        // return list product name that are not in promotion
                         StringBuilder stringBuilder = new StringBuilder();
                         foreach (var pid in request.ProductIds)
                         {
@@ -77,7 +76,6 @@ namespace FoodConnect.Backend.Application.Features.Promotion.Queries
 
                 if (canApply && userId.HasValue)
                 {
-                    // Count how many times user has used this promotion via orders
                     var userOrders = await _orderRepository.GetOrdersByBuyerAsync(userId.Value, null);
                     var userUsageCount = userOrders.Count(o => o.PromotionId == promotion.Id);
                     

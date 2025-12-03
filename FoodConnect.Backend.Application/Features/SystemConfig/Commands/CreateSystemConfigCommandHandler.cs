@@ -49,7 +49,6 @@ public class CreateSystemConfigCommandHandler : IRequestHandler<CreateSystemConf
         await using var transaction = await _unitOfWork.BeginTransactionAsync();
         try
         {
-            // Upload banner image if provided
             string? bannerImageUrl = null;
             if (request.Type == (int)SystemConfigTypeEnum.Banner && request.BannerImage != null)
             {
@@ -57,13 +56,11 @@ public class CreateSystemConfigCommandHandler : IRequestHandler<CreateSystemConf
                 uploadFileUrl = bannerImageUrl;
             }
 
-            // Auto-adjust display order for Banner type
             if (request.Type == (int)SystemConfigTypeEnum.Banner && request.DisplayOrder.HasValue)
             {
                 var existingBanners = await _systemConfigRepository
                     .GetConfigsByTypeAsync(request.Type);
                 
-                // Shift banners with displayOrder >= target up by 1
                 foreach (var banner in existingBanners
                     .Where(b => (b.DisplayOrder ?? int.MaxValue) >= request.DisplayOrder.Value)
                     .OrderByDescending(b => b.DisplayOrder))
@@ -75,7 +72,6 @@ public class CreateSystemConfigCommandHandler : IRequestHandler<CreateSystemConf
                 }
             }
 
-            // If IsActive = true, deactivate other configs of the same type
             if (request.IsActive && request.Type != (int)SystemConfigTypeEnum.Other)
             {
                 var existingConfigsOfType = await _systemConfigRepository.GetConfigsByTypeAsync(request.Type);
@@ -113,7 +109,6 @@ public class CreateSystemConfigCommandHandler : IRequestHandler<CreateSystemConf
         catch (Exception ex)
         {
             await transaction.RollbackAsync();
-            // delete uploaded file if exists
             try 
             {
                 if (!string.IsNullOrEmpty(uploadFileUrl))

@@ -45,40 +45,34 @@ namespace FoodConnect.Backend.Application.Features.Product.Commands
             await using var transaction = await _unitOfWork.BeginTransactionAsync();
             try
             {
-                // Check authorization
                 var userId = _currentUserService.UserId;
                 if (!userId.HasValue)
                 {
                     return result.BuildUnauthorized();
                 }
 
-                // Get order with items
                 var order = await _orderRepository.GetOrderWithDetailsAsync(request.OrderId);
                 if (order == null)
                 {
                     return result.BuildNotFound("Order not found");
                 }
 
-                // Verify buyer owns this order
                 if (order.BuyerId != userId.Value)
                 {
                     return result.BuildForbidden("You can only review products from your own orders");
                 }
 
-                // Validate order is completed
                 if (order.Status != OrderStatusEnum.Completed)
                 {
                     return result.BuildFail("You can only review products after the order is completed");
                 }
 
-                // Verify product is in this order
                 var orderItem = order.OrderItems.FirstOrDefault(oi => oi.ProductId == request.ProductId);
                 if (orderItem == null)
                 {
                     return result.BuildFail("Product not found in this order");
                 }
 
-                // Check if already reviewed
                 var existingReview = await _reviewRepository.GetAsync(
                     r => r.OrderId == request.OrderId && r.ProductId == request.ProductId && r.BuyerId == userId.Value
                 );
@@ -87,7 +81,6 @@ namespace FoodConnect.Backend.Application.Features.Product.Commands
                     return result.BuildConflict("You have already reviewed this product");
                 }
 
-                // Create review
                 var review = new ProductReview
                 {
                     OrderId = request.OrderId,
@@ -100,14 +93,12 @@ namespace FoodConnect.Backend.Application.Features.Product.Commands
                 await _reviewRepository.AddAsync(review);
                 await _unitOfWork.SaveChangesAsync(); // Save to get review.Id
 
-                // Upload review assets (images/videos) if provided
                 if (request.ReviewAssets != null && request.ReviewAssets.Any())
                 {
                     for (int i = 0; i < request.ReviewAssets.Count; i++)
                     {
                         var file = request.ReviewAssets[i];
                         
-                        // Determine asset type and S3 directory
                         var assetType = file.ContentType.StartsWith("image/") 
                             ? ProductAssetTypeEnum.Image 
                             : ProductAssetTypeEnum.Video;
@@ -116,14 +107,12 @@ namespace FoodConnect.Backend.Application.Features.Product.Commands
                             ? AWSDirectoryConstant.IMAGE_REVIEW 
                             : AWSDirectoryConstant.VIDEO_REVIEW;
 
-                        // Upload file to S3
                         var assetUrl = await _fileStorageService.UploadFileAsync(
                             file,
                             $"{prefix}/{request.ProductId}"
                         );
                         uploadedAssetUrls.Add(assetUrl);
 
-                        // Create ProductReviewAsset record
                         var reviewAsset = new ProductReviewAsset
                         {
                             ProductReviewId = review.Id,
@@ -149,7 +138,6 @@ namespace FoodConnect.Backend.Application.Features.Product.Commands
             {
                 await transaction.RollbackAsync();
 
-                // Delete all uploaded assets if transaction fails
                 foreach (var assetUrl in uploadedAssetUrls)
                 {
                     try
@@ -158,7 +146,6 @@ namespace FoodConnect.Backend.Application.Features.Product.Commands
                     }
                     catch
                     {
-                        // Log but don't fail if cleanup fails
                     }
                 }
 

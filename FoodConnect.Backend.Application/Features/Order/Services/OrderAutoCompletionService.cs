@@ -39,14 +39,12 @@ namespace FoodConnect.Backend.Application.Features.Order.Services
         {
             try
             {
-                // Validate order status
                 if (order.Status != OrderStatusEnum.Delivered)
                 {
                     _logger.LogWarning("Order {OrderId} is not in Delivered status, cannot complete", order.Id);
                     return false;
                 }
 
-                // Check payment status
                 if (order.PaymentMethod != PaymentMethodEnum.COD && order.PaymentStatus != PaymentStatusEnum.Paid)
                 {
                     _logger.LogWarning("Order {OrderId} is not paid, cannot complete", order.Id);
@@ -56,12 +54,10 @@ namespace FoodConnect.Backend.Application.Features.Order.Services
                 await using var transaction = await _unitOfWork.BeginTransactionAsync();
                 try
                 {
-                    // Update order status
                     order.Status = OrderStatusEnum.Completed;
                     order.CompletedAt = DateTime.UtcNow;
                     _orderRepository.Update(order);
 
-                    // Get or create seller wallet
                     var sellerId = order.Shop.UserId;
                     var wallet = await _walletRepository.GetByUserIdAndTypeAsync(sellerId, WalletTypeEnum.Seller);
 
@@ -81,7 +77,6 @@ namespace FoodConnect.Backend.Application.Features.Order.Services
                         await _unitOfWork.SaveChangesAsync(cancellationToken);
                     }
 
-                    // Calculate commission and earnings
                     var commissionRate = await _systemConfigRepository.GetCommissionRateAsync();
                     var commissionableAmount = (decimal)(order.Total - order.ShippingFee);
                     var commissionAmount = commissionableAmount * (commissionRate / 100);
@@ -89,7 +84,6 @@ namespace FoodConnect.Backend.Application.Features.Order.Services
 
                     var balanceBefore = wallet.Balance;
 
-                    // Create earning transaction
                     var earningTransaction = new WalletTransaction
                     {
                         WalletId = wallet.Id,
@@ -108,7 +102,6 @@ namespace FoodConnect.Backend.Application.Features.Order.Services
 
                     var balanceAfterEarning = wallet.Balance;
 
-                    // Create commission deduction transaction
                     var commissionTransaction = new WalletTransaction
                     {
                         WalletId = wallet.Id,
@@ -128,7 +121,6 @@ namespace FoodConnect.Backend.Application.Features.Order.Services
                     await _unitOfWork.SaveChangesAsync(cancellationToken);
                     await transaction.CommitAsync(cancellationToken);
 
-                    // Reload order with full details for notification
                     var orderId = order.Id;
                     var orderCode = order.OrderCode;
                     var reloadedOrder = await _orderRepository.GetOrderWithDetailsAsync(orderId);

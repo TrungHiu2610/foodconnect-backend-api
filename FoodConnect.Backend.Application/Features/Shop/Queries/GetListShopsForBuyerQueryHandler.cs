@@ -26,7 +26,6 @@ namespace FoodConnect.Backend.Application.Features.Shop.Queries
         {
             var result = new BaseResponse<PaginatedList<ShopListForBuyerResponse>>();
 
-            // Base query - only Active shops for buyer
             var query = _shopRepository.GetShopsAsQueryable()
                 .Include(s => s.ShopCategories)
                     .ThenInclude(sc => sc.Category)
@@ -35,7 +34,6 @@ namespace FoodConnect.Backend.Application.Features.Shop.Queries
                 .Where(s => s.Status == ShopStatusEnum.Active)
                 .AsNoTracking();
 
-            // 1. Apply filters
             if (!string.IsNullOrWhiteSpace(request.TextSearch))
             {
                 var searchLower = request.TextSearch.ToLower();
@@ -61,14 +59,11 @@ namespace FoodConnect.Backend.Application.Features.Shop.Queries
 
             if (request.HasPromotion.HasValue && request.HasPromotion.Value)
             {
-                // Filter shops that have products with promotions
                 query = query.Where(s => s.IsPromoted);
             }
 
-            // 2. Fetch data for further processing
             var shops = await query.ToListAsync(cancellationToken);
 
-            // 3. Calculate distance if user location provided
             if (request.UserLatitude.HasValue && request.UserLongitude.HasValue)
             {
                 foreach (var shop in shops)
@@ -84,30 +79,25 @@ namespace FoodConnect.Backend.Application.Features.Shop.Queries
                     }
                 }
 
-                // Filter by max distance
                 if (request.MaxDistance.HasValue)
                 {
                     shops = shops.Where(s => s.CalculatedDistance.HasValue && s.CalculatedDistance.Value <= request.MaxDistance.Value).ToList();
                 }
             }
 
-            // 4. Filter by IsOpen
             if (request.IsOpen.HasValue && request.IsOpen.Value)
             {
                 shops = shops.Where(s => s.IsOpenNow()).ToList();
             }
 
-            // 5. Sorting
             shops = ApplySorting(shops, request.SortBy, request.IsDescending);
 
-            // 6. Pagination
             var totalItems = shops.Count;
             var paginatedShops = shops
                 .Skip((request.PageNumber - 1) * request.PageSize)
                 .Take(request.PageSize)
                 .ToList();
 
-            // 7. Map to response DTOs
             var shopResponses = paginatedShops.Select(shop => new ShopListForBuyerResponse
             {
                 Id = shop.Id,
@@ -180,7 +170,6 @@ namespace FoodConnect.Backend.Application.Features.Shop.Queries
 
         private double CalculateDistance(double lat1, double lon1, double lat2, double lon2)
         {
-            // Haversine formula to calculate distance in kilometers
             const double R = 6371; // Earth's radius in km
 
             var dLat = ToRadians(lat2 - lat1);

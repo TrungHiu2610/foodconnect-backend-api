@@ -98,7 +98,6 @@ namespace FoodConnect.Backend.Application.Features.Promotion.Queries
 
             if (userId.HasValue)
             {
-                // Count how many times user has used this promotion via orders
                 var userOrders = await _orderRepository.GetOrdersByBuyerAsync(userId.Value, null);
                 var userUsageCount = userOrders.Count(o => o.PromotionId == promotion.Id);
                 

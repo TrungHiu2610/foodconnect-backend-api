@@ -18,14 +18,12 @@ namespace FoodConnect.Backend.Infrastructure.Repositories
             int? minRating = null,
             bool? hasSellerResponse = null)
         {
-            // Build query
             var query = _context.Set<ProductReview>()
                 .Include(r => r.Product)
                 .Include(r => r.Buyer)
                 .Include(r => r.Assets.OrderBy(a => a.DisplayOrder))
                 .Where(r => r.Product.ShopId == shopId);
 
-            // Apply filters
             if (minRating.HasValue)
             {
                 query = query.Where(r => r.Rating >= minRating.Value);
@@ -43,13 +41,10 @@ namespace FoodConnect.Backend.Infrastructure.Repositories
                 }
             }
 
-            // Order by latest first
             query = query.OrderByDescending(r => r.CreatedAtUtc);
 
-            // Get total count
             var totalCount = await query.CountAsync();
 
-            // Apply pagination
             var reviews = await query
                 .Skip((pageNumber - 1) * pageSize)
                 .Take(pageSize)

@@ -34,7 +34,6 @@ namespace FoodConnect.Backend.Application.Features.Auth.Commands.PhoneLogin
         {
             var result = new BaseResponse<AuthResponse>();
 
-            // Verify OTP from Redis
             var redisKey = $"otp:phone:{request.PhoneNumber}";
             var storedOtp = await _redisService.GetAsync<string>(redisKey);
 
@@ -48,15 +47,12 @@ namespace FoodConnect.Backend.Application.Features.Auth.Commands.PhoneLogin
                 return result.BuildFail("Invalid OTP");
             }
 
-            // Delete OTP after successful verification
             await _redisService.DeleteAsync(redisKey);
 
-            // Check if user exists
             var user = await _userRepository.GetByPhoneNumberAsync(request.PhoneNumber);
 
             if (user == null)
             {
-                // Create new user
                 user = new UserEntity
                 {
                     PhoneNumber = request.PhoneNumber,
@@ -67,7 +63,6 @@ namespace FoodConnect.Backend.Application.Features.Auth.Commands.PhoneLogin
                     PasswordHash = null
                 };
 
-                // Assign default Buyer role
                 user.UserRoles.Add(new Domain.Entities.UserRole
                 {
                     UserId = user.Id,
@@ -86,17 +81,14 @@ namespace FoodConnect.Backend.Application.Features.Auth.Commands.PhoneLogin
                 return result.BuildFail("Your account has been locked");
             }
 
-            // Get user roles
             var roleNames = user.UserRoles.Select(ur => ur.Role.Name).ToList();
 
-            // Check shop ID if user is seller
             Guid? shopId = null;
             if (roleNames.Contains("Seller"))
             {
                 shopId = await _userRepository.GetShopIdByUserIdAsync(user.Id);
             }
 
-            // Generate JWT and Refresh Token
             var (accessToken, refreshToken) = await _jwtTokenGenerator.GenerateTokens(user, roleNames, shopId);
 
             await _refreshTokenRepository.AddAsync(refreshToken);

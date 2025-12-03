@@ -45,7 +45,6 @@ public class CreateWithdrawalRequestCommandHandler : IRequestHandler<CreateWithd
         if (userId == null)
             return result.BuildUnauthorized();
 
-        // Get wallet (supports both buyer and seller wallets)
         var wallet = await _walletRepository.GetByUserIdAndTypeAsync(userId.Value, WalletTypeEnum.Seller);
         if (wallet == null)
             return result.BuildNotFound("Không tìm thấy ví");
@@ -57,7 +56,6 @@ public class CreateWithdrawalRequestCommandHandler : IRequestHandler<CreateWithd
         if (request.RequestedAmount < minWithdrawAmount)
             return result.BuildFail($"Số tiền rút tối thiểu là {minWithdrawAmount:N0} VND");
 
-        // Check available balance (Balance - PendingBalance)
         var availableBalance = wallet.AvailableBalance;
         if (availableBalance < request.RequestedAmount)
             return result.BuildFail($"Số dư không đủ. Số dư khả dùng: {availableBalance:N0} VND");
@@ -104,7 +102,6 @@ public class CreateWithdrawalRequestCommandHandler : IRequestHandler<CreateWithd
 
             await _transactionRepository.AddAsync(walletTransaction);
 
-            // Per user's requirement: deduct from Balance and add to PendingBalance
             wallet.Balance -= request.RequestedAmount;
             wallet.PendingBalance += request.RequestedAmount;
             _walletRepository.Update(wallet);
@@ -112,7 +109,6 @@ public class CreateWithdrawalRequestCommandHandler : IRequestHandler<CreateWithd
             await _unitOfWork.SaveChangesAsync(cancellationToken);
             await transaction.CommitAsync(cancellationToken);
 
-            // Notify admins about new withdrawal request
             try
             {
                 var sellerName = _currentUserService.UserName ?? "Seller";

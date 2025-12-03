@@ -60,7 +60,6 @@ namespace FoodConnect.Backend.Application.Features.Complaint.Commands
 
             var buyerId = _currentUserService.UserId.Value;
 
-            // Validate evidence files
             if (request.EvidenceFiles != null && request.EvidenceFiles.Count > MaxEvidenceFiles)
             {
                 return result.BuildFail($"Maximum {MaxEvidenceFiles} evidence files allowed");
@@ -83,32 +82,27 @@ namespace FoodConnect.Backend.Application.Features.Complaint.Commands
                 }
             }
 
-            // Get order with details
             var order = await _orderRepository.GetOrderWithDetailsAsync(request.OrderId);
             if (order == null)
             {
                 return result.BuildNotFound("Order not found");
             }
 
-            // Validate buyer owns the order
             if (order.BuyerId != buyerId)
             {
                 return result.BuildForbidden("You don't have permission to complain about this order");
             }
 
-            // Validate order status
             if (order.Status != OrderStatusEnum.Delivered)
             {
                 return result.BuildFail("Only delivered orders can be complained");
             }
 
-            // Check if order already completed
             if (order.CompletedAt.HasValue)
             {
                 return result.BuildFail("Cannot complain about completed orders");
             }
 
-            // Check if complaint already exists
             var existingComplaint = await _complaintRepository.GetByOrderIdAsync(request.OrderId);
             if (existingComplaint != null)
             {
@@ -118,10 +112,8 @@ namespace FoodConnect.Backend.Application.Features.Complaint.Commands
             await using var transaction = await _unitOfWork.BeginTransactionAsync();
             try
             {
-                // Ensure buyer has a wallet
                 await _walletService.GetOrCreateBuyerWalletAsync(buyerId, cancellationToken);
 
-                // Create complaint
                 var complaint = new OrderComplaint
                 {
                     OrderId = request.OrderId,
@@ -134,7 +126,6 @@ namespace FoodConnect.Backend.Application.Features.Complaint.Commands
                 await _complaintRepository.AddAsync(complaint);
                 await _unitOfWork.SaveChangesAsync(cancellationToken);
 
-                // Upload evidence files
                 if (request.EvidenceFiles != null && request.EvidenceFiles.Count > 0)
                 {
                     var assets = new List<OrderComplaintAsset>();
@@ -158,18 +149,15 @@ namespace FoodConnect.Backend.Application.Features.Complaint.Commands
                     await _assetRepository.AddRangeAsync(assets);
                 }
 
-                // Update order status to Disputing
                 order.Status = OrderStatusEnum.Disputing;
                 _orderRepository.Update(order);
 
                 await _unitOfWork.SaveChangesAsync(cancellationToken);
                 await transaction.CommitAsync(cancellationToken);
 
-                // Reload complaint with full details
                 complaint = await _complaintRepository.GetComplaintWithDetailsAsync(complaint.Id);
                 var complaintDto = ComplaintMapper.MapToDetailDto(complaint!);
 
-                // Send notification to seller
                 await _notificationService.NotifyComplaintCreatedAsync(complaint!, cancellationToken);
 
                 return result.BuildSuccess(complaintDto, "Complaint created successfully");

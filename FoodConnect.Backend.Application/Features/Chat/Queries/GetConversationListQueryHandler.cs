@@ -33,7 +33,6 @@ public class GetConversationListQueryHandler : IRequestHandler<GetConversationLi
 
         var conversations = await _conversationRepository.GetConversationsByUserIdAsync(userId.Value);
         
-        // Map to response with additional computed fields
         var response = conversations.Select(c => new ConversationResponse
         {
             Id = c.Id,
@@ -46,13 +45,10 @@ public class GetConversationListQueryHandler : IRequestHandler<GetConversationLi
             LastMessageAt = c.LastMessageAt,
             CreatedAt = c.CreatedAtUtc,
             
-            // Get last message content
             LastMessage = c.Messages?.OrderByDescending(m => m.CreatedAtUtc).FirstOrDefault()?.Content,
             
-            // Count unread messages (messages not sent by current user and not read)
             UnreadCount = c.Messages?.Count(m => m.SenderId != userId.Value && !m.IsRead) ?? 0,
             
-            // Determine other user info based on current user
             OtherUserId = c.BuyerId == userId.Value ? c.SellerId : c.BuyerId,
             OtherUserName = c.BuyerId == userId.Value ? (c.Seller?.FullName ?? string.Empty) : (c.Buyer?.FullName ?? string.Empty),
             OtherUserAvatar = c.BuyerId == userId.Value ? c.Seller?.AvatarUrl : c.Buyer?.AvatarUrl

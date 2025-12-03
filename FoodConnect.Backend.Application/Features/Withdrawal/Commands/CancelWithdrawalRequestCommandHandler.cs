@@ -63,7 +63,6 @@ public class CancelWithdrawalRequestCommandHandler : IRequestHandler<CancelWithd
                 _transactionRepository.Update(pendingTransaction);
             }
 
-            // Restore Balance and deduct from PendingBalance
             wallet.Balance += withdrawal.RequestedAmount;
             wallet.PendingBalance -= withdrawal.RequestedAmount;
             _walletRepository.Update(wallet);

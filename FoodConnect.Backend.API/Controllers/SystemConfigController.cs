@@ -10,7 +10,6 @@ namespace FoodConnect.Backend.API.Controllers;
 public class SystemConfigController : ApiBaseController
 {
     [HttpGet]
-    //[Authorize(Roles = "Admin,Seller")]
     public async Task<IActionResult> GetConfigs([FromQuery] string? configKey = null, [FromQuery] int? type = null)
     {
         var query = new GetSystemConfigsQuery

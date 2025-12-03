@@ -36,7 +36,6 @@ namespace FoodConnect.Backend.Application.Features.Complaint.Queries
 
             var userId = _currentUserService.UserId.Value;
 
-            // Verify shop ownership
             var shop = await _shopRepository.GetByIdAsync(request.ShopId);
             if (shop == null)
             {

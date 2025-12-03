@@ -1,4 +1,4 @@
-﻿using FoodConnect.Backend.Application.Commons.DTOs;
+using FoodConnect.Backend.Application.Commons.DTOs;
 using FoodConnect.Backend.Application.Features.Auth.Commands.ChangePassword;
 using FoodConnect.Backend.Application.Features.Auth.Commands.EmailRegister;
 using FoodConnect.Backend.Application.Features.Auth.Commands.FirebasePhoneLogin;
@@ -126,7 +126,6 @@ namespace FoodConnect.Backend.API.Controllers
         [Authorize]
         public async Task<IActionResult> ChangePassword(ChangePasswordCommand command)
         {
-            // Get user ID from JWT token
             var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
             if (string.IsNullOrEmpty(userIdClaim) || !Guid.TryParse(userIdClaim, out var userId))
             {
@@ -200,7 +199,6 @@ namespace FoodConnect.Backend.API.Controllers
             var fullName = User.FindFirstValue(ClaimTypes.Name);
             var shopId = User.FindFirstValue("shopId"); 
             
-            // Get all roles from claims
             var roles = User.Claims
                 .Where(c => c.Type == ClaimTypes.Role)
                 .Select(c => c.Value)

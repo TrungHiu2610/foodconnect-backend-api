@@ -35,7 +35,6 @@ namespace FoodConnect.Backend.Application.Features.Category.Queries
             {
                 var normalizedSearch = request.SearchTerm.NormalizeForSearch();
                 filteredCategories = filteredCategories.Where(c =>
-                    // Vietnamese diacritics insensitive search
                     (c.Name != null && c.Name.NormalizeForSearch().Contains(normalizedSearch)) ||
                     (c.Description != null && c.Description.NormalizeForSearch().Contains(normalizedSearch)) ||
                     (c.Parent != null && c.Parent.Name != null && c.Parent.Name.NormalizeForSearch().Contains(normalizedSearch))

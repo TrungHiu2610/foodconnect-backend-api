@@ -21,29 +21,23 @@ namespace FoodConnect.Backend.Application.Features.Auth.Commands.PhoneLogin
         {
             var result = new BaseResponse<OtpSentResponse>();
 
-            // Normalize phone number to E.164 format for external SMS providers
             request.PhoneNumber = request.PhoneNumber?.Trim() ?? string.Empty;
             if (request.PhoneNumber.StartsWith("0"))
             {
-                // Local VN format 0xxxx -> +84xxxx
                 request.PhoneNumber = "+84" + request.PhoneNumber.Substring(1);
             }
             else if (!request.PhoneNumber.StartsWith("+"))
             {
-                // If missing leading +, assume it's already in international digits and prefix +
                 request.PhoneNumber = "+" + request.PhoneNumber;
             }
 
-            // Generate 6-digit OTP
             var random = new Random();
             var otp = random.Next(100000, 999999).ToString();
 
-            // Store OTP in Redis with 2 minutes TTL
             var redisKey = $"otp:phone:{request.PhoneNumber}";
             var expiryMinutes = 2;
             await _redisService.SetAsync(redisKey, otp, TimeSpan.FromMinutes(expiryMinutes));
 
-            // Send OTP via SMS
             await _smsService.SendOtpSmsAsync(request.PhoneNumber, otp);
 
             var response = new OtpSentResponse

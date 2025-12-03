@@ -20,12 +20,10 @@ namespace FoodConnect.Backend.Application.Commons.DTOs.Responses.Shop
         public string PayoutAccountInfo { get; set; } = string.Empty;
         public string PayoutAccountName { get; set; } = string.Empty;
         
-        // Seller contact info (from Shop entity, not User)
         public string SellerFullName { get; set; } = string.Empty;
         public string SellerEmail { get; set; } = string.Empty;
         public string SellerPhone { get; set; } = string.Empty;
         
-        // User info (Shop owner from User entity)
         public string OwnerName { get; set; } = string.Empty;  // User.FullName
         public string Phone { get; set; } = string.Empty;  // User.PhoneNumber
         public string? Email { get; set; }  // User.Email

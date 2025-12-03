@@ -33,7 +33,6 @@ namespace FoodConnect.Backend.Application.Features.Complaint.Jobs
             {
                 _logger.LogInformation("Starting complaint escalation job...");
 
-                // Get complaints that are ready for auto-escalation (created more than 48 hours ago and still PendingSeller)
                 var expiredComplaints = await _complaintRepository.GetComplaintsReadyForAutoEscalationAsync();
 
                 if (expiredComplaints.Count == 0)
@@ -61,12 +60,10 @@ namespace FoodConnect.Backend.Application.Features.Complaint.Jobs
 
                     _logger.LogInformation($"Successfully escalated {expiredComplaints.Count} complaint(s).");
 
-                    // Send notifications after successful transaction
                     foreach (var complaint in expiredComplaints)
                     {
                         try
                         {
-                            // Reload complaint with full details for notification
                             var complaintWithDetails = await _complaintRepository.GetComplaintWithDetailsAsync(complaint.Id);
                             if (complaintWithDetails != null)
                             {

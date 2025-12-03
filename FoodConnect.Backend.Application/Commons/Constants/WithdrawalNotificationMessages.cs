@@ -1,41 +1,27 @@
-﻿namespace FoodConnect.Backend.Application.Commons.Constants;
+namespace FoodConnect.Backend.Application.Commons.Constants;
 public static class WithdrawalNotificationMessages
 {
-    // ============================================
-    // ADMIN NOTIFICATIONS (New Withdrawal Request)
-    // ============================================
     
     public const string ADMIN_NEW_REQUEST_TITLE = "Yêu cầu rút tiền mới";
     
     public static string AdminNewRequestMessage(string sellerName, decimal amount)
         => $"{sellerName} đã tạo yêu cầu rút {amount:N0} VND";
 
-    // ============================================
-    // SELLER NOTIFICATIONS (Withdrawal Processed)
-    // ============================================
     
-    // Approved
     public const string SELLER_APPROVED_TITLE = "Đã duyệt rút tiền";
     public const string SELLER_APPROVED_MESSAGE = "Yêu cầu rút tiền của bạn đã được duyệt và hoàn thành. Vui lòng kiểm tra tài khoản.";
     
-    // Rejected
     public const string SELLER_REJECTED_TITLE = "Từ chối rút tiền";
     
     public static string SellerRejectedMessage(string reason)
         => $"Yêu cầu rút tiền của bạn đã bị từ chối. Lý do: {reason}";
 
-    // ============================================
-    // SELLER NOTIFICATIONS (Issue Resolution)
-    // ============================================
     
     public const string SELLER_ISSUE_RESOLVED_TITLE = "Đã giải quyết vấn đề rút tiền";
     public const string SELLER_ISSUE_RESOLVED_MESSAGE = "Vấn đề rút tiền của bạn đã được giải quyết. Vui lòng kiểm tra lại.";
 }
 public static class TransactionDescriptions
 {
-    // ============================================
-    // WITHDRAWAL TRANSACTION DESCRIPTIONS
-    // ============================================
     
     public static string WithdrawalPending(string withdrawalId)
         => $"Yêu cầu rút tiền #{withdrawalId.Substring(0, 8)}";
@@ -52,9 +38,6 @@ public static class TransactionDescriptions
     public static string WithdrawalCancelled(string withdrawalId)
         => $"Rút tiền #{withdrawalId.Substring(0, 8)} - Đã hủy bởi seller";
 
-    // ============================================
-    // ORDER TRANSACTION DESCRIPTIONS
-    // ============================================
     
     public static string OrderEarning(string orderId)
         => $"Thu nhập từ đơn hàng #{orderId.Substring(0, 8)}";
@@ -65,9 +48,6 @@ public static class TransactionDescriptions
     public static string OrderRefund(string orderId)
         => $"Hoàn trả từ đơn hàng #{orderId.Substring(0, 8)}";
 
-    // ============================================
-    // SYSTEM TRANSACTION DESCRIPTIONS
-    // ============================================
     
     public const string BALANCE_ADJUSTMENT = "Điều chỉnh số dư ví";
     

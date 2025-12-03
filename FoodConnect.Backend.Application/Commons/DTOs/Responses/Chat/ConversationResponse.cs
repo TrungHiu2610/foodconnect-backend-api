@@ -14,7 +14,6 @@ public class ConversationResponse
     public int UnreadCount { get; set; }
     public DateTime CreatedAt { get; set; }
     
-    // For mapping - determine other user based on current user
     public Guid OtherUserId { get; set; }
     public string OtherUserName { get; set; } = string.Empty;
     public string? OtherUserAvatar { get; set; }

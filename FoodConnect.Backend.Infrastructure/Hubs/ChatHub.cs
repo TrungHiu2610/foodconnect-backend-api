@@ -33,7 +33,6 @@ namespace FoodConnect.Backend.Infrastructure.Hubs
                     UserConnections[userId].Add(Context.ConnectionId);
                 }
 
-                // Add to user's personal group
                 await Groups.AddToGroupAsync(Context.ConnectionId, $"user_{userId}");
                 
                 Console.WriteLine($"[ChatHub] User {userId} connected. ConnectionId: {Context.ConnectionId}");
@@ -81,7 +80,6 @@ namespace FoodConnect.Backend.Infrastructure.Hubs
                 return;
             }
 
-            // Validate user belongs to this conversation
             var conversation = await _conversationRepository.GetByIdAsync(Guid.Parse(conversationId));
             if (conversation == null)
             {
@@ -117,7 +115,6 @@ namespace FoodConnect.Backend.Infrastructure.Hubs
             var userId = Context.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             if (!string.IsNullOrEmpty(userId))
             {
-                // Send to conversation group except the caller
                 await Clients.OthersInGroup($"conversation_{conversationId}")
                     .ReceiveTypingIndicator(userId);
             }
@@ -144,13 +141,11 @@ namespace FoodConnect.Backend.Infrastructure.Hubs
             var userId = Context.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             if (!string.IsNullOrEmpty(userId))
             {
-                // Notify other user in conversation
                 await Clients.OthersInGroup($"conversation_{conversationId}")
                     .ReceiveReadReceipt(userId, messageIds);
             }
         }
 
-        // Helper method to get user's connection IDs
         public static List<string> GetUserConnectionIds(string userId)
         {
             lock (Lock)
@@ -161,7 +156,6 @@ namespace FoodConnect.Backend.Infrastructure.Hubs
             }
         }
 
-        // Helper to check if user is online
         public static bool IsUserOnline(string userId)
         {
             lock (Lock)
@@ -170,7 +164,6 @@ namespace FoodConnect.Backend.Infrastructure.Hubs
             }
         }
 
-        // Test connection
         public async Task Ping()
         {
             await Clients.Caller.ReceiveError("Pong!");

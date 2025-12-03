@@ -28,20 +28,17 @@ namespace FoodConnect.Backend.Application.Features.Order.Queries
         {
             var result = new BaseResponse<CalculateShippingFeeResponse>();
 
-            // Get shop
             var shop = await _shopRepository.GetByIdAsync(request.ShopId);
             if (shop == null)
             {
                 return result.BuildNotFound("Shop not found");
             }
 
-            // Validate shop has coordinates
             if (!shop.Latitude.HasValue || !shop.Longitude.HasValue)
             {
                 return result.BuildFail("Shop does not have location coordinates configured");
             }
 
-            // Calculate distance
             double distanceKm = _distanceCalculator.CalculateDistance(
                 request.BuyerLatitude,
                 request.BuyerLongitude,
@@ -49,7 +46,6 @@ namespace FoodConnect.Backend.Application.Features.Order.Queries
                 shop.Longitude.Value
             );
 
-            // Validate express delivery distance
             if (request.DeliveryType == DeliveryTypeEnum.Express)
             {
                 if (!_shippingFeeCalculator.ValidateExpressDeliveryDistance(distanceKm))
@@ -58,7 +54,6 @@ namespace FoodConnect.Backend.Application.Features.Order.Queries
                 }
             }
 
-            // Calculate shipping fee
             decimal shippingFee = _shippingFeeCalculator.CalculateShippingFee(
                 request.DeliveryType,
                 distanceKm,

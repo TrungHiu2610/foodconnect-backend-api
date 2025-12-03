@@ -9,7 +9,6 @@ namespace FoodConnect.Backend.Domain.Entities
         public ProductAssetTypeEnum AssetType { get; set; }
         public int DisplayOrder { get; set; }
         
-        // Relations
         public Guid ProductReviewId { get; set; }
         public ProductReview ProductReview { get; set; } = null!;
     }

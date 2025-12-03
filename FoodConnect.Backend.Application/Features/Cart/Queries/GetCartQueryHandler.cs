@@ -1,4 +1,4 @@
-﻿using FoodConnect.Backend.Application.Commons.DTOs.Responses;
+using FoodConnect.Backend.Application.Commons.DTOs.Responses;
 using FoodConnect.Backend.Application.Commons.DTOs.Responses.Cart;
 using FoodConnect.Backend.Application.Commons.Interfaces;
 using FoodConnect.Backend.Application.Interfaces.IRepositories;
@@ -71,13 +71,11 @@ namespace FoodConnect.Backend.Application.Features.Cart.Queries
 
             if (cart.CartItems != null && cart.CartItems.Any())
             {
-                // Sort cart items by CreatedAtUtc to maintain order (like Shopee)
                 var sortedCartItems = cart.CartItems
                     .Where(item => item.Product != null && item.Product.Shop != null)
                     .OrderBy(item => item.CreatedAtUtc)
                     .ToList();
 
-                // Group by Shop only (Cart Page doesn't show delivery type grouping)
                 var groupedByShop = sortedCartItems
                     .GroupBy(item => new
                     {
@@ -100,7 +98,6 @@ namespace FoodConnect.Backend.Application.Features.Cart.Queries
                         Items = new List<CartItemResponse>()
                     };
 
-                    // Add all items from this shop (maintain creation order)
                     var sortedShopItems = shopGroup.OrderBy(item => item.CreatedAtUtc);
 
                     foreach (var item in sortedShopItems)
@@ -129,7 +126,6 @@ namespace FoodConnect.Backend.Application.Features.Cart.Queries
                 }
             }
 
-            // Calculate simple summary (no shipping fees for Cart Page)
             var allItems = response.ShopGroups.SelectMany(s => s.Items).ToList();
 
             response.Summary = new CartSummary
