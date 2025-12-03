@@ -28,20 +28,17 @@ namespace FoodConnect.Backend.Application.Features.Auth.Commands.ResetPassword
         {
             var result = new BaseResponse<PasswordResetResponse>();
 
-            // Get user by email
             var user = await _userRepository.GetByEmailAsync(request.Email);
             if (user == null)
             {
                 return result.BuildFail("Invalid email or reset token");
             }
 
-            // Check if user uses Local provider
             if (user.Provider != AuthProviderEnum.Local)
             {
                 return result.BuildFail($"This account uses {user.Provider} login. Password reset is not available.");
             }
 
-            // Check user status
             if (user.Status == UserStatusEnum.Banned)
             {
                 return result.BuildFail("Your account has been banned");
@@ -52,7 +49,6 @@ namespace FoodConnect.Backend.Application.Features.Auth.Commands.ResetPassword
                 return result.BuildFail("Your account has been locked");
             }
 
-            // Verify reset token from Redis
             var redisKey = $"reset:password:{request.Email}";
             var storedToken = await _redisService.GetAsync<string>(redisKey);
 
@@ -66,15 +62,12 @@ namespace FoodConnect.Backend.Application.Features.Auth.Commands.ResetPassword
                 return result.BuildFail("Invalid reset token");
             }
 
-            // Hash new password
             var passwordHash = BCrypt.Net.BCrypt.HashPassword(request.NewPassword);
 
-            // Update user password
             user.PasswordHash = passwordHash;
             _userRepository.Update(user);
             await _unitOfWork.SaveChangesAsync();
 
-            // Delete reset token from Redis
             await _redisService.DeleteAsync(redisKey);
 
             var response = new PasswordResetResponse

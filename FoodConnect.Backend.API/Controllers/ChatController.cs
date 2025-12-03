@@ -11,9 +11,6 @@ namespace FoodConnect.Backend.API.Controllers;
 [ApiController]
 public class ChatController : ApiBaseController
 {
-    /// <summary>
-    /// Start chat from order page - creates conversation and system message
-    /// </summary>
     [HttpPost]
     [Authorize]
     public async Task<IActionResult> StartFromOrder([FromBody] StartChatFromOrderCommand command)
@@ -24,9 +21,6 @@ public class ChatController : ApiBaseController
             : BadRequest();
     }
 
-    /// <summary>
-    /// Start chat from product page - creates conversation and system message
-    /// </summary>
     [HttpPost]
     [Authorize]
     public async Task<IActionResult> StartFromProduct([FromBody] StartChatFromProductCommand command)
@@ -37,9 +31,6 @@ public class ChatController : ApiBaseController
             : BadRequest();
     }
 
-    /// <summary>
-    /// Start chat from shop page - creates conversation without system message
-    /// </summary>
     [HttpPost]
     [Authorize]
     public async Task<IActionResult> StartFromShop([FromBody] StartChatFromShopCommand command)
@@ -50,9 +41,6 @@ public class ChatController : ApiBaseController
             : BadRequest();
     }
 
-    /// <summary>
-    /// Send a message (text, image, or video)
-    /// </summary>
     [HttpPost]
     [Authorize]
     public async Task<IActionResult> SendMessage([FromForm] SendMessageCommand command)
@@ -63,9 +51,6 @@ public class ChatController : ApiBaseController
             : BadRequest();
     }
 
-    /// <summary>
-    /// Get chat history with pagination
-    /// </summary>
     [HttpGet]
     [Authorize]
     public async Task<IActionResult> History([FromQuery] GetChatHistoryQuery query)
@@ -76,9 +61,6 @@ public class ChatController : ApiBaseController
             : BadRequest();
     }
 
-    /// <summary>
-    /// Get list of conversations for current user
-    /// </summary>
     [HttpGet]
     [Authorize]
     public async Task<IActionResult> Conversations()

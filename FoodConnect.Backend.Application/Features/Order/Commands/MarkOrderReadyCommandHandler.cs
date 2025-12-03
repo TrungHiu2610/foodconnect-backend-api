@@ -27,33 +27,28 @@ namespace FoodConnect.Backend.Application.Features.Order.Commands
         {
             var result = new BaseResponse<CreateOrUpdateResponse>();
 
-            // Check authorization
             var userId = _currentUserService.UserId;
             if (!userId.HasValue)
             {
                 return result.BuildUnauthorized();
             }
 
-            // Get order with shop info
             var order = await _orderRepository.GetOrderWithDetailsAsync(request.OrderId);
             if (order == null)
             {
                 return result.BuildNotFound("Order not found");
             }
 
-            // Verify seller owns this order's shop
             if (order.Shop.UserId != userId.Value)
             {
                 return result.BuildForbidden("You don't have permission to update this order");
             }
 
-            // Validate status transition
             if (order.Status != OrderStatusEnum.Prepared && order.Status != OrderStatusEnum.Preparing)
             {
                 return result.BuildFail($"Cannot mark order as ready. Current status is {order.Status}");
             }
 
-            // Update order status
             order.Status = OrderStatusEnum.ReadyForPickup;
             order.ReadyForPickupAt = DateTime.UtcNow;
 

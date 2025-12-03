@@ -29,7 +29,6 @@ namespace FoodConnect.Backend.Application.Features.Shop.Queries
 
             try
             {
-                // Get shop details with related data
                 var shop = await _shopRepository.GetShopsAsQueryable()
                     .Where(s => s.Id == request.ShopId && s.Status == ShopStatusEnum.Active)
                     .Include(s => s.OperatingHours)
@@ -43,7 +42,6 @@ namespace FoodConnect.Backend.Application.Features.Shop.Queries
                     return result.BuildNotFound();
                 }
 
-                // Calculate distance if user location provided
                 double? distance = null;
                 if (request.UserLatitude.HasValue && request.UserLongitude.HasValue &&
                     shop.Latitude.HasValue && shop.Longitude.HasValue)
@@ -55,14 +53,12 @@ namespace FoodConnect.Backend.Application.Features.Shop.Queries
                         shop.Longitude.Value);
                 }
 
-                // Get available products (only Active products for buyer)
                 var products = await _productRepository.GetProductsAsQueryable()
                     .Where(p => p.ShopId == shop.Id && p.Status == ProductStatusEnum.Active)
                     .Include(p => p.Category)
                     .Include(p => p.ProductAssets)
                     .ToListAsync(cancellationToken);
 
-                // Map to response
                 var response = new ShopDetailForBuyerResponse
                 {
                     Id = shop.Id,
@@ -71,7 +67,6 @@ namespace FoodConnect.Backend.Application.Features.Shop.Queries
                     LogoUrl = shop.LogoUrl,
                     CoverImageUrl = shop.CoverImageUrl,
                     
-                    // Location
                     Street = shop.Street ?? "",
                     Ward = shop.Ward ?? "",
                     District = shop.District ?? "",
@@ -80,27 +75,22 @@ namespace FoodConnect.Backend.Application.Features.Shop.Queries
                     Longitude = shop.Longitude,
                     Distance = distance,
                     
-                    // Contact
                     PhoneNumber = shop.SellerPhone ?? "",
                     
-                    // Stats
                     Rating = shop.Rating,
                     ReviewCount = shop.ReviewCount,
                     TotalOrders = shop.TotalOrders,
                     
-                    // Status
                     IsOpen = shop.IsOpenNow(),
                     IsFeatured = shop.IsFeatured,
                     IsVerified = shop.IsVerified,
                     Badges = CalculateBadges(shop),
                     
-                    // Categories
                     Categories = shop.ShopCategories?
                         .Select(sc => sc.Category?.Name ?? "")
                         .Where(name => !string.IsNullOrEmpty(name))
                         .ToList() ?? new List<string>(),
                     
-                    // Operating Hours
                     OperatingHours = shop.OperatingHours?
                         .OrderBy(oh => oh.DayOfWeek)
                         .Select(oh => new OperatingHourDto
@@ -112,13 +102,11 @@ namespace FoodConnect.Backend.Application.Features.Shop.Queries
                         })
                         .ToList() ?? new List<OperatingHourDto>(),
                     
-                    // Additional Images (KitchenPhoto and FoodSafetyCertificate)
                     AdditionalImages = shop.Assets?
                         .Where(a => a.AssetType == ShopAssetTypeEnum.KitchenPhoto || a.AssetType == ShopAssetTypeEnum.FoodSafetyCertificate)
                         .Select(a => a.AssetUrl)
                         .ToList() ?? new List<string>(),
                     
-                    // Available Products
                     AvailableProducts = products.Select(p => 
                     {
                         var dto = new ShopProductDto
@@ -138,7 +126,6 @@ namespace FoodConnect.Backend.Application.Features.Shop.Queries
                             ProductBadges = new List<string>()
                         };
 
-                        // Check if Express product is outside delivery range
                         if (p.Category?.DeliveryType == DeliveryTypeEnum.Express)
                         {
                             if (distance.HasValue && distance.Value > (double)ShippingFeeConstant.EXPRESS_MAX_DISTANCE)

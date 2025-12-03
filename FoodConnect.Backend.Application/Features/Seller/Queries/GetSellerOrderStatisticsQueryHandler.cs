@@ -37,7 +37,6 @@ namespace FoodConnect.Backend.Application.Features.Seller.Queries
                 return result.BuildNotFound("Shop not found");
             }
 
-            // Check cache
             var cacheKey = CacheKeys.SellerOrderStats(request.ShopId, request.FromDate, request.ToDate);
             var cachedResponse = await _redisService.GetAsync<BaseResponse<SellerOrderStatisticsResponse>>(cacheKey);
             if (cachedResponse != null)

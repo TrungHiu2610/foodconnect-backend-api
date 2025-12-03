@@ -16,7 +16,6 @@ namespace FoodConnect.Backend.Application.Features.Admin.Queries
         private readonly IOrderRepository _orderRepository;
         private readonly IRedisService _redisService;
 
-        // Thresholds for warning badges
         private const decimal SELLER_WARNING_THRESHOLD = 40; // Health score < 40
         private const decimal BUYER_WARNING_THRESHOLD = 30; // Risk score >= 30
 
@@ -38,7 +37,6 @@ namespace FoodConnect.Backend.Application.Features.Admin.Queries
         {
             var result = new BaseResponse<List<AccountViolationListResponse>>();
 
-            // Check cache
             var cacheKey = CacheKeys.AccountViolationList(request.Role, request.MinScore, request.MaxScore, 
                 request.HasWarningBadge, request.PageNumber, request.PageSize, request.SortBy, request.SortOrder);
             var cachedResponse = await _redisService.GetAsync<BaseResponse<List<AccountViolationListResponse>>>(cacheKey);
@@ -51,7 +49,6 @@ namespace FoodConnect.Backend.Application.Features.Admin.Queries
                 .Include(u => u.UserRoles)
                 .AsQueryable();
 
-            // Filter by role if specified
             if (!string.IsNullOrEmpty(request.Role))
             {
                 var roleEnum = request.Role.ToLower() == "seller" ? RoleEnum.Seller : RoleEnum.Buyer;
@@ -87,7 +84,6 @@ namespace FoodConnect.Backend.Application.Features.Admin.Queries
                     LastOrderDate = lastOrderDate
                 };
 
-                // Calculate Seller metrics if user is seller
                 if (isSeller)
                 {
                     var shop = await _shopRepository.GetAllQueryable()
@@ -157,7 +153,6 @@ namespace FoodConnect.Backend.Application.Features.Admin.Queries
                                 ComplaintOrders = returnedOrders
                             };
 
-                            // Check warning threshold for seller
                             if (healthScore < SELLER_WARNING_THRESHOLD)
                             {
                                 response.HasWarningBadge = true;
@@ -167,7 +162,6 @@ namespace FoodConnect.Backend.Application.Features.Admin.Queries
                     }
                 }
 
-                // Calculate Buyer metrics if user is buyer
                 if (isBuyer)
                 {
                     var buyerOrders = orders.Where(o => o.BuyerId == user.Id).ToList();
@@ -191,7 +185,6 @@ namespace FoodConnect.Backend.Application.Features.Admin.Queries
                             ? ((decimal)cancellationCount / totalOrders) * 100
                             : 0;
 
-                        // Calculate risk score using same logic as GetBuyerRiskScoreQuery
                         var riskScore = (refundRate * 0.4m) + (complaintRate * 0.3m) + (cancellationRate * 0.3m);
 
                         var riskLevel = riskScore switch
@@ -215,7 +208,6 @@ namespace FoodConnect.Backend.Application.Features.Admin.Queries
                             ComplaintOrders = complaintCount
                         };
 
-                        // Check warning threshold for buyer
                         if (riskScore >= BUYER_WARNING_THRESHOLD)
                         {
                             response.HasWarningBadge = true;
@@ -227,7 +219,6 @@ namespace FoodConnect.Backend.Application.Features.Admin.Queries
                 responses.Add(response);
             }
 
-            // Apply filters
             if (request.HasWarningBadge.HasValue)
             {
                 responses = responses.Where(r => r.HasWarningBadge == request.HasWarningBadge.Value).ToList();
@@ -249,7 +240,6 @@ namespace FoodConnect.Backend.Application.Features.Admin.Queries
                 }).ToList();
             }
 
-            // Apply sorting
             responses = request.SortBy?.ToLower() switch
             {
                 "name" => request.SortOrder?.ToLower() == "asc"
@@ -263,7 +253,6 @@ namespace FoodConnect.Backend.Application.Features.Admin.Queries
                     : responses.OrderByDescending(r => r.SellerMetrics?.HealthScore ?? r.BuyerMetrics?.RiskScore ?? 0).ToList()
             };
 
-            // Apply pagination
             var paginatedResponses = responses
                 .Skip((request.PageNumber - 1) * request.PageSize)
                 .Take(request.PageSize)
@@ -300,7 +289,6 @@ namespace FoodConnect.Backend.Application.Features.Admin.Queries
         {
             var result = new BaseResponse<AccountActivityDetailResponse>();
 
-            // Check cache
             var cacheKey = CacheKeys.AccountActivityDetail(request.UserId, request.RecentOrdersLimit);
             var cachedResponse = await _redisService.GetAsync<BaseResponse<AccountActivityDetailResponse>>(cacheKey);
             if (cachedResponse != null)
@@ -331,7 +319,6 @@ namespace FoodConnect.Backend.Application.Features.Admin.Queries
                 Roles = user.UserRoles.Select(ur => ur.RoleId.ToString()).ToList()
             };
 
-            // Get all orders related to this user
             var ordersQuery = _orderRepository.GetAllQueryable()
                 .Include(o => o.Shop)
                 .Include(o => o.Buyer)
@@ -354,7 +341,6 @@ namespace FoodConnect.Backend.Application.Features.Admin.Queries
 
             var allOrders = await ordersQuery.ToListAsync(cancellationToken);
 
-            // Recent orders
             var recentOrders = allOrders
                 .OrderByDescending(o => o.CreatedAtUtc)
                 .Take(request.RecentOrdersLimit)
@@ -391,7 +377,6 @@ namespace FoodConnect.Backend.Application.Features.Admin.Queries
 
             response.RecentOrders = recentOrders;
 
-            // Calculate statistics
             var totalOrders = allOrders.Count;
             var completedOrders = allOrders.Count(o => o.Status == OrderStatusEnum.Completed);
             var cancelledOrders = allOrders.Count(o => o.Status == OrderStatusEnum.Cancelled);
@@ -420,7 +405,6 @@ namespace FoodConnect.Backend.Application.Features.Admin.Queries
                 DaysSinceFirstOrder = daysSinceFirstOrder
             };
 
-            // Violation history
             var violationHistory = allOrders
                 .Where(o => o.Status == OrderStatusEnum.Cancelled ||
                            o.Status == OrderStatusEnum.Returned ||

@@ -1,4 +1,4 @@
-﻿using FoodConnect.Backend.Application.Commons.DTOs.Responses;
+using FoodConnect.Backend.Application.Commons.DTOs.Responses;
 using FoodConnect.Backend.Application.Commons.Models;
 using FoodConnect.Backend.Application.Commons.DTOs.Responses.Shop;
 using FoodConnect.Backend.Application.Features.Shop.Commands;
@@ -89,7 +89,6 @@ namespace FoodConnect.Backend.API.Controllers
             return result != null ? (result.Success ? Ok(result) : BadRequest(result)) : BadRequest();
         }
 
-        // ============ Buyer APIs ============
         [HttpPost]
         public async Task<IActionResult> GetListShopsForBuyer([FromBody] GetListShopsForBuyerQuery query)
         {

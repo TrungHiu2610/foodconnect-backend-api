@@ -54,20 +54,17 @@ namespace FoodConnect.Backend.Application.Features.Order.Commands
 
             var userId = _currentUserService.UserId.Value;
 
-            // Get order
             var order = await _orderRepository.GetOrderWithDetailsAsync(request.OrderId);
             if (order == null)
             {
                 return result.BuildNotFound("Order not found");
             }
 
-            // Check if order belongs to seller's shop
             if (order.Shop?.UserId != userId)
             {
                 return result.BuildForbidden("You don't have permission to accept this order");
             }
 
-            // Check if order is pending
             if (order.Status != OrderStatusEnum.Pending)
             {
                 if (order.Status == OrderStatusEnum.AwaitingPayment)
@@ -77,14 +74,12 @@ namespace FoodConnect.Backend.Application.Features.Order.Commands
                 return result.BuildFail("Only pending orders can be accepted");
             }
 
-            // For COD orders, check seller wallet balance and hold pending balance
             if (order.PaymentMethod == PaymentMethodEnum.COD)
             {
                 var sellerWallet = await _walletRepository.GetByUserIdAndTypeAsync(userId, WalletTypeEnum.Seller);
                 
                 if (sellerWallet == null)
                 {
-                    // Create seller wallet if not exists
                     sellerWallet = new Domain.Entities.Wallet
                     {
                         UserId = userId,
@@ -102,7 +97,6 @@ namespace FoodConnect.Backend.Application.Features.Order.Commands
                 var availableBalance = sellerWallet.Balance - sellerWallet.PendingBalance;
                 var orderTotal = (decimal)order.Total;
 
-                // Seller must have sufficient available balance to accept COD orders
                 if (availableBalance < orderTotal)
                 {
                     return result.BuildFail(
@@ -112,12 +106,10 @@ namespace FoodConnect.Backend.Application.Features.Order.Commands
                     );
                 }
 
-                // Hold the order amount in pending balance
                 sellerWallet.PendingBalance += orderTotal;
                 _walletRepository.Update(sellerWallet);
             }
 
-            // Check stock availability and reserve stock
             foreach (var orderItem in order.OrderItems)
             {
                 var product = await _productRepository.GetByIdAsync(orderItem.ProductId);
@@ -126,7 +118,6 @@ namespace FoodConnect.Backend.Application.Features.Order.Commands
                     return result.BuildFail($"Product {orderItem.ProductId} not found");
                 }
 
-                // Check if product has stock management
                 if (product.StockQuantity.HasValue)
                 {
                     if (product.StockQuantity.Value < orderItem.Quantity)
@@ -134,10 +125,8 @@ namespace FoodConnect.Backend.Application.Features.Order.Commands
                         return result.BuildFail($"Insufficient stock for product: {product.Name}. Available: {product.StockQuantity}, Required: {orderItem.Quantity}");
                     }
 
-                    // Deduct stock
                     product.StockQuantity -= orderItem.Quantity;
                     
-                    // Mark as unavailable if out of stock
                     if (product.StockQuantity <= 0)
                     {
                         product.IsAvailable = false;
@@ -147,7 +136,6 @@ namespace FoodConnect.Backend.Application.Features.Order.Commands
                 }
             }
 
-            // Update order status
             order.Status = OrderStatusEnum.Preparing;
             order.AcceptedAt = DateTime.UtcNow;
 
@@ -167,11 +155,9 @@ namespace FoodConnect.Backend.Application.Features.Order.Commands
                 }
             }
 
-            // Reload order with full details
             order = await _orderRepository.GetOrderWithDetailsAsync(request.OrderId);
             var orderDto = OrderMapper.MapToDetailDto(order!);
 
-            // Send notification to buyer
             await _orderNotificationService.NotifyOrderAcceptedAsync(order!, cancellationToken);
             
             var newOrderNotification = await _notificationRepository

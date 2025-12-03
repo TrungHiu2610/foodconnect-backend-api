@@ -1,4 +1,4 @@
-﻿using FoodConnect.Backend.Application.Commons.DTOs.Responses;
+using FoodConnect.Backend.Application.Commons.DTOs.Responses;
 using FoodConnect.Backend.Application.Commons.DTOs.Responses.Product;
 using FoodConnect.Backend.Application.Commons.Interfaces;
 using FoodConnect.Backend.Application.Interfaces;
@@ -37,7 +37,6 @@ namespace FoodConnect.Backend.Application.Features.Product.Commands
             {
                 return result.BuildFail("User not found");
             }
-            // validate if shop belongs to user
             var shop = await _shopRepository.GetAsync(s=>s.User.Id==userId, s=>s.User);
             if (shop == null)
             {

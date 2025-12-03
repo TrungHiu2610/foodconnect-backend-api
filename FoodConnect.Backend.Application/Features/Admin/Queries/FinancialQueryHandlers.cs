@@ -130,7 +130,6 @@ namespace FoodConnect.Backend.Application.Features.Admin.Queries
         {
             var result = new BaseResponse<RevenueBySellerResponse>();
 
-            // Check cache
             var cacheKey = CacheKeys.RevenueBySeller(request.FromDate, request.ToDate, request.TopN);
             var cachedResponse = await _redisService.GetAsync<BaseResponse<RevenueBySellerResponse>>(cacheKey);
             if (cachedResponse != null)
@@ -200,7 +199,6 @@ namespace FoodConnect.Backend.Application.Features.Admin.Queries
         {
             var result = new BaseResponse<RefundStatisticsResponse>();
 
-            // Check cache
             var cacheKey = CacheKeys.RefundStats(request.FromDate, request.ToDate, request.SellerId);
             var cachedResponse = await _redisService.GetAsync<BaseResponse<RefundStatisticsResponse>>(cacheKey);
             if (cachedResponse != null)

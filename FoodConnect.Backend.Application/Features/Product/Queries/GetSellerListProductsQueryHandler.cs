@@ -37,14 +37,12 @@ namespace FoodConnect.Backend.Application.Features.Product.Queries
                 return result.BuildFail("User not found");
             }
 
-            // Lấy shop của seller
             var shop = await _shopRepository.GetByUserIdAsync((Guid)userId);
             if (shop == null)
             {
                 return result.BuildFail("Shop not found. You must be approved as seller first.");
             }
 
-            // Get products with pagination and filter
             var (products, totalCount) = await _productRepository.GetPagedByShopIdAsync(
                 shop.Id,
                 request.Page,

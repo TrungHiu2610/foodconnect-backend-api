@@ -39,7 +39,6 @@ namespace FoodConnect.Backend.Application.Features.Complaint.Queries
                 return result.BuildNotFound("Complaint not found");
             }
 
-            // Check if user has permission to view this complaint
             if (complaint.BuyerId != userId && complaint.SellerId != userId)
             {
                 if(_currentUserService.Role != "Admin")

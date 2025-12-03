@@ -35,15 +35,12 @@ public class ConfirmWithdrawalCommandHandler : IRequestHandler<ConfirmWithdrawal
         if (withdrawal == null)
             return result.BuildNotFound("Withdrawal request not found");
 
-        // Verify ownership through wallet
         if (withdrawal.Wallet == null || withdrawal.Wallet.UserId != userId.Value)
             return result.BuildFail("You are not authorized to confirm this withdrawal request");
 
         if (withdrawal.Status != WithdrawalStatusEnum.Completed)
             return result.BuildFail($"Only completed withdrawal requests can be confirmed. Current status: {withdrawal.Status}");
 
-        // Mark as confirmed (no status change needed, just record confirmation)
-        // You can add a ConfirmedAt field to WithdrawalRequest entity if needed
         
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 

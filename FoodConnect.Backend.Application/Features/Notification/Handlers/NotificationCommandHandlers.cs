@@ -39,7 +39,6 @@ namespace FoodConnect.Backend.Application.Features.Notification.Handlers
             await _notificationRepository.MarkAsReadAsync(request.NotificationId);
             await _unitOfWork.SaveChangesAsync(cancellationToken);
 
-            // Update unread count via SignalR
             var unreadCount = await _notificationRepository.GetUnreadCountAsync(_currentUserService.UserId.Value);
             await _notificationService.UpdateUnreadCountAsync(_currentUserService.UserId.Value, unreadCount);
 
@@ -85,7 +84,6 @@ namespace FoodConnect.Backend.Application.Features.Notification.Handlers
             await _notificationRepository.MarkMultipleAsReadAsync(request.NotificationIds);
             await _unitOfWork.SaveChangesAsync(cancellationToken);
 
-            // Update unread count via SignalR
             var unreadCount = await _notificationRepository.GetUnreadCountAsync(_currentUserService.UserId.Value);
             await _notificationService.UpdateUnreadCountAsync(_currentUserService.UserId.Value, unreadCount);
 
@@ -128,13 +126,11 @@ namespace FoodConnect.Backend.Application.Features.Notification.Handlers
                 return result.BuildUnauthorized("User must be logged in");
             }
 
-            // Get unread count before marking
             var unreadCount = await _notificationRepository.GetUnreadCountAsync(_currentUserService.UserId.Value);
             
             await _notificationRepository.MarkAllAsReadAsync(_currentUserService.UserId.Value);
             await _unitOfWork.SaveChangesAsync(cancellationToken);
 
-            // Update unread count to 0
             await _notificationService.UpdateUnreadCountAsync(_currentUserService.UserId.Value, 0);
 
             var actionResult = new NotificationActionResult

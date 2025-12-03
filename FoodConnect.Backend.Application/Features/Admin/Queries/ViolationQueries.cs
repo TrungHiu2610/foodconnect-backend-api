@@ -4,7 +4,6 @@ using MediatR;
 
 namespace FoodConnect.Backend.Application.Features.Admin.Queries
 {
-    // Query 1: Get account list with violation scores
     public class GetAccountViolationListQuery : IRequest<BaseResponse<List<AccountViolationListResponse>>>
     {
         public string? Role { get; set; } // "Seller" or "Buyer" to filter
@@ -17,7 +16,6 @@ namespace FoodConnect.Backend.Application.Features.Admin.Queries
         public string? SortOrder { get; set; } = "desc"; // "asc" or "desc"
     }
 
-    // Query 2: Get account activity details
     public class GetAccountActivityDetailQuery : IRequest<BaseResponse<AccountActivityDetailResponse>>
     {
         public Guid UserId { get; set; }

@@ -9,7 +9,6 @@ namespace FoodConnect.Backend.Application.Features.Shop.Commands
             RuleFor(x => x.ShopId)
                 .NotEmpty().WithMessage("Shop ID is required");
 
-            // Only validate if provided (nullable for partial update)
             When(x => x.ShopName != null, () =>
             {
                 RuleFor(x => x.ShopName!)
@@ -59,7 +58,6 @@ namespace FoodConnect.Backend.Application.Features.Shop.Commands
                     .WithMessage("Longitude must be between -180 and 180");
             });
 
-            // File validations (optional for update)
             When(x => x.IdCardFront != null, () =>
             {
                 RuleFor(x => x.IdCardFront!.Length)

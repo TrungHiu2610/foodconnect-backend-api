@@ -54,7 +54,6 @@ namespace FoodConnect.Backend.Application.Features.Complaint.Commands
 
             var sellerId = _currentUserService.UserId.Value;
 
-            // Validate evidence files
             if (request.EvidenceFiles != null && request.EvidenceFiles.Count > MaxEvidenceFiles)
             {
                 return result.BuildFail($"Maximum {MaxEvidenceFiles} evidence files allowed");
@@ -77,33 +76,28 @@ namespace FoodConnect.Backend.Application.Features.Complaint.Commands
                 }
             }
 
-            // Get complaint with details
             var complaint = await _complaintRepository.GetComplaintWithDetailsAsync(request.ComplaintId);
             if (complaint == null)
             {
                 return result.BuildNotFound("Complaint not found");
             }
 
-            // Validate seller owns the complaint
             if (complaint.SellerId != sellerId)
             {
                 return result.BuildForbidden("You don't have permission to respond to this complaint");
             }
 
-            // Validate complaint status
             if (complaint.Status != OrderComplaintStatusEnum.PendingSeller)
             {
                 return result.BuildFail("Only complaints with PendingSeller status can be responded to");
             }
 
-            // Check response deadline (48 hours)
             var deadline = complaint.CreatedAtUtc.AddHours(ResponseDeadlineHours);
             if (DateTime.UtcNow > deadline)
             {
                 return result.BuildFail("Response deadline has passed. Complaint has been escalated to admin.");
             }
 
-            // Validate refund suggestion
             if (request.IsFixedAmount)
             {
                 if (!request.RefundAmount.HasValue || request.RefundAmount <= 0)
@@ -127,7 +121,6 @@ namespace FoodConnect.Backend.Application.Features.Complaint.Commands
             await using var transaction = await _unitOfWork.BeginTransactionAsync();
             try
             {
-                // Update complaint with seller response
                 complaint.SellerResponse = request.Response;
                 complaint.SellerRespondedAt = DateTime.UtcNow;
                 complaint.IsSellerRefundFixedAmount = request.IsFixedAmount;
@@ -148,7 +141,6 @@ namespace FoodConnect.Backend.Application.Features.Complaint.Commands
                 _complaintRepository.Update(complaint);
                 await _unitOfWork.SaveChangesAsync(cancellationToken);
 
-                // Upload evidence files
                 if (request.EvidenceFiles != null && request.EvidenceFiles.Count > 0)
                 {
                     var assets = new List<OrderComplaintAsset>();
@@ -175,14 +167,11 @@ namespace FoodConnect.Backend.Application.Features.Complaint.Commands
 
                 await transaction.CommitAsync(cancellationToken);
 
-                // Reload complaint with full details
                 complaint = await _complaintRepository.GetComplaintWithDetailsAsync(complaint.Id);
                 var complaintDto = ComplaintMapper.MapToDetailDto(complaint!);
 
-                // Send notification to buyer
                 await _notificationService.NotifySellerRespondedAsync(complaint!, cancellationToken);
 
-                // Send notification to admin that a complaint is pending review
                 await _notificationService.NotifyAdminPendingComplaintAsync(complaint!, "seller-responded", cancellationToken);
 
                 return result.BuildSuccess(complaintDto, "Response submitted successfully");

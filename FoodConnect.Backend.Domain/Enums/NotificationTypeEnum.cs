@@ -2,7 +2,6 @@ namespace FoodConnect.Backend.Domain.Enums
 {
     public enum NotificationTypeEnum
     {
-        // Order related
         NewOrder = 0,
         OrderAccepted = 1,
         OrderRejected = 2,
@@ -12,24 +11,19 @@ namespace FoodConnect.Backend.Domain.Enums
         OrderCompleted = 6,
         OrderCancelled = 7,
 
-        // Shop related
         ShopApproved = 100,
         ShopRejected = 101,
 
-        // Product related
         ProductOutOfStock = 200,
         ProductBackInStock = 201,
 
-        // System
         SystemAnnouncement = 300,
 
-        // Withdrawal related
         WithdrawalRequest = 400,
         WithdrawalApproved = 401,
         WithdrawalRejected = 402,
         WithdrawalResolved = 403,
 
-        // Complaint related
         ComplaintCreated = 500,
         ComplaintUpdated = 501,
         ComplaintResolved = 502

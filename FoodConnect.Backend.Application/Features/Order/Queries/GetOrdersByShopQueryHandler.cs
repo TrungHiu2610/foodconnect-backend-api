@@ -35,7 +35,6 @@ namespace FoodConnect.Backend.Application.Features.Order.Queries
 
             var userId = _currentUserService.UserId.Value;
 
-            // Check if shop belongs to user
             var shop = await _shopRepository.GetByIdAsync(request.ShopId);
             if (shop == null)
             {
@@ -50,7 +49,6 @@ namespace FoodConnect.Backend.Application.Features.Order.Queries
             var orders = await _orderRepository.GetOrdersByShopAsync(request.ShopId, request.Status);
             var orderDtos = orders.Select(o => OrderMapper.MapToSummaryDto(o)).ToList();
 
-            // Apply pagination
             var totalCount = orderDtos.Count;
             var paginatedOrders = orderDtos
                 .Skip((request.PageNumber - 1) * request.PageSize)

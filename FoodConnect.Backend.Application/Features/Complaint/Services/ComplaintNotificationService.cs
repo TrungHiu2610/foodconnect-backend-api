@@ -84,7 +84,6 @@ namespace FoodConnect.Backend.Application.Features.Complaint.Services
 
         public async Task NotifyComplaintApprovedAsync(OrderComplaint complaint, CancellationToken cancellationToken = default)
         {
-            // Notify buyer
             var buyerNotification = new Domain.Entities.Notification
             {
                 UserId = complaint.BuyerId,
@@ -102,7 +101,6 @@ namespace FoodConnect.Backend.Application.Features.Complaint.Services
 
             await _notificationRepository.AddAsync(buyerNotification);
 
-            // Notify seller
             var sellerNotification = new Domain.Entities.Notification
             {
                 UserId = complaint.SellerId,
@@ -121,7 +119,6 @@ namespace FoodConnect.Backend.Application.Features.Complaint.Services
             await _notificationRepository.AddAsync(sellerNotification);
             await _unitOfWork.SaveChangesAsync(cancellationToken);
 
-            // Send real-time notifications
             var buyerDto = MapToDto(buyerNotification);
             buyerDto.RequiresSound = true;
             await _notificationService.SendToUserAsync(complaint.BuyerId, buyerDto);
@@ -130,7 +127,6 @@ namespace FoodConnect.Backend.Application.Features.Complaint.Services
             sellerDto.RequiresSound = true;
             await _notificationService.SendToUserAsync(complaint.SellerId, sellerDto);
 
-            // Update unread counts
             var buyerUnreadCount = await _notificationRepository.GetUnreadCountAsync(complaint.BuyerId);
             await _notificationService.UpdateUnreadCountAsync(complaint.BuyerId, buyerUnreadCount);
 
@@ -140,7 +136,6 @@ namespace FoodConnect.Backend.Application.Features.Complaint.Services
 
         public async Task NotifyComplaintRejectedAsync(OrderComplaint complaint, CancellationToken cancellationToken = default)
         {
-            // Notify buyer
             var buyerNotification = new Domain.Entities.Notification
             {
                 UserId = complaint.BuyerId,
@@ -158,7 +153,6 @@ namespace FoodConnect.Backend.Application.Features.Complaint.Services
 
             await _notificationRepository.AddAsync(buyerNotification);
 
-            // Notify seller
             var sellerNotification = new Domain.Entities.Notification
             {
                 UserId = complaint.SellerId,
@@ -177,11 +171,9 @@ namespace FoodConnect.Backend.Application.Features.Complaint.Services
             await _notificationRepository.AddAsync(sellerNotification);
             await _unitOfWork.SaveChangesAsync(cancellationToken);
 
-            // Send real-time notifications
             await _notificationService.SendToUserAsync(complaint.BuyerId, MapToDto(buyerNotification));
             await _notificationService.SendToUserAsync(complaint.SellerId, MapToDto(sellerNotification));
 
-            // Update unread counts
             var buyerUnreadCount = await _notificationRepository.GetUnreadCountAsync(complaint.BuyerId);
             await _notificationService.UpdateUnreadCountAsync(complaint.BuyerId, buyerUnreadCount);
 
@@ -191,11 +183,7 @@ namespace FoodConnect.Backend.Application.Features.Complaint.Services
 
         public async Task NotifyComplaintEscalatedAsync(OrderComplaint complaint, CancellationToken cancellationToken = default)
         {
-            // Note: In production, you would send this to all admin users
-            // For now, we'll create a notification that can be queried by admins
-            // You could also use a broadcast mechanism or store admin user IDs in config
 
-            // Notify buyer that complaint has been escalated
             var buyerNotification = new Domain.Entities.Notification
             {
                 UserId = complaint.BuyerId,
@@ -214,21 +202,17 @@ namespace FoodConnect.Backend.Application.Features.Complaint.Services
             await _notificationRepository.AddAsync(buyerNotification);
             await _unitOfWork.SaveChangesAsync(cancellationToken);
 
-            // Send real-time notification to buyer
             var buyerDto = MapToDto(buyerNotification);
             await _notificationService.SendToUserAsync(complaint.BuyerId, buyerDto);
 
-            // Update unread count
             var buyerUnreadCount = await _notificationRepository.GetUnreadCountAsync(complaint.BuyerId);
             await _notificationService.UpdateUnreadCountAsync(complaint.BuyerId, buyerUnreadCount);
 
-            // Notify admins about the escalated complaint
             await NotifyAdminPendingComplaintAsync(complaint, "auto-escalated", cancellationToken);
         }
 
         public async Task NotifyAdminPendingComplaintAsync(OrderComplaint complaint, string reason, CancellationToken cancellationToken = default)
         {
-            // Send notification to admin group via SignalR
             var adminNotification = new NotificationDto
             {
                 Id = Guid.NewGuid(),
@@ -253,7 +237,6 @@ namespace FoodConnect.Backend.Application.Features.Complaint.Services
                 })
             };
 
-            // Send to admin group (SignalR will handle broadcasting to all connected admins)
             await _notificationService.SendToGroupAsync("Admin", adminNotification);
         }
 

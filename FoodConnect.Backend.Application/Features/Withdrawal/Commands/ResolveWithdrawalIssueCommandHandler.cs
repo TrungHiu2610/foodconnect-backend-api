@@ -42,11 +42,9 @@ public class ResolveWithdrawalIssueCommandHandler : IRequestHandler<ResolveWithd
         if (withdrawal == null)
             return result.BuildNotFound(WithdrawalValidationMessages.WITHDRAWAL_NOT_FOUND);
 
-        // Must be in UnderReview status
         if (withdrawal.Status != WithdrawalStatusEnum.UnderReview)
             return result.BuildFail("Chỉ có thể giải quyết vấn đề cho yêu cầu đang được xem xét");
 
-        // Validate: NewProofImage is required
         if (request.NewProofImage == null)
             return result.BuildFail("Ảnh chứng từ là bắt buộc khi giải quyết vấn đề");
 
@@ -54,10 +52,8 @@ public class ResolveWithdrawalIssueCommandHandler : IRequestHandler<ResolveWithd
         
         try
         {
-            // Upload new proof image
             var proofImageUrl = await _fileStorageService.UploadFileAsync(request.NewProofImage, "Images/Withdrawals/Proofs");
 
-            // Update based on resolution
             if (request.Resolution.Equals("Resolved", StringComparison.OrdinalIgnoreCase))
             {
                 withdrawal.Status = WithdrawalStatusEnum.Completed;
@@ -82,7 +78,6 @@ public class ResolveWithdrawalIssueCommandHandler : IRequestHandler<ResolveWithd
             await _unitOfWork.SaveChangesAsync(cancellationToken);
             await transaction.CommitAsync(cancellationToken);
 
-            // Notify seller about issue resolution
             try
             {
                 if (withdrawal.Wallet != null)

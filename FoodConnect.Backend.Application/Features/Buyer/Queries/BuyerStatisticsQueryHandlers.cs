@@ -38,7 +38,6 @@ namespace FoodConnect.Backend.Application.Features.Buyer.Queries
                 return result.BuildNotFound("Buyer not found");
             }
 
-            // Check cache
             var cacheKey = CacheKeys.BuyerSpending(request.BuyerId, request.FromDate, request.ToDate);
             var cachedResponse = await _redisService.GetAsync<BaseResponse<BuyerSpendingStatisticsResponse>>(cacheKey);
             if (cachedResponse != null)
@@ -154,7 +153,6 @@ namespace FoodConnect.Backend.Application.Features.Buyer.Queries
                 return result.BuildNotFound("Buyer not found");
             }
 
-            // Check cache
             var cacheKey = CacheKeys.BuyerActivity(request.BuyerId, request.TopProductsCount);
             var cachedResponse = await _redisService.GetAsync<BaseResponse<BuyerOrderActivityResponse>>(cacheKey);
             if (cachedResponse != null)

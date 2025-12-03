@@ -1,4 +1,4 @@
-﻿using FoodConnect.Backend.Domain.Enums;
+using FoodConnect.Backend.Domain.Enums;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -20,7 +20,6 @@ namespace FoodConnect.Backend.Domain.Entities
         public AuthProviderEnum Provider { get; set; } = AuthProviderEnum.Local;
         public DateTime? LastPasswordChangedAt { get; set; }
         
-        // Navigation property - Shop owns the relationship via Shop.UserId
         public virtual Shop? Shop { get; set; }
         
         public virtual ICollection<UserRole> UserRoles { get; set; } = new List<UserRole>();

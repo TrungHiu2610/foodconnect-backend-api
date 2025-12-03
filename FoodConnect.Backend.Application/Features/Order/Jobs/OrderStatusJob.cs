@@ -38,7 +38,6 @@ namespace FoodConnect.Backend.Application.Features.Order.Jobs
                 var expressTimeout = now.AddHours(-2);
                 var standardTimeout = now.AddDays(-2);
 
-                // Get all pending orders
                 var allOrders = await _orderRepository.GetAllAsync();
                 var pendingOrders = allOrders.Where(o => o.Status == OrderStatusEnum.Pending).ToList();
 
@@ -80,7 +79,6 @@ namespace FoodConnect.Backend.Application.Features.Order.Jobs
 
                 if (ordersToCancel.Any())
                 {
-                    // Save all changes at once
                     await _unitOfWork.SaveChangesAsync();
                     _logger.LogInformation("Successfully auto-cancelled {Count} orders", ordersToCancel.Count);
                 }
@@ -104,7 +102,6 @@ namespace FoodConnect.Backend.Application.Features.Order.Jobs
                 var expressTimeout = now.AddHours(-2);
                 var standardTimeout = now.AddDays(-2);
 
-                // Get all delivered orders
                 var allOrders = await _orderRepository.GetAllAsync();
                 var deliveredOrders = allOrders.Where(o => o.Status == OrderStatusEnum.Delivered).ToList();
 
@@ -129,7 +126,6 @@ namespace FoodConnect.Backend.Application.Features.Order.Jobs
                 {
                     try
                     {
-                        // Reload order with full details including Shop and User
                         var orderWithDetails = await _orderRepository.GetOrderWithDetailsAsync(order.Id);
                         
                         if (orderWithDetails != null)

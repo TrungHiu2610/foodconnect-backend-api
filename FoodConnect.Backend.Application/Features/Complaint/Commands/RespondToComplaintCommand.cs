@@ -10,7 +10,6 @@ namespace FoodConnect.Backend.Application.Features.Complaint.Commands
         public Guid ComplaintId { get; set; }
         public string Response { get; set; } = string.Empty;
         
-        // Refund suggestion
         public bool IsFixedAmount { get; set; } = false;
         public decimal? RefundPercentage { get; set; }
         public decimal? RefundAmount { get; set; }

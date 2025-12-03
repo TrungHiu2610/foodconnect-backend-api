@@ -39,19 +39,16 @@ namespace FoodConnect.Backend.Application.Features.Shop.Commands
                 return result.BuildNotFound("Shop not found");
             }
 
-            // Check ownership
             if (shop.UserId != userId)
             {
                 return result.BuildForbidden("You do not have permission to submit this shop");
             }
 
-            // Validate status
             if (shop.Status != ShopStatusEnum.Draft)
             {
                 return result.BuildFail($"Shop must be in Draft status to submit. Current status: {shop.Status}");
             }
 
-            // Validate required assets
             var hasIdCardFront = shop.Assets.Any(a => a.AssetType == ShopAssetTypeEnum.IdCardFront);
             var hasIdCardBack = shop.Assets.Any(a => a.AssetType == ShopAssetTypeEnum.IdCardBack);
             var hasPortrait = shop.Assets.Any(a => a.AssetType == ShopAssetTypeEnum.PortraitPhoto);
@@ -61,7 +58,6 @@ namespace FoodConnect.Backend.Application.Features.Shop.Commands
                 return result.BuildFail("Missing required documents: ID card front, ID card back, and portrait photo are required");
             }
 
-            // Change status to PendingApproval
             shop.Status = ShopStatusEnum.PendingApproval;
 
             _shopRepository.Update(shop);

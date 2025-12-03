@@ -28,22 +28,18 @@ public class GetAllComplaintsQueryHandler : IRequestHandler<GetAllComplaintsQuer
     {
         var result = new BaseResponse<List<ComplaintSummaryDto>>();
 
-        // Check authentication
         if (!_currentUserService.UserId.HasValue)
         {
             return result.BuildUnauthorized("User must be logged in");
         }
 
-        // Check admin role
         if (_currentUserService.Role != "Admin")
         {
             return result.BuildForbidden("Only admins can view all complaints");
         }
 
-        // Get complaints for admin review
         var complaints = await _complaintRepository.GetPendingAdminComplaintsAsync(request.Status);
 
-        // Map to DTOs
         var complaintDtos = complaints
             .Select(ComplaintMapper.MapToSummaryDto)
             .ToList();

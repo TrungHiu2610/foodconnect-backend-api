@@ -1,4 +1,4 @@
-﻿using Amazon.S3;
+using Amazon.S3;
 using Amazon;
 using FluentValidation;
 using FoodConnect.Backend.API.Middlewares;
@@ -68,11 +68,9 @@ services.AddHttpClient();
 
 var configuration = builder.Configuration;
 
-// DbContext  
 services.AddDbContext<AppDbContext>(options =>
    options.UseNpgsql(configuration.GetConnectionString("DefaultConnection")));
 
-// Authen JWT
 services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
@@ -89,7 +87,6 @@ services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ClockSkew = TimeSpan.Zero
         };
 
-        // Configure JWT authentication for SignalR
         options.Events = new JwtBearerEvents
         {
             OnMessageReceived = context =>
@@ -105,7 +102,6 @@ services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         };
     });
 
-// AWS S3
 services.Configure<AwsOptions>(configuration.GetSection("AWS"));
 var awsConfig = configuration.GetSection("AWS").Get<AwsOptions>();
 
@@ -117,7 +113,6 @@ var awsOptions = new Amazon.Extensions.NETCore.Setup.AWSOptions
     Region = region
 };
 
-// Redis
 services.AddSingleton<IConnectionMultiplexer>(sp =>
 {
     var host = builder.Configuration["Redis:Host"];
@@ -131,12 +126,8 @@ services.AddSingleton<IConnectionMultiplexer>(sp =>
 
 services.AddScoped<IRedisService, RedisService>();
 
-// SMS Service
-//services.AddScoped<ISmsService, AwsSnsService>();
 services.AddScoped<ISmsService, SpeedSmsService>();
-//services.AddScoped<ISmsService, VonageSMSService>();
 
-// Email Service
 services.AddOptions();
 services.AddHttpClient<ResendClient>();
 services.Configure<ResendClientOptions>(o =>
@@ -146,18 +137,14 @@ services.Configure<ResendClientOptions>(o =>
 services.AddTransient<IResend, ResendClient>();
 services.AddScoped<IEmailService, ResendEmailService>();
 
-// Google Auth Service
 services.AddScoped<IGoogleAuthService, GoogleAuthService>();
 
-// Firebase Auth Service
 services.AddSingleton<FoodConnect.Backend.Application.Services.FirebaseService.IFirebaseAuthService, FoodConnect.Backend.Application.Services.FirebaseService.FirebaseAuthService>();
 
-// Storage Service
 services.AddDefaultAWSOptions(awsOptions);
 services.AddAWSService<IAmazonS3>();
 services.AddScoped<IFileStorageService, AwsS3FileStorageService>();
 
-// Repositories 
 services.AddScoped(typeof(IBaseRepository<>), typeof(BaseRepository<>));
 services.AddScoped<IUserRepository, UserRepository>();
 services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
@@ -185,7 +172,6 @@ services.AddScoped<IConversationRepository, ConversationRepository>();
 services.AddScoped<IMessageRepository, MessageRepository>();
 services.AddScoped<IUnitOfWork, UnitOfWork>();
 
-// Application Services  
 services.AddSingleton<IJwtTokenGenerator, JwtTokenGenerator>();
 services.AddHttpContextAccessor();
 services.AddScoped<ICurrentUserService, CurrentUserService>();
@@ -194,7 +180,6 @@ services.AddScoped<IShippingFeeCalculatorService, ShippingFeeCalculatorService>(
 services.AddScoped<IVNPayService, VNPayService>();
 services.AddScoped<WalletService>();
 
-// SignalR & Notification Services
 services.AddSignalR(options =>
 {
     options.EnableDetailedErrors = true; 
@@ -208,7 +193,6 @@ services.AddScoped<OrderNotificationService>();
 services.AddScoped<PromotionNotificationService>();
 services.AddScoped<ComplaintNotificationService>();
 
-// Hangfire
 services.AddHangfire(config => config
     .SetDataCompatibilityLevel(CompatibilityLevel.Version_180)
     .UseSimpleAssemblyNameTypeSerializer()
@@ -217,35 +201,25 @@ services.AddHangfire(config => config
         options.UseNpgsqlConnection(configuration.GetConnectionString("DefaultConnection")),
         new PostgreSqlStorageOptions
         {
-            // Distributed lock configuration to prevent timeout errors
             DistributedLockTimeout = TimeSpan.FromMinutes(2), // Increase from default 10s
             
-            // Connection pool settings
             PrepareSchemaIfNecessary = true,
             
-            // Job expiration settings - CRITICAL for database cleanup
             JobExpirationCheckInterval = TimeSpan.FromHours(1), // Check every hour
             
-            // Queue poll interval
             QueuePollInterval = TimeSpan.FromSeconds(15),
             
-            // Invisible timeout for jobs
             InvisibilityTimeout = TimeSpan.FromMinutes(30)
         }));
 
-// Hangfire Server with optimized settings
 services.AddHangfireServer(options =>
 {   
-    // Worker configuration
     options.WorkerCount = Math.Max(Environment.ProcessorCount, 2); // At least 2 workers
     
-    // Prevent multiple instances from conflicting
     options.ServerName = $"{Environment.MachineName}:{Guid.NewGuid()}";
     
-    // Poll interval for queues
     options.SchedulePollingInterval = TimeSpan.FromSeconds(15);
     
-    // Queues to process (default queue)
     options.Queues = new[] { "default" };
 });
 services.AddScoped<PromotionStatusJob>();
@@ -253,16 +227,13 @@ services.AddScoped<ComplaintEscalationJob>();
 services.AddScoped<OrderAutoCompletionService>();
 services.AddScoped<OrderStatusJob>();
 
-// MediatR  
 services.AddMediatR(cfg =>
    cfg.RegisterServicesFromAssembly(Assembly.Load("FoodConnect.Backend.Application")));
 services.AddTransient(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
 services.AddValidatorsFromAssembly(Assembly.Load("FoodConnect.Backend.Application"));
 
-// Automapper IMapperConfigurationExpression
 services.AddAutoMapper(cfg => { }, typeof(Program).Assembly, Assembly.Load("FoodConnect.Backend.Application"));
 
-// Configure Form Options for large file uploads
 services.Configure<FormOptions>(options =>
 {
     options.ValueLengthLimit = int.MaxValue;
@@ -281,7 +252,6 @@ app.UseWebSockets();
 
 app.UseCors(MyAllowSpecificOrigins);
 
-// Configure the HTTP request pipeline.  
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -300,7 +270,6 @@ app.UseHangfireDashboard("/hangfire", new DashboardOptions
     Authorization = new[] { new HangfireAuthorizationFilter() }
 });
 
-// Schedule recurring jobs with optimized intervals
 RecurringJob.AddOrUpdate<PromotionStatusJob>(
     "auto-activate-promotions",
     job => job.AutoActivatePromotionsAsync(),
@@ -316,7 +285,6 @@ RecurringJob.AddOrUpdate<ComplaintEscalationJob>(
     job => job.EscalateExpiredComplaintsAsync(),
     Cron.Hourly); // Keep hourly - appropriate for escalations
 
-// Order management jobs
 RecurringJob.AddOrUpdate<OrderStatusJob>(
     "auto-cancel-unconfirmed-orders",
     job => job.AutoCancelUnconfirmedOrdersAsync(),
@@ -327,7 +295,6 @@ RecurringJob.AddOrUpdate<OrderStatusJob>(
     job => job.AutoCompleteDeliveredOrdersAsync(),
     "*/10 * * * *"); // Every 10 minutes (reduced from every minute)
 
-// Hangfire cleanup job - CRITICAL: Remove old succeeded/deleted jobs
 RecurringJob.AddOrUpdate(
     "hangfire-cleanup-old-jobs",
     () => HangfireCleanupService.CleanupOldJobs(),
@@ -341,14 +308,12 @@ app.Run();
 
 public partial class Program { }
 
-// Hangfire cleanup service - deletes old jobs to prevent database bloat
 public static class HangfireCleanupService
 {
     public static void CleanupOldJobs()
     {
         var monitor = JobStorage.Current.GetMonitoringApi();
         
-        // Delete succeeded jobs older than 7 days
         var succeededJobs = monitor.SucceededJobs(0, int.MaxValue)
             .Where(j => j.Value != null && j.Value.SucceededAt.HasValue 
                         && j.Value.SucceededAt.Value < DateTime.UtcNow.AddDays(-7))
@@ -360,7 +325,6 @@ public static class HangfireCleanupService
             BackgroundJob.Delete(jobId);
         }
         
-        // Delete failed jobs older than 30 days
         var failedJobs = monitor.FailedJobs(0, int.MaxValue)
             .Where(j => j.Value != null && j.Value.FailedAt.HasValue 
                         && j.Value.FailedAt.Value < DateTime.UtcNow.AddDays(-30))
@@ -372,7 +336,6 @@ public static class HangfireCleanupService
             BackgroundJob.Delete(jobId);
         }
         
-        // Delete deleted jobs older than 1 day
         var deletedJobs = monitor.DeletedJobs(0, int.MaxValue)
             .Where(j => j.Value != null && j.Value.DeletedAt.HasValue 
                         && j.Value.DeletedAt.Value < DateTime.UtcNow.AddDays(-1))

@@ -39,22 +39,17 @@ public class ReportWithdrawalIssueCommandHandler : IRequestHandler<ReportWithdra
         if (withdrawal == null)
             return result.BuildNotFound(WithdrawalValidationMessages.WITHDRAWAL_NOT_FOUND);
 
-        // Verify ownership through wallet
         if (withdrawal.Wallet == null || withdrawal.Wallet.UserId != userId.Value)
             return result.BuildForbidden();
 
-        // Can only report issue for completed withdrawals
         if (withdrawal.Status != WithdrawalStatusEnum.Completed)
             return result.BuildFail("Chỉ có thể báo cáo vấn đề cho yêu cầu rút tiền đã hoàn thành");
 
-        // Validate issue image is provided
         if (request.IssueImage == null)
             return result.BuildFail("Ảnh chứng minh vấn đề là bắt buộc");
 
-        // Upload issue image
         var issueImageUrl = await _fileStorageService.UploadFileAsync(request.IssueImage, "Images/Withdrawals/Issues");
 
-        // Update seller note with issue description
         withdrawal.SellerNote = $"[BÁO CÁO VẤN ĐỀ] {request.IssueDescription}";
         withdrawal.IssueImageUrl = issueImageUrl;
         withdrawal.Status = WithdrawalStatusEnum.UnderReview;

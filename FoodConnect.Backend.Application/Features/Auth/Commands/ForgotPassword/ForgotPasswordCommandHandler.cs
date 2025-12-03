@@ -27,11 +27,9 @@ namespace FoodConnect.Backend.Application.Features.Auth.Commands.ForgotPassword
         {
             var result = new BaseResponse<OtpSentResponse>();
 
-            // Check if user exists
             var user = await _userRepository.GetByEmailAsync(request.Email);
             if (user == null)
             {
-                // Return generic success response
                 var dummyResponse = new OtpSentResponse
                 {
                     Destination = MaskEmail(request.Email),
@@ -41,13 +39,11 @@ namespace FoodConnect.Backend.Application.Features.Auth.Commands.ForgotPassword
                 return result.BuildSuccess(dummyResponse, "If your email is registered, you will receive a password reset code");
             }
 
-            // Check if user uses Local provider (has password)
             if (user.Provider != AuthProviderEnum.Local)
             {
                 return result.BuildFail($"This account uses {user.Provider} login. Password reset is not available.");
             }
 
-            // Check user status
             if (user.Status == UserStatusEnum.Banned)
             {
                 return result.BuildFail("Your account has been banned");
@@ -58,16 +54,13 @@ namespace FoodConnect.Backend.Application.Features.Auth.Commands.ForgotPassword
                 return result.BuildFail("Your account has been locked");
             }
 
-            // Generate 6-digit reset token
             var random = new Random();
             var resetToken = random.Next(100000, 999999).ToString();
 
-            // Store reset token in Redis with 15 minutes TTL
             var redisKey = $"reset:password:{request.Email}";
             var expiryMinutes = 15;
             await _redisService.SetAsync(redisKey, resetToken, TimeSpan.FromMinutes(expiryMinutes));
 
-            // Send password reset email
             await _emailService.SendPasswordResetEmailAsync(request.Email, user.FullName, resetToken);
 
             var response = new OtpSentResponse

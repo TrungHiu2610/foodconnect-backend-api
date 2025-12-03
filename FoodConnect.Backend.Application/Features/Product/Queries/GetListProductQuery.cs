@@ -1,4 +1,4 @@
-﻿using FoodConnect.Backend.Application.Commons.DTOs.Responses;
+using FoodConnect.Backend.Application.Commons.DTOs.Responses;
 using FoodConnect.Backend.Application.Commons.DTOs.Responses.Product;
 using FoodConnect.Backend.Application.Commons.Models;
 using FoodConnect.Backend.Domain.Enums;
@@ -8,7 +8,6 @@ namespace FoodConnect.Backend.Application.Features.Product.Queries
 {
     public class GetListProductQuery : IRequest<BaseResponse<PaginatedList<GetListProductItemResponse>>>
     {
-        // Filtering
         public Guid? UserId { get; set; }
         public Guid? CategoryId { get; set; }
         public Guid? ShopId { get; set; }
@@ -19,14 +18,11 @@ namespace FoodConnect.Backend.Application.Features.Product.Queries
         public double? BuyerLongitude { get; set; }
         public DeliveryTypeEnum? DeliveryType { get; set; } 
 
-        // Searching
         public string? TextSearch { get; set; }
 
-        // Sorting
         public List<SortInfo>? SortInfos { get; set; }
         public bool SortOutOfStockLast { get; set; } = false; 
 
-        // Pagination
         public int PageNumber { get; set; } = 1;
         public int PageSize { get; set; } = 10;
 

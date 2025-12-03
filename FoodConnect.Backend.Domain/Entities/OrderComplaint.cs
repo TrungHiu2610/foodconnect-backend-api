@@ -1,4 +1,4 @@
-﻿using FoodConnect.Backend.Domain.Enums;
+using FoodConnect.Backend.Domain.Enums;
 using FoodConnect.Backend.Domain.Interfaces;
 using System;
 using System.Collections.Generic;
@@ -10,27 +10,22 @@ namespace FoodConnect.Backend.Domain.Entities
 {
     public class OrderComplaint : BaseEntity, IHardDelete
     {
-        // Buyer information
         public string BuyerReason { get; set; } = string.Empty;
         
-        // Seller response
         public string? SellerResponse { get; set; }
         public DateTime? SellerRespondedAt { get; set; }
         public decimal? SellerDesiredRefundPercentage { get; set; }  // 0-100%
         public decimal? SellerDesiredRefundAmount { get; set; }      // Fixed amount
         public bool IsSellerRefundFixedAmount { get; set; } = false; // true = amount, false = percentage
         
-        // Admin decision
         public string? AdminDecisionReason { get; set; }
         public DateTime? AdminDecidedAt { get; set; }
         public decimal? ApprovedRefundAmount { get; set; }
         public bool IsApproved { get; set; }
         
-        // Status tracking
         public OrderComplaintStatusEnum Status { get; set; } = OrderComplaintStatusEnum.PendingSeller;
         public DateTime? CompletedAt { get; set; }
         
-        // Relationships
         public Guid OrderId { get; set; }
         public virtual Order Order { get; set; } = null!;
         

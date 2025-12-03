@@ -33,7 +33,6 @@ namespace FoodConnect.Backend.Application.Features.Category.Queries
         {
             var result = new BaseResponse<GetListCategoryResponse>();
 
-            // Authorization: Verify user is the owner of the shop
             var userId = _currentUserService.UserId;
             if (userId == null)
             {
@@ -51,7 +50,6 @@ namespace FoodConnect.Backend.Application.Features.Category.Queries
                 return result.BuildForbidden("You don't have permission to access this shop's categories");
             }
 
-            // Get all category IDs for this shop (including children)
             var categoryIds = await _shopRepository.GetAllCategoryIdsForShopAsync(request.ShopId);
 
             if (!categoryIds.Any())
@@ -62,7 +60,6 @@ namespace FoodConnect.Backend.Application.Features.Category.Queries
                 );
             }
 
-            // Get categories by IDs
             var categories = await _categoryRepository.GetCategoriesByIdsAsync(categoryIds);
 
             var listItemResponse = _mapper.Map<List<GetListCategoryItem>>(categories);

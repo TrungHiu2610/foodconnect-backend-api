@@ -1,4 +1,4 @@
-﻿using FoodConnect.Backend.Domain.Entities;
+using FoodConnect.Backend.Domain.Entities;
 using FoodConnect.Backend.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
@@ -41,7 +41,6 @@ namespace FoodConnect.Backend.Infrastructure.Persistence.Configurations
                 .IsRequired()
                 .HasDefaultValue(ProductStatusEnum.Draft);
             
-            // Ignore calculated fields (not mapped to database)
             builder.Ignore(p => p.CalculatedDistance);
             
             builder.HasOne(p => p.Category)

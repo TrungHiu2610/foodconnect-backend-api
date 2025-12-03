@@ -34,7 +34,6 @@ namespace FoodConnect.Backend.Application.Features.Auth.Commands.GoogleLogin
         {
             var result = new BaseResponse<AuthResponse>();
 
-            // Verify Google ID token
             var (isValid, email, fullName, avatarUrl) = await _googleAuthService.VerifyGoogleTokenAsync(request.IdToken);
 
             if (!isValid)
@@ -42,12 +41,10 @@ namespace FoodConnect.Backend.Application.Features.Auth.Commands.GoogleLogin
                 return result.BuildFail("Invalid Google token");
             }
 
-            // Check if user exists
             var user = await _userRepository.GetByEmailAsync(email);
 
             if (user == null)
             {
-                // Create new user
                 user = new UserEntity
                 {
                     Email = email,
@@ -59,7 +56,6 @@ namespace FoodConnect.Backend.Application.Features.Auth.Commands.GoogleLogin
                     PasswordHash = null
                 };
 
-                // Assign default Buyer role
                 user.UserRoles.Add(new Domain.Entities.UserRole
                 {
                     UserId = user.Id,
@@ -78,17 +74,14 @@ namespace FoodConnect.Backend.Application.Features.Auth.Commands.GoogleLogin
                 return result.BuildFail("Your account has been locked");
             }
 
-            // Get user roles
             var roleNames = user.UserRoles.Select(ur => ur.RoleId.ToString()).ToList();
 
-            // Check shop ID if user is seller
             Guid? shopId = null;
             if (roleNames.Contains("Seller"))
             {
                 shopId = await _userRepository.GetShopIdByUserIdAsync(user.Id);
             }
 
-            // Generate JWT and Refresh Token
             var (accessToken, refreshToken) = await _jwtTokenGenerator.GenerateTokens(user, roleNames, shopId);
 
             await _refreshTokenRepository.AddAsync(refreshToken);

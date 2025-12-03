@@ -51,11 +51,9 @@ public class ProcessWithdrawalRequestCommandHandler : IRequestHandler<ProcessWit
         if (withdrawal.Status != WithdrawalStatusEnum.Pending)
             return result.BuildFail(WithdrawalValidationMessages.OnlyStatusCanBeProcessed(withdrawal.Status.ToString(), "Pending"));
 
-        // Validate: Approval requires proof image
         if (request.IsApproved && request.ProofImage == null)
             return result.BuildFail(WithdrawalValidationMessages.ProofImageRequired());
 
-        // Validate: Rejection requires reason
         if (!request.IsApproved && string.IsNullOrWhiteSpace(request.RejectionReason))
             return result.BuildFail(WithdrawalValidationMessages.RejectionReasonRequired());
 
@@ -64,7 +62,6 @@ public class ProcessWithdrawalRequestCommandHandler : IRequestHandler<ProcessWit
         {
             if (request.IsApproved)
             {
-                // Upload proof image
                 var proofImageUrl = await _fileStorageService.UploadFileAsync(request.ProofImage!, "Images/Withdrawals/Proofs");
 
                 withdrawal.Status = WithdrawalStatusEnum.Completed;
@@ -82,7 +79,6 @@ public class ProcessWithdrawalRequestCommandHandler : IRequestHandler<ProcessWit
                     _transactionRepository.Update(pendingTransaction);
                 }
 
-                // Update wallet balances
                 var wallet = await _walletRepository.GetByIdAsync(withdrawal.WalletId);
                 if (wallet == null)
                     return result.BuildFail("Không tìm thấy ví");
@@ -126,7 +122,6 @@ public class ProcessWithdrawalRequestCommandHandler : IRequestHandler<ProcessWit
                 var wallet = await _walletRepository.GetByIdAsync(withdrawal.WalletId);
                 if (wallet != null)
                 {
-                    // Restore Balance and deduct from PendingBalance
                     wallet.Balance += withdrawal.RequestedAmount;
                     wallet.PendingBalance -= withdrawal.RequestedAmount;
                     _walletRepository.Update(wallet);
@@ -141,7 +136,6 @@ public class ProcessWithdrawalRequestCommandHandler : IRequestHandler<ProcessWit
                 ? WithdrawalSuccessMessages.APPROVE_SUCCESS
                 : WithdrawalSuccessMessages.REJECT_SUCCESS;
 
-            // Notify seller about withdrawal processing
             try
             {
                 var notificationMessage = request.IsApproved

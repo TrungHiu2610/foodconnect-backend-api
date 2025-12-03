@@ -27,21 +27,17 @@ namespace FoodConnect.Backend.Application.Features.Auth.Commands.EmailRegister
         {
             var result = new BaseResponse<OtpSentResponse>();
 
-            // Check if email already exists
             var existingUser = await _userRepository.GetByEmailAsync(request.Email);
             if (existingUser != null)
             {
                 return result.BuildConflict("Email already registered");
             }
 
-            // Hash password
             var passwordHash = BCrypt.Net.BCrypt.HashPassword(request.Password);
 
-            // Generate 6-digit OTP
             var random = new Random();
             var otp = random.Next(100000, 999999).ToString();
 
-            // Store registration data in Redis with 10 minutes TTL
             var redisKey = $"otp:email:{request.Email}";
             var registrationData = new EmailRegistrationData
             {
@@ -53,7 +49,6 @@ namespace FoodConnect.Backend.Application.Features.Auth.Commands.EmailRegister
             var expiryMinutes = 10;
             await _redisService.SetAsync(redisKey, registrationData, TimeSpan.FromMinutes(expiryMinutes));
 
-            // Send OTP email
             await _emailService.SendOtpEmailAsync(request.Email, request.FullName, otp);
 
             var response = new OtpSentResponse

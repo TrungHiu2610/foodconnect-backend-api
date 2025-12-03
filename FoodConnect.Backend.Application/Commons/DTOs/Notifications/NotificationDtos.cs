@@ -12,7 +12,6 @@ namespace FoodConnect.Backend.Application.Commons.DTOs.Notifications
         public DateTime CreatedAt { get; set; }
         public DateTime? ReadAt { get; set; }
         
-        // Optional data
         public Guid? OrderId { get; set; }
         public string? OrderCode { get; set; }
         public Guid? ShopId { get; set; }

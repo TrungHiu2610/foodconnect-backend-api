@@ -21,33 +21,28 @@ namespace FoodConnect.Backend.Application.Features.Cache.Commands
 
             if (request.InvalidateAll)
             {
-                // Invalidate all cache patterns
                 deletedCount += await _redisService.DeleteByPatternAsync("seller:*");
                 deletedCount += await _redisService.DeleteByPatternAsync("admin:*");
                 deletedCount += await _redisService.DeleteByPatternAsync("buyer:*");
             }
             else if (!string.IsNullOrWhiteSpace(request.CachePattern))
             {
-                // Invalidate specific pattern
                 deletedCount = await _redisService.DeleteByPatternAsync(request.CachePattern);
             }
             else
             {
-                // Invalidate seller-specific cache
                 if (request.ShopId.HasValue)
                 {
                     var sellerPattern = $"seller:{request.ShopId}:*";
                     deletedCount += await _redisService.DeleteByPatternAsync(sellerPattern);
                 }
 
-                // Invalidate buyer-specific cache
                 if (request.BuyerId.HasValue)
                 {
                     var buyerPattern = $"buyer:{request.BuyerId}:*";
                     deletedCount += await _redisService.DeleteByPatternAsync(buyerPattern);
                 }
 
-                // If shopId or buyerId affected, also invalidate admin statistics
                 if (request.ShopId.HasValue || request.BuyerId.HasValue)
                 {
                     deletedCount += await _redisService.DeleteByPatternAsync("admin:statistics:*");

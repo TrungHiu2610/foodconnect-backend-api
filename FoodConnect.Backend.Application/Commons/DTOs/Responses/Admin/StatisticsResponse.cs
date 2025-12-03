@@ -1,6 +1,5 @@
 namespace FoodConnect.Backend.Application.Commons.DTOs.Responses.Admin
 {
-    // A. Financial Analytics
     public class SystemRevenueResponse
     {
         public decimal GMV { get; set; }
@@ -61,7 +60,6 @@ namespace FoodConnect.Backend.Application.Commons.DTOs.Responses.Admin
         public decimal RefundRate { get; set; }
     }
 
-    // B. Operational Analytics
     public class OrderStatusOverviewResponse
     {
         public int TotalOrders { get; set; }
@@ -119,7 +117,6 @@ namespace FoodConnect.Backend.Application.Commons.DTOs.Responses.Admin
         public List<TopProductItem> Products { get; set; } = new();
     }
 
-    // C. User Analytics
     public class NewUserStatisticsResponse
     {
         public int NewUsersCount { get; set; }
@@ -173,7 +170,6 @@ namespace FoodConnect.Backend.Application.Commons.DTOs.Responses.Admin
         public DateTime LastOrderDate { get; set; }
     }
 
-    // D. Quality Analytics
     public class ComplaintStatisticsResponse
     {
         public int TotalComplaints { get; set; }

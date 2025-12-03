@@ -43,7 +43,6 @@ public class RejectComplaintCommandHandler : IRequestHandler<RejectComplaintComm
     {
         var result = new BaseResponse<ComplaintDetailDto>();
 
-        // Check authentication
         if (!_currentUserService.UserId.HasValue)
         {
             return result.BuildUnauthorized("User must be logged in");
@@ -51,20 +50,17 @@ public class RejectComplaintCommandHandler : IRequestHandler<RejectComplaintComm
 
         var adminId = _currentUserService.UserId.Value;
 
-        // Check admin role
         if (_currentUserService.Role != "Admin")
         {
             return result.BuildForbidden("Only admins can reject complaints");
         }
 
-        // Get complaint with full details
         var complaint = await _complaintRepository.GetComplaintWithDetailsAsync(request.ComplaintId);
         if (complaint == null)
         {
             return result.BuildNotFound("Complaint not found");
         }
 
-        // Validate complaint status
         if (complaint.Status != OrderComplaintStatusEnum.PendingAdmin && 
             complaint.Status != OrderComplaintStatusEnum.SellerResponded)
         {
@@ -74,28 +70,22 @@ public class RejectComplaintCommandHandler : IRequestHandler<RejectComplaintComm
         await using var transaction = await _unitOfWork.BeginTransactionAsync();
         try
         {
-            // Get seller wallet
             var sellerWallet = await _walletRepository.GetByUserIdAndTypeAsync(complaint.SellerId, WalletTypeEnum.Seller);
             if (sellerWallet == null)
             {
                 return result.BuildFail("Seller wallet not found");
             }
 
-            // Get commission rate from system config
             var commissionRate = await _systemConfigRepository.GetCommissionRateAsync();
             var orderTotal = (decimal)complaint.Order.Total;
             var shippingFee = (decimal)complaint.Order.ShippingFee;
             var commissionableAmount = orderTotal - shippingFee;
             var commissionAmount = commissionableAmount * (commissionRate / 100);
 
-            // Different logic for COD vs Online Payment
             if (complaint.Order.PaymentMethod == PaymentMethodEnum.COD)
             {
-                // COD: Seller already received cash, now must pay commission only
-                // 1. Release pending balance
                 sellerWallet.PendingBalance -= orderTotal;
 
-                // 2. Deduct commission from wallet balance
                 var sellerBalanceBefore = sellerWallet.Balance;
                 sellerWallet.Balance -= commissionAmount;
 
@@ -117,8 +107,6 @@ public class RejectComplaintCommandHandler : IRequestHandler<RejectComplaintComm
             }
             else
             {
-                // ONLINE PAYMENT: Money is still with Admin
-                // Complaint rejected → Seller gets full order amount minus commission
                 var sellerEarning = commissionableAmount - commissionAmount;
 
                 var sellerBalanceBefore = sellerWallet.Balance;
@@ -142,7 +130,6 @@ public class RejectComplaintCommandHandler : IRequestHandler<RejectComplaintComm
                 await _walletTransactionRepository.AddAsync(sellerTransaction);
             }
 
-            // Update complaint
             complaint.Status = OrderComplaintStatusEnum.Rejected;
             complaint.IsApproved = false;
             complaint.ApprovedRefundAmount = 0;
@@ -156,11 +143,9 @@ public class RejectComplaintCommandHandler : IRequestHandler<RejectComplaintComm
             await _unitOfWork.SaveChangesAsync(cancellationToken);
             await transaction.CommitAsync(cancellationToken);
 
-            // Reload complaint with updated details
             complaint = await _complaintRepository.GetComplaintWithDetailsAsync(complaint.Id);
             var complaintDto = ComplaintMapper.MapToDetailDto(complaint!);
 
-            // Send notifications to both buyer and seller
             await _notificationService.NotifyComplaintRejectedAsync(complaint!, cancellationToken);
 
             return result.BuildSuccess(complaintDto, "Complaint rejected successfully");

@@ -26,14 +26,12 @@ namespace FoodConnect.Backend.Application.Features.Category.Queries
         {
             var result = new BaseResponse<GetListCategoryResponse>();
 
-            // Validate parent exists
             var parent = await _categoryRepository.GetByIdAsync(request.ParentId);
             if (parent == null)
             {
                 return result.BuildNotFound("Parent category not found");
             }
 
-            // Get children
             var children = await _categoryRepository.GetChildrenByParentIdAsync(request.ParentId);
 
             if (!children.Any())

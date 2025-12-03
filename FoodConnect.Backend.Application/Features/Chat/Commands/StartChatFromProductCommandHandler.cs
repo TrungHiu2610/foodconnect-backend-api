@@ -49,12 +49,10 @@ public class StartChatFromProductCommandHandler : IRequestHandler<StartChatFromP
         if (userId == null)
             return result.BuildUnauthorized();
 
-        // Verify product exists
         var product = await _productRepository.GetByIdAsync(request.ProductId);
         if (product == null)
             return result.BuildNotFound("Product not found");
 
-        // Verify shop exists
         var shop = await _shopRepository.GetByIdAsync(request.ShopId);
         if (shop == null)
             return result.BuildNotFound("Shop not found");
@@ -62,11 +60,9 @@ public class StartChatFromProductCommandHandler : IRequestHandler<StartChatFromP
         var buyerId = userId.Value;
         var sellerId = shop.UserId;
 
-        // Prevent seller from chatting with themselves
         if (buyerId == sellerId)
             return result.BuildFail("Cannot start chat with yourself");
 
-        // Check if conversation already exists
         var conversation = await _conversationRepository.GetByBuyerAndSellerAsync(buyerId, sellerId);
         var isNewConversation = false;
 
@@ -84,7 +80,6 @@ public class StartChatFromProductCommandHandler : IRequestHandler<StartChatFromP
             isNewConversation = true;
         }
 
-        // Create system message
         var systemMessage = new Message
         {
             ConversationId = conversation.Id,
@@ -97,7 +92,6 @@ public class StartChatFromProductCommandHandler : IRequestHandler<StartChatFromP
         conversation.LastMessageAt = DateTime.UtcNow;
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
-        // Send real-time notification to seller
         try
         {
             await _chatNotificationService.NotifyNewMessageAsync(

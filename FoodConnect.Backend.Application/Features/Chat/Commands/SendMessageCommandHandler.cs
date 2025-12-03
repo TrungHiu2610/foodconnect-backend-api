@@ -86,7 +86,6 @@ public class SendMessageCommandHandler : IRequestHandler<SendMessageCommand, Bas
         conversation.LastMessageAt = DateTime.UtcNow;
         await _unitOfWork.SaveChangesAsync();
 
-        // Broadcast message to conversation room via SignalR
         var messageResponse = _mapper.Map<MessageResponse>(message);
         await _chatNotificationService.SendMessageToConversationAsync(
             conversation.Id.ToString(), 
