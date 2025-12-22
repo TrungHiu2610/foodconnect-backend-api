@@ -32,7 +32,9 @@ namespace FoodConnect.Backend.Infrastructure.Repositories
                 .Include(w => w.Product!)
                     .ThenInclude(p => p.Category)
                 .Include(w => w.Shop)
-                .Where(w => w.UserId == userId && !w.IsDeleted);
+                .Where(w => w.UserId == userId && !w.IsDeleted)
+                .Where(w => (w.ProductId == null || !w.Product!.IsDeleted)
+                         && (w.ShopId == null || !w.Shop!.IsDeleted));
 
             if (type.HasValue)
             {
