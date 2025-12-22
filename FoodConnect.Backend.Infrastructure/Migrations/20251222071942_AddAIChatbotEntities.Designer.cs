@@ -3,6 +3,7 @@ using System;
 using FoodConnect.Backend.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using Pgvector;
@@ -12,9 +13,11 @@ using Pgvector;
 namespace FoodConnect.Backend.Infrastructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251222071942_AddAIChatbotEntities")]
+    partial class AddAIChatbotEntities
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -1036,9 +1039,6 @@ namespace FoodConnect.Backend.Infrastructure.Migrations
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("boolean");
 
-                    b.Property<DateTime?>("ModeratedAt")
-                        .HasColumnType("timestamp with time zone");
-
                     b.Property<Guid>("OrderId")
                         .HasColumnType("uuid");
 
@@ -1048,20 +1048,11 @@ namespace FoodConnect.Backend.Infrastructure.Migrations
                     b.Property<int>("Rating")
                         .HasColumnType("integer");
 
-                    b.Property<string>("RejectionDetails")
-                        .HasColumnType("text");
-
-                    b.Property<int?>("RejectionReason")
-                        .HasColumnType("integer");
-
                     b.Property<DateTime?>("SellerRespondedAt")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("SellerResponse")
                         .HasColumnType("text");
-
-                    b.Property<int>("Status")
-                        .HasColumnType("integer");
 
                     b.Property<DateTime?>("UpdatedAtUtc")
                         .HasColumnType("timestamp with time zone");

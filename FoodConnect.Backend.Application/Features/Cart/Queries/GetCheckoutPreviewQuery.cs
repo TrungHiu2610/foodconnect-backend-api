@@ -8,5 +8,6 @@ namespace FoodConnect.Backend.Application.Features.Cart.Queries
     {
         public string? SessionId { get; set; }
         public List<Guid>? CartItemIds { get; set; } // Optional: checkout specific items
+        public Guid? AddressId { get; set; } // Optional: specific address for shipping calculation
     }
 }

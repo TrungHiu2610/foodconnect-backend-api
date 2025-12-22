@@ -45,6 +45,11 @@ namespace FoodConnect.Backend.Infrastructure.Persistence
         public DbSet<OrderComplaintAsset> OrderComplaintAssets { get; set; }
         public DbSet<Conversation> Conversations { get; set; }
         public DbSet<Message> Messages { get; set; }
+        
+        // AI Chatbot
+        public DbSet<AIChatConversation> AIChatConversations { get; set; }
+        public DbSet<AIChatMessage> AIChatMessages { get; set; }
+        public DbSet<ProductEmbedding> ProductEmbeddings { get; set; }
 
         #endregion
 

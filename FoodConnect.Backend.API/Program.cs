@@ -69,7 +69,8 @@ services.AddHttpClient();
 var configuration = builder.Configuration;
 
 services.AddDbContext<AppDbContext>(options =>
-   options.UseNpgsql(configuration.GetConnectionString("DefaultConnection")));
+   options.UseNpgsql(configuration.GetConnectionString("DefaultConnection"),
+       o => o.UseVector()));
 
 services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
@@ -170,6 +171,12 @@ services.AddScoped<IOrderComplaintRepository, OrderComplaintRepository>();
 services.AddScoped<IOrderComplaintAssetRepository, OrderComplaintAssetRepository>();
 services.AddScoped<IConversationRepository, ConversationRepository>();
 services.AddScoped<IMessageRepository, MessageRepository>();
+
+// AI Chatbot repositories
+services.AddScoped<IAIChatConversationRepository, AIChatConversationRepository>();
+services.AddScoped<IAIChatMessageRepository, AIChatMessageRepository>();
+services.AddScoped<IProductEmbeddingRepository, ProductEmbeddingRepository>();
+
 services.AddScoped<IUnitOfWork, UnitOfWork>();
 
 services.AddSingleton<IJwtTokenGenerator, JwtTokenGenerator>();
@@ -185,6 +192,11 @@ services.AddScoped<IToxicKeywordFilterService, ToxicKeywordFilterService>();
 services.AddScoped<IOpenAIModerationService, OpenAIModerationService>();
 services.AddScoped<ISpamDetectionService, SpamDetectionService>();
 services.AddScoped<IReviewModerationService, ReviewModerationService>();
+
+// AI Chatbot services
+services.AddScoped<IGeminiAIService, GeminiAIService>();
+services.AddScoped<IProductEmbeddingService, ProductEmbeddingService>();
+services.AddScoped<IProductRetrievalService, ProductRetrievalService>();
 
 // SignalR & Notification Services
 services.AddSignalR(options =>

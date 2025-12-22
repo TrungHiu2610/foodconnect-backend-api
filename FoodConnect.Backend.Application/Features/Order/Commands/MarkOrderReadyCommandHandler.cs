@@ -1,5 +1,6 @@
 using FoodConnect.Backend.Application.Commons.DTOs.Responses;
 using FoodConnect.Backend.Application.Commons.Interfaces;
+using FoodConnect.Backend.Application.Features.Notification.Services;
 using FoodConnect.Backend.Application.Interfaces;
 using FoodConnect.Backend.Application.Interfaces.IRepositories;
 using FoodConnect.Backend.Domain.Enums;
@@ -12,15 +13,18 @@ namespace FoodConnect.Backend.Application.Features.Order.Commands
         private readonly IOrderRepository _orderRepository;
         private readonly IUnitOfWork _unitOfWork;
         private readonly ICurrentUserService _currentUserService;
+        private readonly OrderNotificationService _orderNotificationService;
 
         public MarkOrderReadyCommandHandler(
             IOrderRepository orderRepository,
             IUnitOfWork unitOfWork,
-            ICurrentUserService currentUserService)
+            ICurrentUserService currentUserService,
+            OrderNotificationService orderNotificationService)
         {
             _orderRepository = orderRepository;
             _unitOfWork = unitOfWork;
             _currentUserService = currentUserService;
+            _orderNotificationService = orderNotificationService;
         }
 
         public async Task<BaseResponse<CreateOrUpdateResponse>> Handle(MarkOrderReadyCommand request, CancellationToken cancellationToken)
@@ -54,6 +58,10 @@ namespace FoodConnect.Backend.Application.Features.Order.Commands
 
             _orderRepository.Update(order);
             await _unitOfWork.SaveChangesAsync();
+
+            // Reload order with full details for notification
+            order = await _orderRepository.GetOrderWithDetailsAsync(request.OrderId);
+            await _orderNotificationService.NotifyOrderReadyForPickupAsync(order!, cancellationToken);
 
             return result.BuildSuccess(
                 new CreateOrUpdateResponse { Id = order.Id },

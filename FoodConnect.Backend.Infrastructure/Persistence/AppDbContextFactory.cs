@@ -25,7 +25,7 @@ namespace FoodConnect.Backend.Infrastructure.Persistence
             var optionsBuilder = new DbContextOptionsBuilder<AppDbContext>();
             var connectionString = configRoot.GetConnectionString("DefaultConnection");
 
-            optionsBuilder.UseNpgsql(connectionString);
+            optionsBuilder.UseNpgsql(connectionString, o => o.UseVector());
 
             return new AppDbContext(optionsBuilder.Options, currentUserService:null);
         }

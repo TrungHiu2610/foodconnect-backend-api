@@ -16,5 +16,9 @@ namespace FoodConnect.Backend.Application.Interfaces.IRepositories
             ProductStatusEnum? status = null,
             string? searchTerm = null);
         Task<IEnumerable<Product>> GetAllProductsWithDetailsAsync();
+        
+        // AI Chatbot methods
+        Task<List<Product>> SearchByKeywordsAsync(List<string> keywords, int limit = 15);
+        IQueryable<Product> GetQueryable();
     }
 }

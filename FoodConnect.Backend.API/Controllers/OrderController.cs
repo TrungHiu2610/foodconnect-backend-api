@@ -147,5 +147,13 @@ namespace FoodConnect.Backend.API.Controllers
             var result = await Mediator.Send(command);
             return result != null ? (result.Success ? Ok(result) : BadRequest(result)) : BadRequest();
         }
+
+        [HttpPost]
+        public async Task<IActionResult> Reorder([FromQuery] Guid orderId)
+        {
+            var command = new ReorderCommand { OrderId = orderId };
+            var result = await Mediator.Send(command);
+            return result != null ? (result.Success ? Ok(result) : BadRequest(result)) : BadRequest();
+        }
     }
 }
