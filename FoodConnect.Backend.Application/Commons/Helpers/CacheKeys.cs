@@ -1,3 +1,5 @@
+using Hangfire.Storage.Monitoring;
+
 namespace FoodConnect.Backend.Application.Commons.Helpers
 {
     public static class CacheKeys
@@ -73,6 +75,7 @@ namespace FoodConnect.Backend.Application.Commons.Helpers
             public static TimeSpan AdminUserAnalytics = TimeSpan.FromHours(1);
             public static TimeSpan AdminQuality = TimeSpan.FromMinutes(30);
             public static TimeSpan BuyerStats = TimeSpan.FromMinutes(15);
+            public static TimeSpan OpenAIModerationResult = TimeSpan.FromHours(24);
         }
     }
 }

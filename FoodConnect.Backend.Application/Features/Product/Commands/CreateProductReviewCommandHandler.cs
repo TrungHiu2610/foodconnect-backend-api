@@ -18,6 +18,7 @@ namespace FoodConnect.Backend.Application.Features.Product.Commands
         private readonly IUnitOfWork _unitOfWork;
         private readonly ICurrentUserService _currentUserService;
         private readonly IFileStorageService _fileStorageService;
+        private readonly IReviewModerationService _reviewModerationService;
 
         public CreateProductReviewCommandHandler(
             IOrderRepository orderRepository,
@@ -26,7 +27,8 @@ namespace FoodConnect.Backend.Application.Features.Product.Commands
             IBaseRepository<ProductReviewAsset> reviewAssetRepository,
             IUnitOfWork unitOfWork,
             ICurrentUserService currentUserService,
-            IFileStorageService fileStorageService)
+            IFileStorageService fileStorageService,
+            IReviewModerationService reviewModerationService)
         {
             _orderRepository = orderRepository;
             _productRepository = productRepository;
@@ -35,6 +37,7 @@ namespace FoodConnect.Backend.Application.Features.Product.Commands
             _unitOfWork = unitOfWork;
             _currentUserService = currentUserService;
             _fileStorageService = fileStorageService;
+            _reviewModerationService = reviewModerationService;
         }
 
         public async Task<BaseResponse<CreateOrUpdateResponse>> Handle(CreateProductReviewCommand request, CancellationToken cancellationToken)
@@ -81,13 +84,24 @@ namespace FoodConnect.Backend.Application.Features.Product.Commands
                     return result.BuildConflict("You have already reviewed this product");
                 }
 
+                // Tầng 1: Toxic Keyword -> Tầng 2: OpenAI Moderation -> Tầng 3: Spam Detection
+                var moderationResult = await _reviewModerationService.ModerateReviewAsync(
+                    request.Comment ?? string.Empty,
+                    userId.Value,
+                    request.ProductId
+                );
+
                 var review = new ProductReview
                 {
                     OrderId = request.OrderId,
                     ProductId = request.ProductId,
                     BuyerId = userId.Value,
                     Rating = request.Rating,
-                    Comment = request.Comment
+                    Comment = request.Comment,
+                    Status = moderationResult.Status,
+                    RejectionReason = moderationResult.RejectionReason,
+                    RejectionDetails = moderationResult.Details,
+                    ModeratedAt = DateTime.UtcNow
                 };
 
                 await _reviewRepository.AddAsync(review);
@@ -129,9 +143,38 @@ namespace FoodConnect.Backend.Application.Features.Product.Commands
 
                 await _unitOfWork.CommitTransactionAsync(transaction);
 
+                var (message, statusCode) = moderationResult.Status switch
+                {
+                    ReviewStatusEnum.Approved => 
+                        ("Đánh giá sản phẩm đã được gửi và hiển thị thành công!", 200),
+                    
+                    ReviewStatusEnum.Toxic => 
+                        ("Review của bạn chứa nội dung không phù hợp hoặc vi phạm quy định cộng đồng. " +
+                         $"Lý do: {moderationResult.Details}. " +
+                         "Review của bạn đã được lưu lại để quản trị viên xem xét. " +
+                         "Nếu tiếp tục vi phạm, tài khoản của bạn có thể bị khóa.", 
+                         400),
+                    
+                    ReviewStatusEnum.Spam => 
+                        ("Review của bạn bị phát hiện là spam hoặc không có nội dung. " +
+                         $"Lý do: {moderationResult.Details}. " +
+                         "Review của bạn đã được lưu lại để quản trị viên xem xét. " +
+                         "Vui lòng viết đánh giá chi tiết và chân thực hơn. " +
+                         "Nếu tiếp tục vi phạm, tài khoản của bạn có thể bị khóa.",
+                         400),
+                    
+                    _ => ("Review đã được gửi để kiểm duyệt.", 200)
+                };
+
+                if (moderationResult.Status == ReviewStatusEnum.Toxic || 
+                    moderationResult.Status == ReviewStatusEnum.Spam)
+                {
+                    return result.BuildFail(message, statusCode);
+                }
+
                 return result.BuildSuccess(
                     new CreateOrUpdateResponse { Id = review.Id },
-                    "Product review submitted successfully"
+                    message
                 );
             }
             catch (Exception ex)
