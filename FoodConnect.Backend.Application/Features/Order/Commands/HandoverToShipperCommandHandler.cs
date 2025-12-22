@@ -1,5 +1,6 @@
 using FoodConnect.Backend.Application.Commons.DTOs.Responses;
 using FoodConnect.Backend.Application.Commons.Interfaces;
+using FoodConnect.Backend.Application.Features.Notification.Services;
 using FoodConnect.Backend.Application.Features.Order.DTOs;
 using FoodConnect.Backend.Application.Features.Order.Mappers;
 using FoodConnect.Backend.Application.Interfaces;
@@ -15,17 +16,20 @@ namespace FoodConnect.Backend.Application.Features.Order.Commands
         private readonly IUnitOfWork _unitOfWork;
         private readonly ICurrentUserService _currentUserService;
         private readonly IFileStorageService _fileStorageService;
+        private readonly OrderNotificationService _orderNotificationService;
 
         public HandoverToShipperCommandHandler(
             IOrderRepository orderRepository,
             IUnitOfWork unitOfWork,
             ICurrentUserService currentUserService,
-            IFileStorageService fileStorageService)
+            IFileStorageService fileStorageService,
+            OrderNotificationService orderNotificationService)
         {
             _orderRepository = orderRepository;
             _unitOfWork = unitOfWork;
             _currentUserService = currentUserService;
             _fileStorageService = fileStorageService;
+            _orderNotificationService = orderNotificationService;
         }
 
         public async Task<BaseResponse<OrderDetailDto>> Handle(HandoverToShipperCommand request, CancellationToken cancellationToken)
@@ -84,6 +88,8 @@ namespace FoodConnect.Backend.Application.Features.Order.Commands
                 await _unitOfWork.CommitTransactionAsync(transaction);
 
                 order = await _orderRepository.GetOrderWithDetailsAsync(request.OrderId);
+                await _orderNotificationService.NotifyOrderOutForDeliveryAsync(order!, cancellationToken);
+                
                 var orderDto = OrderMapper.MapToDetailDto(order!);
 
                 return result.BuildSuccess(orderDto, "Order handed over to shipper successfully");

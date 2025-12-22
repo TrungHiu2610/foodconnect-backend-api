@@ -1,5 +1,6 @@
 using FoodConnect.Backend.Application.Commons.DTOs.Responses;
 using FoodConnect.Backend.Application.Commons.Interfaces;
+using FoodConnect.Backend.Application.Features.Notification.Services;
 using FoodConnect.Backend.Application.Interfaces;
 using FoodConnect.Backend.Application.Interfaces.IRepositories;
 using FoodConnect.Backend.Domain.Enums;
@@ -13,17 +14,20 @@ namespace FoodConnect.Backend.Application.Features.Order.Commands
         private readonly IUnitOfWork _unitOfWork;
         private readonly ICurrentUserService _currentUserService;
         private readonly IFileStorageService _fileStorageService;
+        private readonly OrderNotificationService _orderNotificationService;
 
         public ConfirmDeliveryWithProofCommandHandler(
             IOrderRepository orderRepository,
             IUnitOfWork unitOfWork,
             ICurrentUserService currentUserService,
-            IFileStorageService fileStorageService)
+            IFileStorageService fileStorageService,
+            OrderNotificationService orderNotificationService)
         {
             _orderRepository = orderRepository;
             _unitOfWork = unitOfWork;
             _currentUserService = currentUserService;
             _fileStorageService = fileStorageService;
+            _orderNotificationService = orderNotificationService;
         }
 
         public async Task<BaseResponse<CreateOrUpdateResponse>> Handle(ConfirmDeliveryWithProofCommand request, CancellationToken cancellationToken)
@@ -68,6 +72,10 @@ namespace FoodConnect.Backend.Application.Features.Order.Commands
                 _orderRepository.Update(order);
                 await _unitOfWork.SaveChangesAsync();
                 await _unitOfWork.CommitTransactionAsync(transaction);
+
+                // Reload order with full details for notification
+                order = await _orderRepository.GetOrderWithDetailsAsync(request.OrderId);
+                await _orderNotificationService.NotifyOrderDeliveredAsync(order!, cancellationToken);
 
                 return result.BuildSuccess(
                     new CreateOrUpdateResponse { Id = order.Id },
