@@ -1,6 +1,7 @@
 using FoodConnect.Backend.Application.Interfaces;
 using FoodConnect.Backend.Application.Interfaces.IRepositories;
 using FoodConnect.Backend.Application.Features.Promotion.Services;
+using FoodConnect.Backend.Application.Features.Wishlist.Services;
 using FoodConnect.Backend.Domain.Enums;
 using Microsoft.Extensions.Logging;
 using Hangfire;
@@ -13,17 +14,20 @@ namespace FoodConnect.Backend.Application.Features.Promotion.Jobs
         private readonly IUnitOfWork _unitOfWork;
         private readonly ILogger<PromotionStatusJob> _logger;
         private readonly PromotionNotificationService _promotionNotificationService;
+        private readonly ShopFollowerNotificationService _shopFollowerNotificationService;
 
         public PromotionStatusJob(
             IPromotionRepository promotionRepository,
             IUnitOfWork unitOfWork,
             ILogger<PromotionStatusJob> logger,
-            PromotionNotificationService promotionNotificationService)
+            PromotionNotificationService promotionNotificationService,
+            ShopFollowerNotificationService shopFollowerNotificationService)
         {
             _promotionRepository = promotionRepository;
             _unitOfWork = unitOfWork;
             _logger = logger;
             _promotionNotificationService = promotionNotificationService;
+            _shopFollowerNotificationService = shopFollowerNotificationService;
         }
         
         [DisableConcurrentExecution(timeoutInSeconds: 600)] // Prevent concurrent runs, 10 min timeout
@@ -54,6 +58,12 @@ namespace FoodConnect.Backend.Application.Features.Promotion.Jobs
                         "[PromotionStatusJob] Auto-activated promotion {PromotionId} - {PromotionName}", 
                         promotion.Id, 
                         promotion.PromotionName);
+
+                    // Send notification to shop owner (async but don't wait)
+                    _ = _promotionNotificationService.NotifyPromotionActivatedAsync(promotion);
+                    
+                    // Notify all shop followers about new active promotion
+                    _ = _shopFollowerNotificationService.NotifyFollowersAboutPromotionAsync(promotion);
                 }
 
                 await _unitOfWork.SaveChangesAsync();

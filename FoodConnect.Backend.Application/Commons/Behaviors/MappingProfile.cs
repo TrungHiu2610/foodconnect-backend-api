@@ -7,6 +7,7 @@ using FoodConnect.Backend.Application.Commons.DTOs.Responses.Shop;
 using FoodConnect.Backend.Application.Commons.DTOs.Responses.Payment;
 using FoodConnect.Backend.Application.Commons.DTOs.Responses.SystemConfig;
 using FoodConnect.Backend.Application.Commons.DTOs.Responses.Withdrawal;
+using FoodConnect.Backend.Application.Commons.DTOs.Responses.Wishlist;
 using FoodConnect.Backend.Application.Features.Category.Commands;
 using FoodConnect.Backend.Application.Features.Product.Commands;
 using FoodConnect.Backend.Application.Features.Shop.Commands;
@@ -203,6 +204,41 @@ namespace FoodConnect.Backend.Application.Commons.Behaviors
                 .ForMember(dest => dest.BuyerAvatarUrl, opt => opt.MapFrom(src => src.Buyer.AvatarUrl))
                 .ForMember(dest => dest.Assets, opt => opt.MapFrom(src => src.Assets))
                 .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(src => src.CreatedAtUtc));
+
+            #endregion
+
+            #region wishlist mappings
+
+            CreateMap<Wishlist, WishlistResponse>()
+                .ForMember(dest => dest.Type, opt => opt.MapFrom(src => (int)src.Type))
+                .ForMember(dest => dest.TypeName, opt => opt.MapFrom(src => src.Type.ToString()))
+                .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(src => src.CreatedAtUtc))
+                .ForMember(dest => dest.Item, opt => opt.MapFrom(src => 
+                    src.Type == WishlistTypeEnum.Product && src.Product != null
+                        ? new WishlistItemDto
+                        {
+                            Id = src.Product.Id,
+                            Name = src.Product.Name,
+                            Description = src.Product.Description,
+                            ImageUrl = src.Product.ProductAssets != null && src.Product.ProductAssets.Any()
+                                ? src.Product.ProductAssets.FirstOrDefault(a => a.IsThumbnail)!.AssetUrl ?? src.Product.ProductAssets.FirstOrDefault()!.AssetUrl
+                                : null,
+                            Price = src.Product.Price,
+                            IsAvailable = src.Product.IsAvailable,
+                            Status = src.Product.Status.ToString()
+                        }
+                        : src.Type == WishlistTypeEnum.Shop && src.Shop != null
+                            ? new WishlistItemDto
+                            {
+                                Id = src.Shop.Id,
+                                Name = src.Shop.ShopName,
+                                Description = src.Shop.Description,
+                                ImageUrl = src.Shop.LogoUrl,
+                                Rating = src.Shop.Rating,
+                                ReviewCount = src.Shop.ReviewCount,
+                                Status = src.Shop.Status.ToString()
+                            }
+                            : null));
 
             #endregion
 
