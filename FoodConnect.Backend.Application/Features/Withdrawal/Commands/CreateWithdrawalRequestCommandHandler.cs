@@ -46,6 +46,12 @@ public class CreateWithdrawalRequestCommandHandler : IRequestHandler<CreateWithd
             return result.BuildUnauthorized();
 
         var wallet = await _walletRepository.GetByUserIdAndTypeAsync(userId.Value, WalletTypeEnum.Seller);
+        
+        if (wallet == null)
+        {
+            wallet = await _walletRepository.GetByUserIdAndTypeAsync(userId.Value, WalletTypeEnum.Buyer);
+        }
+
         if (wallet == null)
             return result.BuildNotFound("Không tìm thấy ví");
 

@@ -1,5 +1,6 @@
 using FoodConnect.Backend.Application.Commons.DTOs.Requests.AIChatbot;
 using FoodConnect.Backend.Application.Features.AIChatbot.Commands;
+using FoodConnect.Backend.Application.Features.AIChatbot.Queries;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -32,6 +33,43 @@ public class AIChatbotController : ApiBaseController
         var command = new GenerateProductEmbeddingsCommand
         {
             ForceRegenerate = forceRegenerate
+        };
+
+        var result = await Mediator.Send(command);
+        return result != null
+            ? (result.Success ? Ok(result) : BadRequest(result))
+            : BadRequest();
+    }
+
+    [HttpGet]
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> GetEmbeddings(
+        [FromQuery] int pageNumber = 1,
+        [FromQuery] int pageSize = 20,
+        [FromQuery] string? searchTerm = null,
+        [FromQuery] bool? hasEmbedding = null)
+    {
+        var query = new GetProductEmbeddingsQuery
+        {
+            PageNumber = pageNumber,
+            PageSize = pageSize,
+            SearchTerm = searchTerm,
+            HasEmbedding = hasEmbedding
+        };
+
+        var result = await Mediator.Send(query);
+        return result != null
+            ? (result.Success ? Ok(result) : BadRequest(result))
+            : BadRequest();
+    }
+
+    [HttpDelete("{productId}")]
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> DeleteEmbedding([FromRoute] Guid productId)
+    {
+        var command = new DeleteProductEmbeddingCommand
+        {
+            ProductId = productId
         };
 
         var result = await Mediator.Send(command);
