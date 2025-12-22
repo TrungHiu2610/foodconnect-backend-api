@@ -64,7 +64,7 @@ namespace FoodConnect.Backend.Application.Features.Cart.Queries
                 }, "Empty cart");
             }
 
-            var response = await MapCartToCheckoutPreviewAsync(cart, userId, request.CartItemIds);
+            var response = await MapCartToCheckoutPreviewAsync(cart, userId, request.CartItemIds, request.AddressId);
 
             return result.BuildSuccess(response, "Get checkout preview successfully");
         }
@@ -72,7 +72,8 @@ namespace FoodConnect.Backend.Application.Features.Cart.Queries
         private async Task<CheckoutPreviewResponse> MapCartToCheckoutPreviewAsync(
             Domain.Entities.Cart cart,
             Guid? userId,
-            List<Guid>? selectedCartItemIds)
+            List<Guid>? selectedCartItemIds,
+            Guid? addressId = null)
         {
             var response = new CheckoutPreviewResponse
             {
@@ -83,7 +84,15 @@ namespace FoodConnect.Backend.Application.Features.Cart.Queries
             Domain.Entities.Address? buyerAddress = null;
             if (userId.HasValue)
             {
-                buyerAddress = await _addressRepository.GetDefaultAddressByUserIdAsync(userId.Value);
+                // Use specific address if provided, otherwise use default
+                if (addressId.HasValue)
+                {
+                    buyerAddress = await _addressRepository.GetByIdAsync(addressId.Value);
+                }
+                else
+                {
+                    buyerAddress = await _addressRepository.GetDefaultAddressByUserIdAsync(userId.Value);
+                }
             }
 
             if (cart.CartItems != null && cart.CartItems.Any())
