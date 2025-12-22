@@ -63,9 +63,9 @@ namespace FoodConnect.Backend.Application.Features.Order.Commands
                     return result.BuildFail("This endpoint is only for Standard delivery orders");
                 }
 
-                if (order.Status != OrderStatusEnum.OutForDelivery)
+                if (order.Status != OrderStatusEnum.DeliveryingByShipper)
                 {
-                    return result.BuildFail($"Only OutForDelivery orders can be confirmed as delivered. Current status: {order.Status}");
+                    return result.BuildFail($"Only DeliveryingByShipper orders can be confirmed as delivered. Current status: {order.Status}");
                 }
 
                 if (string.IsNullOrEmpty(order.TrackingCode))

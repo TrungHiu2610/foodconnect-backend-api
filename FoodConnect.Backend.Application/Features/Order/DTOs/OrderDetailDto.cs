@@ -26,9 +26,12 @@ namespace FoodConnect.Backend.Application.Features.Order.DTOs
         public DateTime CreatedAt { get; set; }
         public DateTime? AcceptedAt { get; set; }
         public DateTime? PreparedAt { get; set; }
+        public DateTime? ReadyForPickupAt { get; set; }
+        public DateTime? DeliveryStartedAt { get; set; }
         public DateTime? DeliveredAt { get; set; }
         public DateTime? CompletedAt { get; set; }
         public DateTime? CancelledAt { get; set; }
+
         
         public Guid BuyerId { get; set; }
         public string BuyerName { get; set; } = string.Empty;

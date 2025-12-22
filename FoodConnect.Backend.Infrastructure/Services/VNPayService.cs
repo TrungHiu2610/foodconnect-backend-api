@@ -31,7 +31,17 @@ public class VNPayService : IVNPayService
         var orderType = _configuration["VNPay:OrderType"] ?? "other";
         var version = _configuration["VNPay:Version"] ?? "2.1.0";
         var command = _configuration["VNPay:Command"] ?? "pay";
-        var returnUrl = _configuration["VNPay:ReturnUrl"] ?? "https://glossemic-jarrett-irreverent.ngrok-free.dev/api/Payment/VNPayCallback";
+        
+        // Determine returnUrl based on platform
+        string returnUrl;
+        if (request.Platform?.ToLower() == "mobile")
+        {
+            returnUrl = "foodconnect://payment/vnpay-callback";
+        }
+        else
+        {
+            returnUrl = _configuration["VNPay:ReturnUrl"] ?? "https://glossemic-jarrett-irreverent.ngrok-free.dev/api/Payment/VNPayCallback";
+        }
         
         var createDate = DateTime.Now.ToString("yyyyMMddHHmmss", CultureInfo.InvariantCulture);
         var txnRef = DateTime.Now.Ticks.ToString();

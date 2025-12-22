@@ -322,7 +322,14 @@ public static class HangfireCleanupService
         
         foreach (var jobId in succeededJobs)
         {
-            BackgroundJob.Delete(jobId);
+            try
+            {
+                BackgroundJob.Delete(jobId);
+            }
+            catch (Exception)
+            {
+                // Job may have already been deleted or doesn't exist
+            }
         }
         
         var failedJobs = monitor.FailedJobs(0, int.MaxValue)
@@ -333,7 +340,14 @@ public static class HangfireCleanupService
         
         foreach (var jobId in failedJobs)
         {
-            BackgroundJob.Delete(jobId);
+            try
+            {
+                BackgroundJob.Delete(jobId);
+            }
+            catch (Exception)
+            {
+                // Job may have already been deleted or doesn't exist
+            }
         }
         
         var deletedJobs = monitor.DeletedJobs(0, int.MaxValue)
@@ -344,7 +358,14 @@ public static class HangfireCleanupService
         
         foreach (var jobId in deletedJobs)
         {
-            BackgroundJob.Delete(jobId);
+            try
+            {
+                BackgroundJob.Delete(jobId);
+            }
+            catch (Exception)
+            {
+                // Job may have already been deleted or doesn't exist
+            }
         }
     }
 }

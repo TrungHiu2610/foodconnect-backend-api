@@ -109,22 +109,6 @@ namespace FoodConnect.Backend.API.Controllers
         }
 
         [HttpPut]
-        public async Task<IActionResult> MarkAsPrepared([FromQuery] Guid orderId)
-        {
-            var command = new MarkAsPreparedCommand { OrderId = orderId };
-            var result = await Mediator.Send(command);
-            return result != null ? (result.Success ? Ok(result) : BadRequest(result)) : BadRequest();
-        }
-
-        [HttpPut]
-        public async Task<IActionResult> MarkAsDelivered([FromQuery] Guid orderId)
-        {
-            var command = new MarkAsDeliveredCommand { OrderId = orderId };
-            var result = await Mediator.Send(command);
-            return result != null ? (result.Success ? Ok(result) : BadRequest(result)) : BadRequest();
-        }
-
-        [HttpPut]
         public async Task<IActionResult> MarkOrderReady([FromQuery] Guid orderId)
         {
             var command = new MarkOrderReadyCommand { OrderId = orderId };
@@ -136,14 +120,6 @@ namespace FoodConnect.Backend.API.Controllers
         public async Task<IActionResult> StartSelfDelivery([FromQuery] Guid orderId)
         {
             var command = new StartSelfDeliveryCommand { OrderId = orderId };
-            var result = await Mediator.Send(command);
-            return result != null ? (result.Success ? Ok(result) : BadRequest(result)) : BadRequest();
-        }
-
-        [HttpPut]
-        public async Task<IActionResult> RequestShipper([FromQuery] Guid orderId)
-        {
-            var command = new RequestShipperCommand { OrderId = orderId };
             var result = await Mediator.Send(command);
             return result != null ? (result.Success ? Ok(result) : BadRequest(result)) : BadRequest();
         }

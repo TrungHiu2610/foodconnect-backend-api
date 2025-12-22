@@ -9,4 +9,5 @@ public interface IChatNotificationService
     Task SendStopTypingIndicatorAsync(string conversationId, string userId);
     Task SendReadReceiptAsync(string conversationId, string userId, List<string> messageIds);
     Task NotifyNewMessageAsync(Guid conversationId, Guid messageId, Guid recipientUserId, string messagePreview);
+    Task UpdateUnreadCountAsync(Guid userId, int unreadCount);
 }

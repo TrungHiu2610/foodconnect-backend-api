@@ -9,6 +9,7 @@ namespace FoodConnect.Backend.Application.Features.Order.DTOs
         public double Total { get; set; }
         public OrderStatusEnum Status { get; set; }
         public PaymentMethodEnum PaymentMethod { get; set; }
+        public DeliveryTypeEnum DeliveryType { get; set; }
         public DateTime CreatedAt { get; set; }
         public string EstimatedDelivery { get; set; } = string.Empty;
         

@@ -33,4 +33,13 @@ public class MessageRepository : BaseRepository<Message>, IMessageRepository
         return await _context.Messages
             .CountAsync(m => m.ConversationId == conversationId && m.SenderId != userId && !m.IsRead);
     }
+
+    public async Task<int> GetUnreadCountByUserAsync(Guid userId)
+    {
+        return await _context.Messages
+            .Include(m => m.Conversation)
+            .Where(m => !m.IsRead && m.SenderId != userId &&
+                       (m.Conversation.BuyerId == userId || m.Conversation.SellerId == userId))
+            .CountAsync();
+    }
 }

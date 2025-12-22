@@ -7,4 +7,5 @@ public class CreateVNPayPaymentCommand : IRequest<BaseResponse<string>>
 {
     public Guid OrderId { get; set; }
     public string IpAddress { get; set; } = string.Empty;
+    public string Platform { get; set; } = "web";
 }
