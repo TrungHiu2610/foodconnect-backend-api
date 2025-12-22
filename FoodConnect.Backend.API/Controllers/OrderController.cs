@@ -35,9 +35,17 @@ namespace FoodConnect.Backend.API.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> GetMyOrders([FromQuery] OrderStatusEnum? status = null)
+        public async Task<IActionResult> GetMyOrders(
+            [FromQuery] OrderStatusEnum? status = null,
+            [FromQuery] int pageNumber = 1,
+            [FromQuery] int pageSize = 10)
         {
-            var query = new GetOrdersByBuyerQuery { Status = status };
+            var query = new GetOrdersByBuyerQuery 
+            { 
+                Status = status,
+                PageNumber = pageNumber,
+                PageSize = pageSize
+            };
             var result = await Mediator.Send(query);
             return result != null ? (result.Success ? Ok(result) : BadRequest(result)) : BadRequest();
         }
@@ -63,12 +71,18 @@ namespace FoodConnect.Backend.API.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> GetShopOrders([FromQuery] Guid shopId, [FromQuery] OrderStatusEnum? status = null)
+        public async Task<IActionResult> GetShopOrders(
+            [FromQuery] Guid shopId, 
+            [FromQuery] OrderStatusEnum? status = null,
+            [FromQuery] int pageNumber = 1,
+            [FromQuery] int pageSize = 10)
         {
             var query = new GetOrdersByShopQuery 
             { 
                 ShopId = shopId,
-                Status = status 
+                Status = status,
+                PageNumber = pageNumber,
+                PageSize = pageSize
             };
             var result = await Mediator.Send(query);
             return result != null ? (result.Success ? Ok(result) : BadRequest(result)) : BadRequest();
@@ -95,22 +109,6 @@ namespace FoodConnect.Backend.API.Controllers
         }
 
         [HttpPut]
-        public async Task<IActionResult> MarkAsPrepared([FromQuery] Guid orderId)
-        {
-            var command = new MarkAsPreparedCommand { OrderId = orderId };
-            var result = await Mediator.Send(command);
-            return result != null ? (result.Success ? Ok(result) : BadRequest(result)) : BadRequest();
-        }
-
-        [HttpPut]
-        public async Task<IActionResult> MarkAsDelivered([FromQuery] Guid orderId)
-        {
-            var command = new MarkAsDeliveredCommand { OrderId = orderId };
-            var result = await Mediator.Send(command);
-            return result != null ? (result.Success ? Ok(result) : BadRequest(result)) : BadRequest();
-        }
-
-        [HttpPut]
         public async Task<IActionResult> MarkOrderReady([FromQuery] Guid orderId)
         {
             var command = new MarkOrderReadyCommand { OrderId = orderId };
@@ -127,17 +125,33 @@ namespace FoodConnect.Backend.API.Controllers
         }
 
         [HttpPut]
-        public async Task<IActionResult> RequestShipper([FromQuery] Guid orderId)
+        public async Task<IActionResult> ConfirmDeliveryWithProof([FromQuery] Guid orderId, [FromForm] ConfirmDeliveryWithProofCommand command)
         {
-            var command = new RequestShipperCommand { OrderId = orderId };
+            command.OrderId = orderId;
             var result = await Mediator.Send(command);
             return result != null ? (result.Success ? Ok(result) : BadRequest(result)) : BadRequest();
         }
 
         [HttpPut]
-        public async Task<IActionResult> ConfirmDeliveryWithProof([FromQuery] Guid orderId, [FromForm] ConfirmDeliveryWithProofCommand command)
+        public async Task<IActionResult> HandoverToShipper([FromQuery] Guid orderId, [FromForm] HandoverToShipperCommand command)
         {
             command.OrderId = orderId;
+            var result = await Mediator.Send(command);
+            return result != null ? (result.Success ? Ok(result) : BadRequest(result)) : BadRequest();
+        }
+
+        [HttpPut]
+        public async Task<IActionResult> ConfirmStandardDelivery([FromQuery] Guid orderId, [FromForm] ConfirmStandardDeliveryCommand command)
+        {
+            command.OrderId = orderId;
+            var result = await Mediator.Send(command);
+            return result != null ? (result.Success ? Ok(result) : BadRequest(result)) : BadRequest();
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> Reorder([FromQuery] Guid orderId)
+        {
+            var command = new ReorderCommand { OrderId = orderId };
             var result = await Mediator.Send(command);
             return result != null ? (result.Success ? Ok(result) : BadRequest(result)) : BadRequest();
         }

@@ -24,16 +24,13 @@ namespace FoodConnect.Backend.Application.Features.Shop.Queries
 
             try
             {
-                // Get featured and active shops
                 var query = _shopRepository.GetShopsAsQueryable()
                     .Where(s => s.IsFeatured && s.Status == ShopStatusEnum.Active);
 
-                // Calculate distance if user location provided
                 if (request.UserLatitude.HasValue && request.UserLongitude.HasValue)
                 {
                     var shops = await query.ToListAsync(cancellationToken);
 
-                    // Calculate distance for each shop
                     foreach (var shop in shops)
                     {
                         if (shop.Latitude.HasValue && shop.Longitude.HasValue)
@@ -46,7 +43,6 @@ namespace FoodConnect.Backend.Application.Features.Shop.Queries
                         }
                     }
 
-                    // Sort by Rating DESC, then TotalOrders DESC
                     shops = shops
                         .OrderByDescending(s => s.Rating)
                         .ThenByDescending(s => s.TotalOrders)
@@ -58,7 +54,6 @@ namespace FoodConnect.Backend.Application.Features.Shop.Queries
                 }
                 else
                 {
-                    // No location provided - just sort and limit
                     var shops = await query
                         .OrderByDescending(s => s.Rating)
                         .ThenByDescending(s => s.TotalOrders)
@@ -74,10 +69,6 @@ namespace FoodConnect.Backend.Application.Features.Shop.Queries
                 return result.BuildFail($"Failed to retrieve featured shops: {ex.Message}");
             }
         }
-
-        /// <summary>
-        /// Calculate distance between two coordinates using Haversine formula
-        /// </summary>
         private double CalculateDistance(double lat1, double lon1, double lat2, double lon2)
         {
             const double R = 6371; // Earth's radius in kilometers
@@ -94,10 +85,6 @@ namespace FoodConnect.Backend.Application.Features.Shop.Queries
         }
 
         private double ToRadians(double degrees) => degrees * Math.PI / 180;
-
-        /// <summary>
-        /// Map shop entities to response DTOs
-        /// </summary>
         private List<ShopListForBuyerResponse> MapToResponse(List<Domain.Entities.Shop> shops)
         {
             return shops.Select(shop => new ShopListForBuyerResponse
@@ -122,10 +109,6 @@ namespace FoodConnect.Backend.Application.Features.Shop.Queries
                 Address = shop.GetFullAddress()
             }).ToList();
         }
-
-        /// <summary>
-        /// Calculate shop badges based on properties
-        /// </summary>
         private List<string> CalculateBadges(Domain.Entities.Shop shop)
         {
             var badges = new List<string>();

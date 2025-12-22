@@ -1,5 +1,6 @@
 using FoodConnect.Backend.Application.Commons.DTOs.Responses;
 using FoodConnect.Backend.Application.Commons.Interfaces;
+using FoodConnect.Backend.Application.Features.Notification.Services;
 using FoodConnect.Backend.Application.Interfaces;
 using FoodConnect.Backend.Application.Interfaces.IRepositories;
 using FoodConnect.Backend.Domain.Enums;
@@ -13,17 +14,20 @@ namespace FoodConnect.Backend.Application.Features.Order.Commands
         private readonly IUnitOfWork _unitOfWork;
         private readonly ICurrentUserService _currentUserService;
         private readonly IFileStorageService _fileStorageService;
+        private readonly OrderNotificationService _orderNotificationService;
 
         public ConfirmDeliveryWithProofCommandHandler(
             IOrderRepository orderRepository,
             IUnitOfWork unitOfWork,
             ICurrentUserService currentUserService,
-            IFileStorageService fileStorageService)
+            IFileStorageService fileStorageService,
+            OrderNotificationService orderNotificationService)
         {
             _orderRepository = orderRepository;
             _unitOfWork = unitOfWork;
             _currentUserService = currentUserService;
             _fileStorageService = fileStorageService;
+            _orderNotificationService = orderNotificationService;
         }
 
         public async Task<BaseResponse<CreateOrUpdateResponse>> Handle(ConfirmDeliveryWithProofCommand request, CancellationToken cancellationToken)
@@ -34,39 +38,33 @@ namespace FoodConnect.Backend.Application.Features.Order.Commands
             await using var transaction = await _unitOfWork.BeginTransactionAsync();
             try
             {
-                // Check authorization
                 var userId = _currentUserService.UserId;
                 if (!userId.HasValue)
                 {
                     return result.BuildUnauthorized();
                 }
 
-                // Get order with shop info
                 var order = await _orderRepository.GetOrderWithDetailsAsync(request.OrderId);
                 if (order == null)
                 {
                     return result.BuildNotFound("Order not found");
                 }
 
-                // Verify seller owns this order's shop
                 if (order.Shop.UserId != userId.Value)
                 {
                     return result.BuildForbidden("You don't have permission to update this order");
                 }
 
-                // Validate status transition
                 if (order.Status != OrderStatusEnum.DeliveryingBySeller)
                 {
                     return result.BuildFail($"Order must be in DeliveryingBySeller status. Current status is {order.Status}");
                 }
 
-                // Upload delivery proof image to S3
                 uploadedImageUrl = await _fileStorageService.UploadFileAsync(
                     request.DeliveryProofImage,
                     $"Orders/{order.OrderCode}/DeliveryProof"
                 );
 
-                // Update order
                 order.DeliveryProofImageUrl = uploadedImageUrl;
                 order.Status = OrderStatusEnum.Delivered;
                 order.DeliveredAt = DateTime.UtcNow;
@@ -74,6 +72,10 @@ namespace FoodConnect.Backend.Application.Features.Order.Commands
                 _orderRepository.Update(order);
                 await _unitOfWork.SaveChangesAsync();
                 await _unitOfWork.CommitTransactionAsync(transaction);
+
+                // Reload order with full details for notification
+                order = await _orderRepository.GetOrderWithDetailsAsync(request.OrderId);
+                await _orderNotificationService.NotifyOrderDeliveredAsync(order!, cancellationToken);
 
                 return result.BuildSuccess(
                     new CreateOrUpdateResponse { Id = order.Id },
@@ -84,7 +86,6 @@ namespace FoodConnect.Backend.Application.Features.Order.Commands
             {
                 await transaction.RollbackAsync();
 
-                // Delete uploaded image if transaction fails
                 if (!string.IsNullOrEmpty(uploadedImageUrl))
                 {
                     await _fileStorageService.DeleteFileAsync(uploadedImageUrl);

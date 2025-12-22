@@ -1,5 +1,6 @@
 using FoodConnect.Backend.Application.Commons.DTOs.Responses;
 using FoodConnect.Backend.Application.Commons.Interfaces;
+using FoodConnect.Backend.Application.Commons.Models;
 using FoodConnect.Backend.Application.Features.Order.DTOs;
 using FoodConnect.Backend.Application.Features.Order.Mappers;
 using FoodConnect.Backend.Application.Interfaces.IRepositories;
@@ -7,7 +8,7 @@ using MediatR;
 
 namespace FoodConnect.Backend.Application.Features.Order.Queries
 {
-    public class GetOrdersByShopQueryHandler : IRequestHandler<GetOrdersByShopQuery, BaseResponse<List<OrderSummaryDto>>>
+    public class GetOrdersByShopQueryHandler : IRequestHandler<GetOrdersByShopQuery, BaseResponse<PaginatedList<OrderSummaryDto>>>
     {
         private readonly IOrderRepository _orderRepository;
         private readonly IShopRepository _shopRepository;
@@ -23,9 +24,9 @@ namespace FoodConnect.Backend.Application.Features.Order.Queries
             _currentUserService = currentUserService;
         }
 
-        public async Task<BaseResponse<List<OrderSummaryDto>>> Handle(GetOrdersByShopQuery request, CancellationToken cancellationToken)
+        public async Task<BaseResponse<PaginatedList<OrderSummaryDto>>> Handle(GetOrdersByShopQuery request, CancellationToken cancellationToken)
         {
-            var result = new BaseResponse<List<OrderSummaryDto>>();
+            var result = new BaseResponse<PaginatedList<OrderSummaryDto>>();
 
             if (!_currentUserService.UserId.HasValue)
             {
@@ -34,7 +35,6 @@ namespace FoodConnect.Backend.Application.Features.Order.Queries
 
             var userId = _currentUserService.UserId.Value;
 
-            // Check if shop belongs to user
             var shop = await _shopRepository.GetByIdAsync(request.ShopId);
             if (shop == null)
             {
@@ -49,7 +49,20 @@ namespace FoodConnect.Backend.Application.Features.Order.Queries
             var orders = await _orderRepository.GetOrdersByShopAsync(request.ShopId, request.Status);
             var orderDtos = orders.Select(o => OrderMapper.MapToSummaryDto(o)).ToList();
 
-            return result.BuildSuccess(orderDtos, "Orders retrieved successfully");
+            var totalCount = orderDtos.Count;
+            var paginatedOrders = orderDtos
+                .Skip((request.PageNumber - 1) * request.PageSize)
+                .Take(request.PageSize)
+                .ToList();
+
+            var paginatedList = new PaginatedList<OrderSummaryDto>(
+                paginatedOrders,
+                totalCount,
+                request.PageNumber,
+                request.PageSize
+            );
+
+            return result.BuildSuccess(paginatedList, "Orders retrieved successfully");
         }
     }
 }

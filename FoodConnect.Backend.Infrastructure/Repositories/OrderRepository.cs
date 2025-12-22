@@ -28,6 +28,7 @@ namespace FoodConnect.Backend.Infrastructure.Repositories
             var query = _context.Orders
                 .Include(o => o.OrderItems)
                     .ThenInclude(oi => oi.Product)
+                        .ThenInclude(p=>p.ProductAssets)
                 .Include(o => o.Shop)
                 .Where(o => o.BuyerId == buyerId);
 
@@ -44,8 +45,11 @@ namespace FoodConnect.Backend.Infrastructure.Repositories
             var query = _context.Orders
                 .Include(o => o.OrderItems)
                     .ThenInclude(oi => oi.Product)
+                        .ThenInclude(p => p.ProductAssets)
                 .Include(o => o.Buyer)
-                .Where(o => o.ShopId == shopId);
+                .Where(o => o.ShopId == shopId)
+                .Where(o => o.Status != OrderStatusEnum.AwaitingPayment 
+                         && o.Status != OrderStatusEnum.Cancelled);
 
             if (status.HasValue)
             {
@@ -73,7 +77,6 @@ namespace FoodConnect.Backend.Infrastructure.Repositories
             if (order == null)
                 return false;
 
-            // Only pending orders can be cancelled
             return order.Status == OrderStatusEnum.Pending;
         }
 
@@ -91,7 +94,6 @@ namespace FoodConnect.Backend.Infrastructure.Repositories
 
         public async Task<List<Guid>> GetBuyersWithPendingOrdersContainingProductAsync(Guid productId)
         {
-            // Return all buyer IDs who have pending orders containing the product
             return await _context.Orders
                 .Where(o => o.Status == OrderStatusEnum.Pending && o.OrderItems.Any(oi => oi.ProductId == productId))
                 .Select(o => o.BuyerId)

@@ -35,7 +35,6 @@ namespace FoodConnect.Backend.Application.Features.Cart.Commands
         {
             var result = new BaseResponse<CartResponse>();
 
-            // Check product exists
             var product = await _productRepository.GetByIdAsync(request.ProductId);
             if (product == null)
             {
@@ -44,13 +43,11 @@ namespace FoodConnect.Backend.Application.Features.Cart.Commands
 
             var userId = _currentUserService.UserId;
 
-            // Validate SessionId
             if (string.IsNullOrWhiteSpace(request.SessionId) && !userId.HasValue)
             {
                 return result.BuildFail("Either user must be logged in or a valid session ID must be provided");
             }
 
-            // Get or create cart
             Domain.Entities.Cart? cart;
             if (userId.HasValue)
             {
@@ -65,7 +62,6 @@ namespace FoodConnect.Backend.Application.Features.Cart.Commands
 
             try
             {
-                // Create new cart if not exists
                 if (cart == null)
                 {
                     cart = new Domain.Entities.Cart
@@ -79,12 +75,10 @@ namespace FoodConnect.Backend.Application.Features.Cart.Commands
                     await _unitOfWork.SaveChangesAsync(cancellationToken);
                 }
 
-                // Check if product already in cart
                 var existingItem = await _cartItemRepository.GetCartItemAsync(cart.Id, request.ProductId);
 
                 if (existingItem != null)
                 {
-                    // Check if total quantity exceeds maximum
                     var newQuantity = existingItem.Quantity + request.Quantity;
                     if (newQuantity > CartConstants.MaxQuantityPerProduct)
                     {
@@ -92,13 +86,11 @@ namespace FoodConnect.Backend.Application.Features.Cart.Commands
                         return result.BuildFail($"Total quantity cannot exceed {CartConstants.MaxQuantityPerProduct}. Current: {existingItem.Quantity}, Adding: {request.Quantity}");
                     }
                     
-                    // Update quantity
                     existingItem.Quantity = newQuantity;
                     _cartItemRepository.Update(existingItem);
                 }
                 else
                 {
-                    // Check cart items limit (max products in cart)
                     var currentItemCount = cart.CartItems?.Count ?? 0;
                     if (currentItemCount >= CartConstants.MaxProductsInCart)
                     {
@@ -106,7 +98,6 @@ namespace FoodConnect.Backend.Application.Features.Cart.Commands
                         return result.BuildFail($"Cart cannot contain more than {CartConstants.MaxProductsInCart} different products");
                     }
                     
-                    // Add new item
                     var cartItem = new CartItem
                     {
                         Id = Guid.NewGuid(),
@@ -120,7 +111,6 @@ namespace FoodConnect.Backend.Application.Features.Cart.Commands
                 await _unitOfWork.SaveChangesAsync(cancellationToken);
                 await _unitOfWork.CommitTransactionAsync(transaction);
 
-                // Reload cart with full data
                 cart = await _cartRepository.GetCartWithItemsAsync(userId, request.SessionId);
                 var response = MapCartToResponse(cart!);
 
@@ -147,7 +137,6 @@ namespace FoodConnect.Backend.Application.Features.Cart.Commands
 
             if (cart.CartItems != null && cart.CartItems.Any())
             {
-                // Sort cart items by CreatedAtUtc to maintain order (consistent with GetCart)
                 var sortedCartItems = cart.CartItems
                     .Where(item => item.Product != null && item.Product.Shop != null)
                     .OrderBy(item => item.CreatedAtUtc)
@@ -159,7 +148,6 @@ namespace FoodConnect.Backend.Application.Features.Cart.Commands
                         ShopId = item.Product!.ShopId,
                         ShopName = item.Product.Shop!.ShopName,
                         ShopStatus = item.Product.Shop.Status,
-                        // Track earliest item for shop ordering
                         FirstItemCreatedAt = sortedCartItems
                             .Where(ci => ci.Product!.ShopId == item.Product!.ShopId)
                             .Min(ci => ci.CreatedAtUtc)
@@ -176,7 +164,6 @@ namespace FoodConnect.Backend.Application.Features.Cart.Commands
                         Items = new List<CartItemResponse>() // Changed from OrderPreviewGroups
                     };
                     
-                    // Maintain creation order within shop
                     var sortedShopItems = shopGroup.OrderBy(item => item.CreatedAtUtc);
                     
                     foreach (var item in sortedShopItems)

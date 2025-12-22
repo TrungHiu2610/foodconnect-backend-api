@@ -9,9 +9,6 @@ using MediatR;
 
 namespace FoodConnect.Backend.Application.Features.Cart.Queries
 {
-    /// <summary>
-    /// Get checkout preview - shows how cart will be split into orders with shipping fees
-    /// </summary>
     public class GetCheckoutPreviewQueryHandler : IRequestHandler<GetCheckoutPreviewQuery, BaseResponse<CheckoutPreviewResponse>>
     {
         private readonly ICartRepository _cartRepository;
@@ -67,15 +64,16 @@ namespace FoodConnect.Backend.Application.Features.Cart.Queries
                 }, "Empty cart");
             }
 
-            var response = await MapCartToCheckoutPreviewAsync(cart, userId, request.CartItemIds);
+            var response = await MapCartToCheckoutPreviewAsync(cart, userId, request.CartItemIds, request.AddressId);
 
             return result.BuildSuccess(response, "Get checkout preview successfully");
         }
 
         private async Task<CheckoutPreviewResponse> MapCartToCheckoutPreviewAsync(
-            Domain.Entities.Cart cart, 
-            Guid? userId, 
-            List<Guid>? selectedCartItemIds)
+            Domain.Entities.Cart cart,
+            Guid? userId,
+            List<Guid>? selectedCartItemIds,
+            Guid? addressId = null)
         {
             var response = new CheckoutPreviewResponse
             {
@@ -83,16 +81,22 @@ namespace FoodConnect.Backend.Application.Features.Cart.Queries
                 ShopGroups = new List<CheckoutShopGroup>()
             };
 
-            // Get buyer's default address for distance/shipping calculations
             Domain.Entities.Address? buyerAddress = null;
             if (userId.HasValue)
             {
-                buyerAddress = await _addressRepository.GetDefaultAddressByUserIdAsync(userId.Value);
+                // Use specific address if provided, otherwise use default
+                if (addressId.HasValue)
+                {
+                    buyerAddress = await _addressRepository.GetByIdAsync(addressId.Value);
+                }
+                else
+                {
+                    buyerAddress = await _addressRepository.GetDefaultAddressByUserIdAsync(userId.Value);
+                }
             }
 
             if (cart.CartItems != null && cart.CartItems.Any())
             {
-                // Filter items if specific items selected for checkout
                 var itemsToCheckout = cart.CartItems;
                 if (selectedCartItemIds != null && selectedCartItemIds.Any())
                 {
@@ -101,7 +105,6 @@ namespace FoodConnect.Backend.Application.Features.Cart.Queries
                         .ToList();
                 }
 
-                // Sort cart items by CreatedAtUtc to maintain order
                 var sortedCartItems = itemsToCheckout
                     .Where(item => item.Product != null && item.Product.Shop != null)
                     .OrderBy(item => item.CreatedAtUtc)
@@ -132,7 +135,6 @@ namespace FoodConnect.Backend.Application.Features.Cart.Queries
                         OrderPreviewGroups = new List<OrderPreviewGroup>()
                     };
 
-                    // Calculate distance to shop if buyer has address
                     double? distanceKm = null;
                     if (buyerAddress != null &&
                         buyerAddress.Latitude.HasValue &&
@@ -147,7 +149,6 @@ namespace FoodConnect.Backend.Application.Features.Cart.Queries
                             shopGroup.Key.ShopLongitude.Value);
                     }
 
-                    // Group items by DeliveryType (Express/Standard) - KEY DIFFERENCE FROM GetCart
                     var groupedByDeliveryType = shopGroup
                         .GroupBy(item => item.Product!.Category?.DeliveryType ?? DeliveryTypeEnum.Standard)
                         .OrderBy(g => g.Key); // Express first, then Standard
@@ -163,7 +164,6 @@ namespace FoodConnect.Backend.Application.Features.Cart.Queries
 
                         decimal groupSubtotal = 0;
 
-                        // Sort items by creation time within delivery group
                         var sortedDeliveryItems = deliveryGroup.OrderBy(item => item.CreatedAtUtc);
 
                         foreach (var item in sortedDeliveryItems)
@@ -187,7 +187,6 @@ namespace FoodConnect.Backend.Application.Features.Cart.Queries
                             groupSubtotal += cartItem.Subtotal;
                         }
 
-                        // Calculate shipping fee for this delivery group
                         decimal shippingFee = 0;
                         bool groupCanCheckout = true;
                         var warnings = new List<string>();
@@ -220,9 +219,9 @@ namespace FoodConnect.Backend.Application.Features.Cart.Queries
                             {
                                 var shop = await _shopRepository.GetByIdAsync(shopGroup.Key.ShopId);
                                 shippingFee = _shippingFeeCalculator.CalculateShippingFee(
-                                    DeliveryTypeEnum.Standard, 
-                                    distanceKm.Value, 
-                                    buyerAddress!.City, 
+                                    DeliveryTypeEnum.Standard,
+                                    distanceKm.Value,
+                                    buyerAddress!.City,
                                     shop!.City);
                             }
                         }
@@ -250,7 +249,7 @@ namespace FoodConnect.Backend.Application.Features.Cart.Queries
                 .SelectMany(s => s.OrderPreviewGroups)
                 .SelectMany(g => g.Items)
                 .ToList();
-            
+
             var allOrderGroups = response.ShopGroups
                 .SelectMany(s => s.OrderPreviewGroups)
                 .ToList();

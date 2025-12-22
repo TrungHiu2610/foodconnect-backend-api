@@ -46,20 +46,17 @@ namespace FoodConnect.Backend.Application.Features.Shop.Commands
                 return result.BuildUnauthorized("User not found");
             }
 
-            // Get existing shop
             var shop = await _shopRepository.GetDetailByIdAsync(request.ShopId);
             if (shop == null)
             {
                 return result.BuildNotFound("Shop not found");
             }
 
-            // Check ownership
             if (shop.UserId != userId)
             {
                 return result.BuildForbidden("You don't have permission to update this shop");
             }
 
-            // Validate categories if provided
             if (request.CategoryIds != null && request.CategoryIds.Any())
             {
                 foreach (var categoryId in request.CategoryIds)
@@ -72,7 +69,6 @@ namespace FoodConnect.Backend.Application.Features.Shop.Commands
                 }
             }
 
-            // Validate payout method if provided
             if (request.PayoutMethod.HasValue)
             {
                 if (!Enum.IsDefined(typeof(PaymentMethodEnum), request.PayoutMethod.Value))
@@ -97,7 +93,6 @@ namespace FoodConnect.Backend.Application.Features.Shop.Commands
                         filesToDelete.Add(asset.AssetUrl);
                         shop.Assets.Remove(asset);
                         
-                        // Clear LogoUrl/CoverImageUrl if deleting those assets
                         if (asset.AssetType == ShopAssetTypeEnum.Logo)
                         {
                             shop.LogoUrl = null;
@@ -171,7 +166,6 @@ namespace FoodConnect.Backend.Application.Features.Shop.Commands
                     });
                 }
 
-                // Add new food safety certificates (old ones are kept unless deleted via AssetIdsToDelete)
                 if (request.FoodSafetyCertificates != null && request.FoodSafetyCertificates.Any())
                 {
                     foreach (var certificate in request.FoodSafetyCertificates)
@@ -190,7 +184,6 @@ namespace FoodConnect.Backend.Application.Features.Shop.Commands
 
                 if (request.Logo != null)
                 {
-                    // Delete old Logo asset
                     var oldLogo = shop.Assets.FirstOrDefault(a => a.AssetType == ShopAssetTypeEnum.Logo);
                     if (oldLogo != null)
                     {
@@ -225,7 +218,6 @@ namespace FoodConnect.Backend.Application.Features.Shop.Commands
                     
                     shop.Assets.Add(new Domain.Entities.ShopAsset
                     {
-                        // EF Core will auto-generate Id via ValueGeneratedOnAdd()
                         ShopId = shop.Id,
                         AssetUrl = url,
                         AssetType = ShopAssetTypeEnum.CoverImage
@@ -303,7 +295,6 @@ namespace FoodConnect.Backend.Application.Features.Shop.Commands
                     }
                     catch
                     {
-                        // Ignore invalid JSON
                     }
                 }
 
@@ -334,7 +325,6 @@ namespace FoodConnect.Backend.Application.Features.Shop.Commands
             {
                 await transaction.RollbackAsync(cancellationToken);
                 
-                // Cleanup newly uploaded files
                 if (uploadedFiles.Any())
                 {
                     foreach (var fileUrl in uploadedFiles)

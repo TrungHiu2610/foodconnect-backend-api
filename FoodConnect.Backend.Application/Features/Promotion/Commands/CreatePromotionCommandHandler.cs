@@ -128,7 +128,6 @@ namespace FoodConnect.Backend.Application.Features.Promotion.Commands
 
                 await _unitOfWork.CommitTransactionAsync(transaction);
 
-                // Send notification to shop owner
                 var fullPromotion = await _promotionRepository.GetDetailByIdAsync(promotion.Id);
                 if (fullPromotion != null)
                 {

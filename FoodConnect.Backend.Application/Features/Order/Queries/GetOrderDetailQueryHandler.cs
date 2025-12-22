@@ -39,19 +39,18 @@ namespace FoodConnect.Backend.Application.Features.Order.Queries
                 return result.BuildNotFound("Order not found");
             }
 
-            // Check if user has permission to view this order
             var userId = _currentUserService.UserId.Value;
             var isBuyer = order.BuyerId == userId;
             var isSeller = order.Shop?.UserId == userId;
+            var isAdmin = _currentUserService.Role == "Admin";
 
-            if (!isBuyer && !isSeller)
+            if (!isBuyer && !isSeller && !isAdmin)
             {
                 return result.BuildForbidden("You don't have permission to view this order");
             }
 
             var orderDto = OrderMapper.MapToDetailDto(order);
             
-            // Calculate review status and mark reviewed items (only for buyers and completed orders)
             if (isBuyer && order.Status == OrderStatusEnum.Completed)
             {
                 var reviews = await _reviewRepository.GetAllAsync();
@@ -59,13 +58,11 @@ namespace FoodConnect.Backend.Application.Features.Order.Queries
                     .Where(r => r.OrderId == request.OrderId && r.BuyerId == userId)
                     .ToList();
                 
-                // Mark which items have been reviewed
                 foreach (var item in orderDto.OrderItems)
                 {
                     item.IsReviewed = orderReviews.Any(r => r.ProductId == item.ProductId);
                 }
                 
-                // Calculate overall review status
                 var totalItems = orderDto.OrderItems.Count;
                 var reviewedItems = orderDto.OrderItems.Count(i => i.IsReviewed);
                 

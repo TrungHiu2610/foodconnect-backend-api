@@ -12,7 +12,6 @@ namespace FoodConnect.Backend.Application.Commons.DTOs.Notifications
         public DateTime CreatedAt { get; set; }
         public DateTime? ReadAt { get; set; }
         
-        // Optional data
         public Guid? OrderId { get; set; }
         public string? OrderCode { get; set; }
         public Guid? ShopId { get; set; }
@@ -21,6 +20,8 @@ namespace FoodConnect.Backend.Application.Commons.DTOs.Notifications
         public bool RequiresSound { get; set; }
         public int? SoundRepeatIntervalSeconds { get; set; }
         public bool RequiresAction { get; set; }
+        public string? Priority { get; set; }
+        public string? ReferenceId { get; set; }
     }
     
     public class CreateNotificationDto

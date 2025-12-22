@@ -22,10 +22,6 @@ namespace FoodConnect.Backend.Application.Features.Address.Commands
                 .NotEmpty().WithMessage("Ward is required")
                 .MaximumLength(200).WithMessage("Ward must not exceed 200 characters");
 
-            RuleFor(x => x.District)
-                .NotEmpty().WithMessage("District is required")
-                .MaximumLength(200).WithMessage("District must not exceed 200 characters");
-
             RuleFor(x => x.City)
                 .NotEmpty().WithMessage("City is required")
                 .MaximumLength(200).WithMessage("City must not exceed 200 characters");

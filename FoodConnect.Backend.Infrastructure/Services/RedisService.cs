@@ -7,9 +7,11 @@ namespace FoodConnect.Backend.Infrastructure.Services
     public class RedisService : IRedisService
     {
         private readonly IDatabase _db;
+        private readonly IConnectionMultiplexer _redis;
 
         public RedisService(IConnectionMultiplexer redis)
         {
+            _redis = redis;
             _db = redis.GetDatabase();
         }
         public async Task SetAsync<T>(string key, T value, TimeSpan expiration)
@@ -32,6 +34,17 @@ namespace FoodConnect.Backend.Infrastructure.Services
         public async Task<bool> ExistsAsync(string key)
         {
             return await _db.KeyExistsAsync(key);
+        }
+
+        public async Task<long> DeleteByPatternAsync(string pattern)
+        {
+            var server = _redis.GetServer(_redis.GetEndPoints().First());
+            var keys = server.Keys(pattern: pattern).ToArray();
+            
+            if (keys.Length == 0)
+                return 0;
+
+            return await _db.KeyDeleteAsync(keys);
         }
     }
 }

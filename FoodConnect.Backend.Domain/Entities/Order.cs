@@ -1,9 +1,4 @@
 ﻿using FoodConnect.Backend.Domain.Enums;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace FoodConnect.Backend.Domain.Entities
 {
@@ -16,6 +11,7 @@ namespace FoodConnect.Backend.Domain.Entities
         public double Total { get; set; }
         public OrderStatusEnum Status { get; set; }
         public PaymentMethodEnum PaymentMethod { get; set; }
+        public PaymentStatusEnum PaymentStatus { get; set; } = PaymentStatusEnum.Unpaid;
         public DeliveryTypeEnum DeliveryType { get; set; } = DeliveryTypeEnum.Standard;
         public double? DistanceKm { get; set; }
         public string ShippingAddressJson { get; set; } = string.Empty;
@@ -27,7 +23,9 @@ namespace FoodConnect.Backend.Domain.Entities
         public decimal? PromotionDiscountAmount { get; set; }
         public string? PromotionCode { get; set; }
         
-        public string? DeliveryProofImageUrl { get; set; }
+        public string? PackagePhotoUrl { get; set; } // Standard: Ảnh kiện hàng trước khi giao shipper
+        public string? TrackingCode { get; set; } // Standard: Mã vận đơn
+        public string? DeliveryProofImageUrl { get; set; } // Ảnh minh chứng giao hàng thành công
         
         public DateTime? AcceptedAt { get; set; }
         public DateTime? PreparedAt { get; set; }
@@ -43,5 +41,8 @@ namespace FoodConnect.Backend.Domain.Entities
         public Shop Shop { get; set; } = null!;
         public ICollection<OrderItem> OrderItems { get; set; } = new List<OrderItem>();
         public ICollection<ProductReview> ProductReviews { get; set; } = new List<ProductReview>();
+        public Guid? OrderComplaintId { get; set; }
+        public OrderComplaint? OrderComplaint { get; set; }
+        public ICollection<PaymentTransaction> PaymentTransactions { get; set; } = new List<PaymentTransaction>();
     }
 }

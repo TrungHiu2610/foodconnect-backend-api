@@ -54,10 +54,6 @@ namespace FoodConnect.Backend.API.Controllers
             return result != null ? (result.Success ? Ok(result) : BadRequest(result)) : BadRequest();
         }
 
-        /// <summary>
-        /// Get cart item count for header badge (lightweight)
-        /// Header: X-Session-Id (for guest users)
-        /// </summary>
         [HttpGet]
         public async Task<IActionResult> GetCartCount()
         {
@@ -76,11 +72,6 @@ namespace FoodConnect.Backend.API.Controllers
             return StatusCode(result.StatusCode, result);
         }
 
-        /// <summary>
-        /// Get checkout preview - shows how cart will be split into orders with shipping fees
-        /// Used for Checkout Page (not Cart Page)
-        /// Header: X-Session-Id (for guest users)
-        /// </summary>
         [HttpPost]
         public async Task<IActionResult> GetCheckoutPreview([FromBody] GetCheckoutPreviewQuery query)
         {

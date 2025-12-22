@@ -1,4 +1,4 @@
-﻿using FoodConnect.Backend.Domain.Entities;
+using FoodConnect.Backend.Domain.Entities;
 using FoodConnect.Backend.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
@@ -12,26 +12,6 @@ namespace FoodConnect.Backend.Infrastructure.Persistence.Configurations
 {
     public class ProductConfiguration : IEntityTypeConfiguration<Product>
     {
-        //public class Product : BaseEntity
-        //{
-        //    public string Name { get; set; }
-        //    public string? Description { get; set; }
-        //    public decimal Price { get; set; }
-        //    public string Ingredients { get; set; }
-        //    public string Weight { get; set; }
-        //    public string ExpiryDate { get; set; }
-        //    public string StorageInstructions { get; set; }
-        //    public string UsageInstructions { get; set; }
-        //    public ProductStatusEnum Status { get; set; } = ProductStatusEnum.Draft;
-        //    public bool IsAvailable { get; set; } = true;
-        //    public int? StockQuantity { get; set; }
-
-        //    public Guid CategoryId { get; set; }
-        //    public virtual Category Category { get; set; }
-        //    public Guid ShopId { get; set; }
-        //    public virtual Shop Shop { get; set; }
-        //    public ICollection<ProductAsset> ProductAssets { get; set; } = new List<ProductAsset>();
-        //}
         public void Configure(EntityTypeBuilder<Product> builder)
         {
             builder.Property(p => p.Name)
@@ -61,7 +41,6 @@ namespace FoodConnect.Backend.Infrastructure.Persistence.Configurations
                 .IsRequired()
                 .HasDefaultValue(ProductStatusEnum.Draft);
             
-            // Ignore calculated fields (not mapped to database)
             builder.Ignore(p => p.CalculatedDistance);
             
             builder.HasOne(p => p.Category)

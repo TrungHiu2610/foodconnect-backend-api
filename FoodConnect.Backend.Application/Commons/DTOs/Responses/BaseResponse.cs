@@ -2,11 +2,11 @@
 {
     public class BaseResponse<T> where T : class
     {
-        public bool Success { get; private set; }
-        public string Message { get; private set; }
-        public int StatusCode { get; private set; }
-        public T? Data { get; private set; }
-        public List<string>? Errors { get; private set; }
+        public bool Success { get;  set; }
+        public string Message { get;  set; }
+        public int StatusCode { get;  set; }
+        public T? Data { get;  set; }
+        public List<string>? Errors { get;  set; }
 
         public BaseResponse()
         {

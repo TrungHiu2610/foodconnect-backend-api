@@ -1,9 +1,12 @@
-﻿using AutoMapper;
+using AutoMapper;
 using FoodConnect.Backend.Application.Commons.DTOs;
 using FoodConnect.Backend.Application.Commons.DTOs.Responses.Category;
 using FoodConnect.Backend.Application.Commons.DTOs.Responses.Product;
 using FoodConnect.Backend.Application.Commons.DTOs.Responses.Promotion;
 using FoodConnect.Backend.Application.Commons.DTOs.Responses.Shop;
+using FoodConnect.Backend.Application.Commons.DTOs.Responses.Payment;
+using FoodConnect.Backend.Application.Commons.DTOs.Responses.SystemConfig;
+using FoodConnect.Backend.Application.Commons.DTOs.Responses.Withdrawal;
 using FoodConnect.Backend.Application.Commons.DTOs.Responses.Wishlist;
 using FoodConnect.Backend.Application.Features.Category.Commands;
 using FoodConnect.Backend.Application.Features.Product.Commands;
@@ -19,7 +22,6 @@ namespace FoodConnect.Backend.Application.Commons.Behaviors
         {
             #region product mappings
 
-            // create product
             CreateMap<CreateProductCommand, Product>()
                 .ForMember(dest => dest.Status,
                     opt => opt.ConvertUsing(new StringToEnumConverter<ProductStatusEnum>(), src => src.Status))
@@ -31,7 +33,6 @@ namespace FoodConnect.Backend.Application.Commons.Behaviors
                 .ForMember(dest => dest.Product, opt => opt.Ignore())
                 .ReverseMap();
 
-            // get product
             CreateMap<ProductAssetGetDto, ProductAsset>()
                 .ForMember(dest => dest.ProductId, opt => opt.Ignore())
                 .ForMember(dest => dest.Product, opt => opt.Ignore())
@@ -47,7 +48,7 @@ namespace FoodConnect.Backend.Application.Commons.Behaviors
                 .ForMember(dest => dest.DeliveryType,
                            opt => opt.MapFrom(src => src.Category.DeliveryType.ToString()))
                 .ForMember(dest => dest.ProductAssets,
-                           opt => opt.MapFrom(src => src.ProductAssets))
+                           opt => opt.MapFrom(src => src.ProductAssets.OrderByDescending(pa => pa.IsThumbnail)))
                 .ForMember(dest => dest.ShopName,
                            opt => opt.MapFrom(src => src.Shop.ShopName))
                 .ForMember(dest => dest.ShopId,
@@ -69,7 +70,6 @@ namespace FoodConnect.Backend.Application.Commons.Behaviors
                 .ForMember(dest => dest.ShopId,
                            opt => opt.MapFrom(src => src.Shop.Id));
 
-            // update product
             CreateMap<UpdateProductCommand, Product>()
                 .ForMember(dest => dest.Id, opt => opt.Ignore())
                 .ForMember(dest => dest.CategoryId, opt => opt.Ignore())
@@ -89,7 +89,6 @@ namespace FoodConnect.Backend.Application.Commons.Behaviors
             #endregion
 
             #region category mappings
-            // get category
             CreateMap<Category, GetListCategoryItem>()
                 .ForMember(dest => dest.ParentName,
                     opt => opt.MapFrom(src => src.Parent.Name))
@@ -98,14 +97,12 @@ namespace FoodConnect.Backend.Application.Commons.Behaviors
                 .ForMember(dest => dest.ProductCount,
                     opt => opt.MapFrom(src => src.Products.Count()));
 
-            // create category
             CreateMap<CreateCategoryCommand, Category>()
                 .ForMember(dest=>dest.DeliveryType,
                     opt => opt.ConvertUsing(new StringToEnumConverter<DeliveryTypeEnum>(), src => src.DeliveryType))
                 .ForMember(dest => dest.Parent, opt => opt.Ignore())
                 .ForMember(dest => dest.Products, opt => opt.Ignore());
 
-            // update category
             CreateMap<UpdateCategoryCommand, Category>()
                 .ForMember(dest => dest.Id, opt => opt.Ignore())
                 .ForMember(dest => dest.ParentId, opt => opt.Ignore())
@@ -118,15 +115,14 @@ namespace FoodConnect.Backend.Application.Commons.Behaviors
             #endregion
 
             #region shop mappings
-            // get shop detail
             CreateMap<Domain.Entities.Shop, ShopResponse>()
                 .ForMember(dest => dest.Status, opt => opt.MapFrom(src => (int)src.Status))
                 .ForMember(dest => dest.StatusName, opt => opt.MapFrom(src => src.Status.ToString()))
                 .ForMember(dest => dest.PayoutMethod, opt => opt.MapFrom(src => (int)src.PayoutMethod))
                 .ForMember(dest => dest.PayoutMethodName, opt => opt.MapFrom(src => src.PayoutMethod.ToString()))
-                .ForMember(dest => dest.OwnerName, opt => opt.MapFrom(src => src.User.FullName))
-                .ForMember(dest => dest.Phone, opt => opt.MapFrom(src => src.User.PhoneNumber))
-                .ForMember(dest => dest.Email, opt => opt.MapFrom(src => src.User.Email))
+                .ForMember(dest => dest.OwnerName, opt => opt.MapFrom(src => string.IsNullOrEmpty(src.SellerFullName) ? src.User.FullName : src.SellerFullName))
+                .ForMember(dest => dest.Phone, opt => opt.MapFrom(src => string.IsNullOrEmpty(src.SellerPhone) ? src.User.PhoneNumber : src.SellerPhone))
+                .ForMember(dest => dest.Email, opt => opt.MapFrom(src => string.IsNullOrEmpty(src.SellerEmail) ? src.User.Email : src.SellerEmail))
                 .ForMember(dest => dest.Address, opt => opt.MapFrom(src => 
                     string.Join(", ", new[] { src.Street, src.Ward, src.District, src.City, src.Country }
                         .Where(s => !string.IsNullOrWhiteSpace(s)))))
@@ -145,17 +141,16 @@ namespace FoodConnect.Backend.Application.Commons.Behaviors
 
             CreateMap<ShopOperatingHour, ShopOperatingHourResponse>();
 
-            // get shop list
             CreateMap<Domain.Entities.Shop, ShopListResponse>()
                 .ForMember(dest => dest.Status, opt => opt.MapFrom(src => (int)src.Status))
                 .ForMember(dest => dest.StatusName, opt => opt.MapFrom(src => src.Status.ToString()))
-                .ForMember(dest => dest.OwnerName, opt => opt.MapFrom(src => src.User.FullName))
-                .ForMember(dest => dest.Phone, opt => opt.MapFrom(src => src.User.PhoneNumber))
+                .ForMember(dest => dest.OwnerName, opt => opt.MapFrom(src => string.IsNullOrEmpty(src.SellerFullName) ? src.User.FullName : src.SellerFullName))
+                .ForMember(dest => dest.Phone, opt => opt.MapFrom(src => string.IsNullOrEmpty(src.SellerPhone) ? src.User.PhoneNumber : src.SellerPhone))
+                .ForMember(dest=>dest.Email, opt => opt.MapFrom(src => string.IsNullOrEmpty(src.SellerEmail) ? src.User.Email : src.SellerEmail))
                 .ForMember(dest => dest.Address, opt => opt.MapFrom(src => 
                     string.Join(", ", new[] { src.Street, src.Ward, src.District, src.City, src.Country }
                         .Where(s => !string.IsNullOrWhiteSpace(s)))));
 
-            // update shop - only map non-null properties
             CreateMap<UpdateShopCommand, Domain.Entities.Shop>()
                 .ForMember(dest => dest.Id, opt => opt.Ignore())
                 .ForMember(dest => dest.UserId, opt => opt.Ignore())
@@ -178,7 +173,6 @@ namespace FoodConnect.Backend.Application.Commons.Behaviors
             #endregion
 
             #region address mappings
-            // update address - only map non-null properties
             CreateMap<Application.Features.Address.Commands.UpdateAddressCommand, Domain.Entities.Address>()
                 .ForMember(dest => dest.Id, opt => opt.Ignore())
                 .ForMember(dest => dest.UserId, opt => opt.Ignore())
@@ -192,12 +186,10 @@ namespace FoodConnect.Backend.Application.Commons.Behaviors
 
             #region product review mappings
 
-            // ProductReviewAsset → ProductReviewAssetDto
             CreateMap<ProductReviewAsset, ProductReviewAssetDto>()
                 .ForMember(dest => dest.AssetType, opt => opt.MapFrom(src => (int)src.AssetType))
                 .ForMember(dest => dest.AssetTypeName, opt => opt.MapFrom(src => src.AssetType.ToString()));
 
-            // ProductReview → ProductReviewResponse
             CreateMap<ProductReview, ProductReviewResponse>()
                 .ForMember(dest => dest.ProductName, opt => opt.MapFrom(src => src.Product.Name))
                 .ForMember(dest => dest.BuyerName, opt => opt.MapFrom(src => src.Buyer.FullName))
@@ -239,6 +231,36 @@ namespace FoodConnect.Backend.Application.Commons.Behaviors
                                 Status = src.Shop.Status.ToString()
                             }
                             : null));
+
+            #endregion
+
+            #region payment transaction mappings
+
+            CreateMap<PaymentTransaction, PaymentTransactionResponse>()
+                .ForMember(dest => dest.OrderCode, opt => opt.MapFrom(src => src.Order.OrderCode))
+                .ForMember(dest => dest.Status, opt => opt.MapFrom(src => (int)src.Status))
+                .ForMember(dest => dest.StatusName, opt => opt.MapFrom(src => src.Status.ToString()))
+                .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(src => src.CreatedAtUtc));
+
+            #endregion
+
+            #region wallet mappings
+
+            CreateMap<Domain.Entities.Wallet, Application.Commons.DTOs.Responses.Wallet.WalletResponse>()
+                .ForMember(dest => dest.WalletType, opt => opt.MapFrom(src => (int)src.WalletType))
+                .ForMember(dest => dest.WalletTypeName, opt => opt.MapFrom(src => src.WalletType.ToString()))
+                .ForMember(dest => dest.AvailableBalance, opt => opt.MapFrom(src => src.AvailableBalance))
+                .ForMember(dest => dest.Status, opt => opt.MapFrom(src => (int)src.Status))
+                .ForMember(dest => dest.StatusName, opt => opt.MapFrom(src => src.Status.ToString()))
+                .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(src => src.CreatedAtUtc));
+
+            CreateMap<WalletTransaction, Application.Commons.DTOs.Responses.Wallet.WalletTransactionResponse>()
+                .ForMember(dest => dest.OrderCode, opt => opt.MapFrom(src => src.Order != null ? src.Order.OrderCode : null))
+                .ForMember(dest => dest.TransactionType, opt => opt.MapFrom(src => (int)src.TransactionType))
+                .ForMember(dest => dest.TransactionTypeName, opt => opt.MapFrom(src => src.TransactionType.ToString()))
+                .ForMember(dest => dest.Status, opt => opt.MapFrom(src => (int)src.Status))
+                .ForMember(dest => dest.StatusName, opt => opt.MapFrom(src => src.Status.ToString()))
+                .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(src => src.CreatedAtUtc));
 
             #endregion
 
@@ -302,6 +324,56 @@ namespace FoodConnect.Backend.Application.Commons.Behaviors
                         IsAvailable = pp.Product.IsAvailable,
                         StockQuantity = pp.Product.StockQuantity
                     }).ToList()));
+
+            #endregion
+
+            #region system config mappings
+
+            CreateMap<SystemConfig, SystemConfigResponse>()
+                .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(src => src.CreatedAtUtc))
+                .ForMember(dest => dest.UpdatedAt, opt => opt.MapFrom(src => src.UpdatedAtUtc))
+                .ForMember(dest => dest.Type, opt => opt.MapFrom(src => (int)src.Type))
+                .ForMember(dest => dest.TypeName, opt => opt.MapFrom(src => src.Type.ToString()));
+
+            #endregion
+
+            #region withdrawal mappings
+
+            CreateMap<WithdrawalRequest, WithdrawalRequestListResponse>()
+                .ForMember(dest => dest.SellerName, opt => opt.MapFrom(src => src.Wallet != null && src.Wallet.User != null ? src.Wallet.User.FullName : string.Empty))
+                .ForMember(dest => dest.Status, opt => opt.MapFrom(src => (int)src.Status))
+                .ForMember(dest => dest.StatusName, opt => opt.MapFrom(src => src.Status.ToString()))
+                .ForMember(dest => dest.PaymentMethod, opt => opt.MapFrom(src => (int)src.PaymentMethod))
+                .ForMember(dest => dest.PaymentMethodName, opt => opt.MapFrom(src => src.PaymentMethod.ToString()))
+                .ForMember(dest => dest.RequestedAt, opt => opt.MapFrom(src => src.CreatedAtUtc))
+                .ForMember(dest => dest.CompletedAt, opt => opt.MapFrom(src => src.CompletedAt));
+
+            CreateMap<WithdrawalRequest, WithdrawalRequestResponse>()
+                .ForMember(dest => dest.SellerName, opt => opt.MapFrom(src => src.Wallet != null && src.Wallet.User != null ? src.Wallet.User.FullName : string.Empty))
+                .ForMember(dest => dest.Status, opt => opt.MapFrom(src => (int)src.Status))
+                .ForMember(dest => dest.StatusName, opt => opt.MapFrom(src => src.Status.ToString()))
+                .ForMember(dest => dest.PaymentMethod, opt => opt.MapFrom(src => (int)src.PaymentMethod))
+                .ForMember(dest => dest.PaymentMethodName, opt => opt.MapFrom(src => src.PaymentMethod.ToString()))
+                .ForMember(dest => dest.RequestedAt, opt => opt.MapFrom(src => src.CreatedAtUtc))
+                .ForMember(dest => dest.ProcessedByName, opt => opt.MapFrom(src => src.ProcessedByAdmin != null ? src.ProcessedByAdmin.FullName : null));
+
+            #endregion
+
+            #region chat mappings
+
+            CreateMap<Conversation, Application.Commons.DTOs.Responses.Chat.ConversationResponse>()
+                .ForMember(dest => dest.BuyerName, opt => opt.MapFrom(src => src.Buyer.FullName))
+                .ForMember(dest => dest.BuyerAvatar, opt => opt.MapFrom(src => src.Buyer.AvatarUrl))
+                .ForMember(dest => dest.SellerName, opt => opt.MapFrom(src => src.Seller.FullName))
+                .ForMember(dest => dest.SellerAvatar, opt => opt.MapFrom(src => src.Seller.AvatarUrl))
+                .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(src => src.CreatedAtUtc));
+
+            CreateMap<Message, Application.Commons.DTOs.Responses.Chat.MessageResponse>()
+                .ForMember(dest => dest.SenderName, opt => opt.MapFrom(src => src.Sender.FullName))
+                .ForMember(dest => dest.SenderAvatar, opt => opt.MapFrom(src => src.Sender.AvatarUrl))
+                .ForMember(dest => dest.MessageType, opt => opt.MapFrom(src => (int)src.MessageType))
+                .ForMember(dest => dest.MessageTypeName, opt => opt.MapFrom(src => src.MessageType.ToString()))
+                .ForMember(dest => dest.CreatedAt, opt => opt.MapFrom(src => src.CreatedAtUtc));
 
             #endregion
         }

@@ -27,7 +27,6 @@ namespace FoodConnect.Backend.Infrastructure.Hubs
                     UserConnections[userId].Add(Context.ConnectionId);
                 }
 
-                // Add to user's personal group
                 await Groups.AddToGroupAsync(Context.ConnectionId, $"user_{userId}");
                 
                 Console.WriteLine($"[SignalR] User {userId} connected. ConnectionId: {Context.ConnectionId}");
@@ -62,7 +61,6 @@ namespace FoodConnect.Backend.Infrastructure.Hubs
             await base.OnDisconnectedAsync(exception);
         }
 
-        // Client can call this to join specific groups
         public async Task JoinOrderGroup(string orderId)
         {
             await Groups.AddToGroupAsync(Context.ConnectionId, $"order_{orderId}");
@@ -83,7 +81,6 @@ namespace FoodConnect.Backend.Infrastructure.Hubs
             await Groups.RemoveFromGroupAsync(Context.ConnectionId, $"shop_{shopId}");
         }
 
-        // Helper method to get user's connection IDs
         public static List<string> GetUserConnectionIds(string userId)
         {
             lock (Lock)
@@ -94,7 +91,6 @@ namespace FoodConnect.Backend.Infrastructure.Hubs
             }
         }
 
-        // Helper to check if user is online
         public static bool IsUserOnline(string userId)
         {
             lock (Lock)
@@ -103,7 +99,6 @@ namespace FoodConnect.Backend.Infrastructure.Hubs
             }
         }
 
-        // Client can call to test connection
         public async Task Ping()
         {
             await Clients.Caller.ReceiveNotification(new NotificationDto

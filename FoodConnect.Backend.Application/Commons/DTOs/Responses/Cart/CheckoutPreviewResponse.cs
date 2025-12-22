@@ -1,18 +1,11 @@
-namespace FoodConnect.Backend.Application.Commons.DTOs.Responses.Cart
+﻿namespace FoodConnect.Backend.Application.Commons.DTOs.Responses.Cart
 {
-    /// <summary>
-    /// Checkout preview response - shows how cart will be split into orders
-    /// </summary>
     public class CheckoutPreviewResponse
     {
         public Guid CartId { get; set; }
         public List<CheckoutShopGroup> ShopGroups { get; set; } = new List<CheckoutShopGroup>();
         public CheckoutSummary Summary { get; set; } = new CheckoutSummary();
     }
-
-    /// <summary>
-    /// Shop group in checkout - contains delivery type groups with shipping fees
-    /// </summary>
     public class CheckoutShopGroup
     {
         public Guid ShopId { get; set; }
@@ -23,10 +16,6 @@ namespace FoodConnect.Backend.Application.Commons.DTOs.Responses.Cart
         public decimal ShopTotalShipping { get; set; }
         public decimal ShopGrandTotal { get; set; }
     }
-
-    /// <summary>
-    /// Checkout summary - overall order breakdown
-    /// </summary>
     public class CheckoutSummary
     {
         public int TotalItems { get; set; }

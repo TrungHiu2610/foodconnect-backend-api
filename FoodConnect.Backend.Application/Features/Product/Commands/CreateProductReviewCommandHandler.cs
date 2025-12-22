@@ -18,6 +18,7 @@ namespace FoodConnect.Backend.Application.Features.Product.Commands
         private readonly IUnitOfWork _unitOfWork;
         private readonly ICurrentUserService _currentUserService;
         private readonly IFileStorageService _fileStorageService;
+        private readonly IReviewModerationService _reviewModerationService;
 
         public CreateProductReviewCommandHandler(
             IOrderRepository orderRepository,
@@ -26,7 +27,8 @@ namespace FoodConnect.Backend.Application.Features.Product.Commands
             IBaseRepository<ProductReviewAsset> reviewAssetRepository,
             IUnitOfWork unitOfWork,
             ICurrentUserService currentUserService,
-            IFileStorageService fileStorageService)
+            IFileStorageService fileStorageService,
+            IReviewModerationService reviewModerationService)
         {
             _orderRepository = orderRepository;
             _productRepository = productRepository;
@@ -35,6 +37,7 @@ namespace FoodConnect.Backend.Application.Features.Product.Commands
             _unitOfWork = unitOfWork;
             _currentUserService = currentUserService;
             _fileStorageService = fileStorageService;
+            _reviewModerationService = reviewModerationService;
         }
 
         public async Task<BaseResponse<CreateOrUpdateResponse>> Handle(CreateProductReviewCommand request, CancellationToken cancellationToken)
@@ -45,40 +48,34 @@ namespace FoodConnect.Backend.Application.Features.Product.Commands
             await using var transaction = await _unitOfWork.BeginTransactionAsync();
             try
             {
-                // Check authorization
                 var userId = _currentUserService.UserId;
                 if (!userId.HasValue)
                 {
                     return result.BuildUnauthorized();
                 }
 
-                // Get order with items
                 var order = await _orderRepository.GetOrderWithDetailsAsync(request.OrderId);
                 if (order == null)
                 {
                     return result.BuildNotFound("Order not found");
                 }
 
-                // Verify buyer owns this order
                 if (order.BuyerId != userId.Value)
                 {
                     return result.BuildForbidden("You can only review products from your own orders");
                 }
 
-                // Validate order is completed
                 if (order.Status != OrderStatusEnum.Completed)
                 {
                     return result.BuildFail("You can only review products after the order is completed");
                 }
 
-                // Verify product is in this order
                 var orderItem = order.OrderItems.FirstOrDefault(oi => oi.ProductId == request.ProductId);
                 if (orderItem == null)
                 {
                     return result.BuildFail("Product not found in this order");
                 }
 
-                // Check if already reviewed
                 var existingReview = await _reviewRepository.GetAsync(
                     r => r.OrderId == request.OrderId && r.ProductId == request.ProductId && r.BuyerId == userId.Value
                 );
@@ -87,27 +84,35 @@ namespace FoodConnect.Backend.Application.Features.Product.Commands
                     return result.BuildConflict("You have already reviewed this product");
                 }
 
-                // Create review
+                // Tầng 1: Toxic Keyword -> Tầng 2: OpenAI Moderation -> Tầng 3: Spam Detection
+                var moderationResult = await _reviewModerationService.ModerateReviewAsync(
+                    request.Comment ?? string.Empty,
+                    userId.Value,
+                    request.ProductId
+                );
+
                 var review = new ProductReview
                 {
                     OrderId = request.OrderId,
                     ProductId = request.ProductId,
                     BuyerId = userId.Value,
                     Rating = request.Rating,
-                    Comment = request.Comment
+                    Comment = request.Comment,
+                    Status = moderationResult.Status,
+                    RejectionReason = moderationResult.RejectionReason,
+                    RejectionDetails = moderationResult.Details,
+                    ModeratedAt = DateTime.UtcNow
                 };
 
                 await _reviewRepository.AddAsync(review);
                 await _unitOfWork.SaveChangesAsync(); // Save to get review.Id
 
-                // Upload review assets (images/videos) if provided
                 if (request.ReviewAssets != null && request.ReviewAssets.Any())
                 {
                     for (int i = 0; i < request.ReviewAssets.Count; i++)
                     {
                         var file = request.ReviewAssets[i];
                         
-                        // Determine asset type and S3 directory
                         var assetType = file.ContentType.StartsWith("image/") 
                             ? ProductAssetTypeEnum.Image 
                             : ProductAssetTypeEnum.Video;
@@ -116,14 +121,12 @@ namespace FoodConnect.Backend.Application.Features.Product.Commands
                             ? AWSDirectoryConstant.IMAGE_REVIEW 
                             : AWSDirectoryConstant.VIDEO_REVIEW;
 
-                        // Upload file to S3
                         var assetUrl = await _fileStorageService.UploadFileAsync(
                             file,
                             $"{prefix}/{request.ProductId}"
                         );
                         uploadedAssetUrls.Add(assetUrl);
 
-                        // Create ProductReviewAsset record
                         var reviewAsset = new ProductReviewAsset
                         {
                             ProductReviewId = review.Id,
@@ -140,16 +143,44 @@ namespace FoodConnect.Backend.Application.Features.Product.Commands
 
                 await _unitOfWork.CommitTransactionAsync(transaction);
 
+                var (message, statusCode) = moderationResult.Status switch
+                {
+                    ReviewStatusEnum.Approved => 
+                        ("Đánh giá sản phẩm đã được gửi và hiển thị thành công!", 200),
+                    
+                    ReviewStatusEnum.Toxic => 
+                        ("Review của bạn chứa nội dung không phù hợp hoặc vi phạm quy định cộng đồng. " +
+                         $"Lý do: {moderationResult.Details}. " +
+                         "Review của bạn đã được lưu lại để quản trị viên xem xét. " +
+                         "Nếu tiếp tục vi phạm, tài khoản của bạn có thể bị khóa.", 
+                         400),
+                    
+                    ReviewStatusEnum.Spam => 
+                        ("Review của bạn bị phát hiện là spam hoặc không có nội dung. " +
+                         $"Lý do: {moderationResult.Details}. " +
+                         "Review của bạn đã được lưu lại để quản trị viên xem xét. " +
+                         "Vui lòng viết đánh giá chi tiết và chân thực hơn. " +
+                         "Nếu tiếp tục vi phạm, tài khoản của bạn có thể bị khóa.",
+                         400),
+                    
+                    _ => ("Review đã được gửi để kiểm duyệt.", 200)
+                };
+
+                if (moderationResult.Status == ReviewStatusEnum.Toxic || 
+                    moderationResult.Status == ReviewStatusEnum.Spam)
+                {
+                    return result.BuildFail(message, statusCode);
+                }
+
                 return result.BuildSuccess(
                     new CreateOrUpdateResponse { Id = review.Id },
-                    "Product review submitted successfully"
+                    message
                 );
             }
             catch (Exception ex)
             {
                 await transaction.RollbackAsync();
 
-                // Delete all uploaded assets if transaction fails
                 foreach (var assetUrl in uploadedAssetUrls)
                 {
                     try
@@ -158,7 +189,6 @@ namespace FoodConnect.Backend.Application.Features.Product.Commands
                     }
                     catch
                     {
-                        // Log but don't fail if cleanup fails
                     }
                 }
 

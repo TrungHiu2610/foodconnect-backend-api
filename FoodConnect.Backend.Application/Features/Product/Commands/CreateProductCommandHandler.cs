@@ -1,4 +1,4 @@
-﻿using AutoMapper;
+using AutoMapper;
 using FoodConnect.Backend.Application.Commons.Constants;
 using FoodConnect.Backend.Application.Commons.DTOs.Responses;
 using FoodConnect.Backend.Application.Commons.DTOs.Responses.Product;
@@ -70,14 +70,12 @@ namespace FoodConnect.Backend.Application.Features.Product.Commands
                 return result.BuildFail("Category not found");
             }
 
-            // Validate that category is a leaf category (no children)
             var hasChildren = await _categoryRepository.HasChildrenAsync(request.CategoryId);
             if (hasChildren)
             {
                 return result.BuildFail("Product can only be assigned to a leaf category (category without sub-categories)");
             }
 
-            // Validate that category belongs to shop's registered categories (including children)
             var shopCategoryIds = await _shopRepository.GetAllCategoryIdsForShopAsync(shop.Id);
             if (!shopCategoryIds.Contains(request.CategoryId))
             {
@@ -88,15 +86,12 @@ namespace FoodConnect.Backend.Application.Features.Product.Commands
             product.ShopId = shop.Id;
             product.Id = Guid.NewGuid();
 
-            // Apply inventory logic based on DeliveryType
             if (category.DeliveryType == DeliveryTypeEnum.Standard)
             {
-                // Standard products: Auto-set IsAvailable based on stock only
                 product.IsAvailable = request.StockQuantity > 0;
             }
             else
             {
-                // Express products: Use seller's IsAvailable setting, ignore stock
                 product.IsAvailable = request.IsAvailable;
                 product.StockQuantity = null;
             }
@@ -108,7 +103,6 @@ namespace FoodConnect.Backend.Application.Features.Product.Commands
             {
                 if (request.ProductAssets != null)
                 {
-                    // validate thumbnail
                     if (request.ProductAssets.All(a => !a.IsThumbnail))
                     {
                         return result.BuildFail("Thumbnail is required");

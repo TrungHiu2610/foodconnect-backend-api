@@ -10,7 +10,6 @@ namespace FoodConnect.Backend.Application.Features.Shop.Commands
                 .NotEmpty().WithMessage("Shop name is required")
                 .MaximumLength(200).WithMessage("Shop name must not exceed 200 characters");
 
-            // Seller information validation
             RuleFor(x => x.SellerFullName)
                 .NotEmpty().WithMessage("Seller full name is required")
                 .MaximumLength(100).WithMessage("Seller full name must not exceed 100 characters");
@@ -51,7 +50,6 @@ namespace FoodConnect.Backend.Application.Features.Shop.Commands
                 .NotNull().WithMessage("Longitude is required for shop location")
                 .InclusiveBetween(-180, 180).WithMessage("Longitude must be between -180 and 180");
 
-            // File validations
             RuleFor(x => x.IdCardFront)
                 .NotNull().WithMessage("ID card front is required");
 
@@ -66,7 +64,6 @@ namespace FoodConnect.Backend.Application.Features.Shop.Commands
                 .Must(x => x != null && x.Count > 0)
                 .WithMessage("At least one food safety certificate is required");
 
-            // File size validations
             When(x => x.IdCardFront != null, () =>
             {
                 RuleFor(x => x.IdCardFront!.Length)

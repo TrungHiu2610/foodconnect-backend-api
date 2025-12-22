@@ -41,15 +41,12 @@ namespace FoodConnect.Backend.Application.Features.Auth.Commands.FirebasePhoneLo
 
             try
             {
-                // Step 1: Verify Firebase ID token
                 var firebaseToken = await _firebaseAuthService.VerifyIdTokenAsync(request.IdToken);
                 
-                // Step 2: Get phone number from token
                 var phoneNumber = _firebaseAuthService.GetPhoneNumber(firebaseToken);
                 
                 if (string.IsNullOrEmpty(phoneNumber))
                 {
-                    // Fallback: Get user record from Firebase
                     var firebaseUser = await _firebaseAuthService.GetUserAsync(firebaseToken.Uid);
                     phoneNumber = firebaseUser.PhoneNumber;
                 }
@@ -62,12 +59,10 @@ namespace FoodConnect.Backend.Application.Features.Auth.Commands.FirebasePhoneLo
 
                 _logger.LogInformation("Firebase phone authentication for: {PhoneNumber}", phoneNumber);
 
-                // Step 3: Check if user exists by phone number
                 var user = await _userRepository.GetByPhoneNumberAsync(phoneNumber);
 
                 if (user == null)
                 {
-                    // Step 4: Auto-register new user
                     var fullName = !string.IsNullOrEmpty(request.FullName) 
                         ? request.FullName 
                         : $"User {phoneNumber.Substring(phoneNumber.Length - 4)}"; // Use last 4 digits
@@ -83,7 +78,6 @@ namespace FoodConnect.Backend.Application.Features.Auth.Commands.FirebasePhoneLo
                         AvatarUrl = null
                     };
 
-                    // Assign default Buyer role
                     user.UserRoles.Add(new Domain.Entities.UserRole
                     {
                         UserId = user.Id,
@@ -97,7 +91,6 @@ namespace FoodConnect.Backend.Application.Features.Auth.Commands.FirebasePhoneLo
                 }
                 else
                 {
-                    // Step 5: Check user status
                     if (user.Status == UserStatusEnum.Banned)
                     {
                         return result.BuildFail("Your account has been banned");
@@ -110,23 +103,19 @@ namespace FoodConnect.Backend.Application.Features.Auth.Commands.FirebasePhoneLo
                     _logger.LogInformation("Existing user logged in via Firebase phone auth: {UserId}", user.Id);
                 }
 
-                // Step 6: Get user roles
                 var roleNames = user.UserRoles.Select(ur => ur.RoleId.ToString()).ToList();
 
-                // Step 7: Check shop ID if user is seller
                 Guid? shopId = null;
                 if (roleNames.Contains("Seller"))
                 {
                     shopId = await _userRepository.GetShopIdByUserIdAsync(user.Id);
                 }
 
-                // Step 8: Generate JWT and Refresh Token
                 var (accessToken, refreshToken) = await _jwtTokenGenerator.GenerateTokens(user, roleNames, shopId);
 
                 await _refreshTokenRepository.AddAsync(refreshToken);
                 await _unitOfWork.SaveChangesAsync(cancellationToken);
 
-                // Step 9: Build response
                 var authResponse = new AuthResponse(
                     user.Id,
                     user.Email ?? "",

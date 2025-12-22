@@ -1,4 +1,4 @@
-﻿using AutoMapper;
+using AutoMapper;
 using FoodConnect.Backend.Application.Commons.Constants;
 using FoodConnect.Backend.Application.Commons.DTOs.Responses;
 using FoodConnect.Backend.Application.Commons.DTOs.Responses.Product;
@@ -49,7 +49,6 @@ namespace FoodConnect.Backend.Application.Features.Product.Queries
         {
             var result = new BaseResponse<PaginatedList<GetListProductItemResponse>>();
 
-            // Get buyer location (from params or default address)
             var buyerLocation = await GetBuyerLocationAsync(request);
 
             var query = _productRepository.GetProductsAsQueryable()
@@ -58,23 +57,18 @@ namespace FoodConnect.Backend.Application.Features.Product.Queries
                 .Include(p => p.Category)
                 .AsNoTracking();
             
-            // Apply filters
             query = await ApplyFiltersAsync(query, request, cancellationToken);
 
-            // Apply sorting
             query = ApplySorting(query, request);
 
-            // Apply text search and location filtering
             var (filteredProducts, totalCount) = await ApplySearchAndLocationFilterAsync(
                 query, request, buyerLocation, cancellationToken);
 
-            // Paginate
             var paginatedProducts = filteredProducts
                 .Skip((request.PageNumber - 1) * request.PageSize)
                 .Take(request.PageSize)
                 .ToList();
 
-            // Map to DTOs
             var productDtos = _mapper.Map<List<GetListProductItemResponse>>(paginatedProducts);
             var paginatedList = new PaginatedList<GetListProductItemResponse>(
                 productDtos, totalCount, request.PageNumber, request.PageSize);
@@ -83,19 +77,13 @@ namespace FoodConnect.Backend.Application.Features.Product.Queries
         }
 
         #region Private Helper Methods
-
-        /// <summary>
-        /// Get buyer location from request params, or fallback to default address
-        /// </summary>
         private async Task<(double? Latitude, double? Longitude)> GetBuyerLocationAsync(GetListProductQuery request)
         {
-            // If location provided in request, use it
             if (request.BuyerLatitude.HasValue && request.BuyerLongitude.HasValue)
             {
                 return (request.BuyerLatitude, request.BuyerLongitude);
             }
 
-            // Try to get from user's default address
             var userId = _currentUserService.UserId ?? request.UserId;
             if (userId.HasValue)
             {
@@ -108,22 +96,16 @@ namespace FoodConnect.Backend.Application.Features.Product.Queries
 
             return (null, null);
         }
-
-        /// <summary>
-        /// Apply category, shop, status, availability filters
-        /// </summary>
         private async Task<IQueryable<Domain.Entities.Product>> ApplyFiltersAsync(
             IQueryable<Domain.Entities.Product> query, 
             GetListProductQuery request,
             CancellationToken cancellationToken)
         {
-            // Category filter (including parent category children)
             if (request.CategoryId.HasValue)
             {
                 var category = await _categoryRepository.GetByIdAsync(request.CategoryId.Value, c => c.Parent);
                 if (category != null && category.Parent == null)
                 {
-                    // Parent category: include all children
                     var childrenCategory = await _categoryRepository.GetChildrenByParentIdAsync(category.Id);
                     var childCategoryIds = childrenCategory.Select(c => c.Id).ToList();
                     query = query.Where(p => childCategoryIds.Contains(p.CategoryId));
@@ -134,19 +116,16 @@ namespace FoodConnect.Backend.Application.Features.Product.Queries
                 }
             }
 
-            // Shop filter
             if (request.ShopId.HasValue)
             {
                 query = query.Where(p => p.ShopId == request.ShopId);
             }
 
-            // Availability filter
             if (request.IsAvailable.HasValue)
             {
                 query = query.Where(p => p.IsAvailable == request.IsAvailable.Value);
             }
 
-            // Status filter
             if (!string.IsNullOrWhiteSpace(request.Status))
             {
                 if (Enum.TryParse<ProductStatusEnum>(request.Status, true, out var statusEnum))
@@ -157,10 +136,6 @@ namespace FoodConnect.Backend.Application.Features.Product.Queries
 
             return query;
         }
-
-        /// <summary>
-        /// Apply sorting logic
-        /// </summary>
         private IQueryable<Domain.Entities.Product> ApplySorting(
             IQueryable<Domain.Entities.Product> query, 
             GetListProductQuery request)
@@ -169,7 +144,6 @@ namespace FoodConnect.Backend.Application.Features.Product.Queries
             {
                 IOrderedQueryable<Domain.Entities.Product>? orderedQuery = null;
                 
-                // Shop management: Sort out-of-stock products last
                 if (request.SortOutOfStockLast)
                 {
                     orderedQuery = query.OrderByDescending(p => p.IsAvailable);
@@ -199,7 +173,6 @@ namespace FoodConnect.Backend.Application.Features.Product.Queries
             }
             else
             {
-                // Default sort
                 if (request.SortOutOfStockLast)
                 {
                     query = query.OrderByDescending(p => p.IsAvailable)
@@ -222,7 +195,6 @@ namespace FoodConnect.Backend.Application.Features.Product.Queries
         {
             var allProducts = await query.ToListAsync(cancellationToken);
 
-            // Apply text search
             if (!string.IsNullOrEmpty(request.TextSearch))
             {
                 var normalizedSearch = request.TextSearch.NormalizeForSearch();
@@ -232,7 +204,6 @@ namespace FoodConnect.Backend.Application.Features.Product.Queries
                 ).ToList();
             }
 
-            // Apply location-based filtering for delivery type
             var filteredProducts = ApplyLocationFilter(allProducts, request, buyerLocation);
 
             return (filteredProducts, filteredProducts.Count);
@@ -252,16 +223,13 @@ namespace FoodConnect.Backend.Application.Features.Product.Queries
 
                 var deliveryType = product.Category.DeliveryType;
 
-                // Filter by delivery type if specified
                 if (request.DeliveryType.HasValue && deliveryType != request.DeliveryType.Value)
                 {
                     continue;
                 }
 
-                // If buyer has no location
                 if (!hasLocation)
                 {
-                    // Only show Standard products
                     if (deliveryType == DeliveryTypeEnum.Standard)
                     {
                         filteredProducts.Add(product);
@@ -269,10 +237,8 @@ namespace FoodConnect.Backend.Application.Features.Product.Queries
                     continue;
                 }
 
-                // Buyer has location
                 if (deliveryType == DeliveryTypeEnum.Express)
                 {
-                    // Express: Only show if shop within range
                     if (product.Shop?.Latitude != null && product.Shop?.Longitude != null)
                     {
                         double distance = _distanceCalculator.CalculateDistance(

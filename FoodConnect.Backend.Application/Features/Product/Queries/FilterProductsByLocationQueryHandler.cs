@@ -39,14 +39,12 @@ namespace FoodConnect.Backend.Application.Features.Product.Queries
         {
             var result = new BaseResponse<List<GetListProductItemResponse>>();
 
-            // Step 1: Get all active products with shop and category info
             var products = await _productRepository.GetAllProductsWithDetailsAsync();
             if (products == null || !products.Any())
             {
                 return result.BuildSuccess(new List<GetListProductItemResponse>(), "No products available");
             }
 
-            // Step 2: Check if buyer has valid coordinates
             bool buyerHasLocation = request.BuyerLatitude.HasValue && request.BuyerLongitude.HasValue;
             if (!buyerHasLocation)
             {
@@ -68,16 +66,13 @@ namespace FoodConnect.Backend.Application.Features.Product.Queries
 
             foreach (var product in products)
             {
-                // Get product's category delivery type
                 var category = await _categoryRepository.GetByIdAsync(product.CategoryId);
                 if (category == null) continue;
 
                 var deliveryType = category.DeliveryType;
 
-                // Step 3: If buyer has no location GPS
                 if (!buyerHasLocation)
                 {
-                    // Only show Standard products
                     if (deliveryType == DeliveryTypeEnum.Standard)
                     {
                         filteredProducts.Add(product);
@@ -85,11 +80,9 @@ namespace FoodConnect.Backend.Application.Features.Product.Queries
                     continue;
                 }
 
-                // Step 4: Buyer has location => calculate distance to shop
                 var shop = product.Shop;
                 if (shop == null) continue;
 
-                // Express products: only show if shop within delivery range
                 if (deliveryType == DeliveryTypeEnum.Express)
                 {
                     if (shop.Latitude.HasValue && shop.Longitude.HasValue)
@@ -101,13 +94,11 @@ namespace FoodConnect.Backend.Application.Features.Product.Queries
                             shop.Longitude.Value
                         );
 
-                        // Only include if within express delivery range
                         if (distance <= (double)ShippingFeeConstant.EXPRESS_MAX_DISTANCE)
                         {
                             filteredProducts.Add(product);
                         }
                     }
-                    // If shop has no coordinates, don't show express products
                 }
                 else // Standard products: always show (no distance limit)
                 {
@@ -115,7 +106,6 @@ namespace FoodConnect.Backend.Application.Features.Product.Queries
                 }
             }
 
-            // Step 5: Map to response DTOs
             var productResponses = _mapper.Map<List<GetListProductItemResponse>>(filteredProducts);
 
             return result.BuildSuccess(productResponses, $"Found {productResponses.Count} products");

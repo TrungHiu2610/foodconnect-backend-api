@@ -42,7 +42,6 @@ namespace FoodConnect.Backend.Application.Features.Shop.Queries
             var shopDetail = await _shopRepository.GetDetailByIdAsync(shop.Id);
             var response = _mapper.Map<ShopResponse>(shopDetail);
 
-            // order by DayOfWeek in OperatingHours
             response.OperatingHours = response.OperatingHours
                 .OrderBy(oh => oh.DayOfWeek)
                 .ToList();

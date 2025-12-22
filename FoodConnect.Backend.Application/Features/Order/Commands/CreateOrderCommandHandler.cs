@@ -4,11 +4,13 @@ using FoodConnect.Backend.Application.Commons.Interfaces;
 using FoodConnect.Backend.Application.Commons.Services;
 using FoodConnect.Backend.Application.Features.Notification.Services;
 using FoodConnect.Backend.Application.Features.Order.DTOs;
+using FoodConnect.Backend.Application.Features.Order.Jobs;
 using FoodConnect.Backend.Application.Features.Order.Mappers;
 using FoodConnect.Backend.Application.Interfaces;
 using FoodConnect.Backend.Application.Interfaces.IRepositories;
 using FoodConnect.Backend.Domain.Entities;
 using FoodConnect.Backend.Domain.Enums;
+using Hangfire;
 using MediatR;
 using System.Text.Json;
 
@@ -22,7 +24,6 @@ namespace FoodConnect.Backend.Application.Features.Order.Commands
         private readonly IProductRepository _productRepository;
         private readonly IShopRepository _shopRepository;
         private readonly IPromotionRepository _promotionRepository;
-        private readonly IPromotionUsageRepository _promotionUsageRepository;
         private readonly IUnitOfWork _unitOfWork;
         private readonly ICurrentUserService _currentUserService;
         private readonly OrderNotificationService _orderNotificationService;
@@ -36,7 +37,6 @@ namespace FoodConnect.Backend.Application.Features.Order.Commands
             IProductRepository productRepository,
             IShopRepository shopRepository,
             IPromotionRepository promotionRepository,
-            IPromotionUsageRepository promotionUsageRepository,
             IUnitOfWork unitOfWork,
             ICurrentUserService currentUserService,
             OrderNotificationService orderNotificationService,
@@ -49,7 +49,6 @@ namespace FoodConnect.Backend.Application.Features.Order.Commands
             _productRepository = productRepository;
             _shopRepository = shopRepository;
             _promotionRepository = promotionRepository;
-            _promotionUsageRepository = promotionUsageRepository;
             _unitOfWork = unitOfWork;
             _currentUserService = currentUserService;
             _orderNotificationService = orderNotificationService;
@@ -61,7 +60,6 @@ namespace FoodConnect.Backend.Application.Features.Order.Commands
         {
             var result = new BaseResponse<List<OrderDetailDto>>();
 
-            // Check if user is authenticated
             if (!_currentUserService.UserId.HasValue)
             {
                 return result.BuildUnauthorized("User must be logged in to create an order");
@@ -69,14 +67,12 @@ namespace FoodConnect.Backend.Application.Features.Order.Commands
 
             var buyerId = _currentUserService.UserId.Value;
 
-            // Get cart items
             var cart = await _cartRepository.GetCartWithItemsAsync(buyerId, null);
             if (cart == null || !cart.CartItems.Any())
             {
                 return result.BuildFail("Cart is empty");
             }
 
-            // Filter cart items based on request
             var selectedCartItems = cart.CartItems
                 .Where(ci => request.CartItemIds.Contains(ci.Id))
                 .ToList();
@@ -86,7 +82,6 @@ namespace FoodConnect.Backend.Application.Features.Order.Commands
                 return result.BuildFail("No valid cart items found");
             }
 
-            // Validate stock availability before creating orders
             foreach (var cartItem in selectedCartItems)
             {
                 var product = await _productRepository.GetByIdAsync(cartItem.ProductId);
@@ -95,21 +90,17 @@ namespace FoodConnect.Backend.Application.Features.Order.Commands
                     return result.BuildFail($"Product not found");
                 }
 
-                // Check if product is available
                 if (!product.IsAvailable)
                 {
                     return result.BuildFail($"Product '{product.Name}' is currently unavailable");
                 }
 
-                // Check stock if managed
                 if (product.StockQuantity.HasValue && product.StockQuantity.Value < cartItem.Quantity)
                 {
                     return result.BuildFail($"Insufficient stock for '{product.Name}'. Available: {product.StockQuantity}, Required: {cartItem.Quantity}");
                 }
             }
 
-            // Group cart items by shop AND delivery type
-            // This will create separate orders for Express and Standard items from same shop
             var orderGroups = selectedCartItems
                 .GroupBy(ci => new
                 {
@@ -118,7 +109,6 @@ namespace FoodConnect.Backend.Application.Features.Order.Commands
                 })
                 .ToList();
 
-            // Parse shipping address to get coordinates
             ShippingAddressDto? shippingAddress = null;
             try
             {
@@ -133,13 +123,11 @@ namespace FoodConnect.Backend.Application.Features.Order.Commands
                 return result.BuildFail("Failed to parse shipping address");
             }
 
-            // Validate shipping address has coordinates
             if (!shippingAddress.Latitude.HasValue || !shippingAddress.Longitude.HasValue)
             {
                 return result.BuildFail("Shipping address must include location coordinates (Latitude and Longitude)");
             }
 
-            // Validate promotion if provided
             Domain.Entities.Promotion? promotion = null;
             if (request.PromotionId.HasValue)
             {
@@ -149,35 +137,31 @@ namespace FoodConnect.Backend.Application.Features.Order.Commands
                     return result.BuildFail("Promotion not found");
                 }
 
-                // Check if promotion is active
                 if (promotion.Status != PromotionStatusEnum.Active)
                 {
                     return result.BuildFail($"Promotion is not active (Status: {promotion.Status})");
                 }
 
-                // Check date validity
                 var now = DateTime.UtcNow;
                 if (now < promotion.StartDate || now > promotion.EndDate)
                 {
                     return result.BuildFail("Promotion is not valid at this time");
                 }
 
-                // Check max usage count
                 if (promotion.MaxUsageCount.HasValue && promotion.TotalUsedCount >= promotion.MaxUsageCount.Value)
                 {
                     return result.BuildFail("Promotion has reached maximum usage limit");
                 }
 
-                // Check user usage limit
-                var userUsageCount = await _promotionRepository.GetUserUsageCountAsync(promotion.Id, buyerId);
+                var buyerOrders = await _orderRepository.GetOrdersByBuyerAsync(buyerId, null);
+                var userUsageCount = buyerOrders.Count(o => o.PromotionId == promotion.Id);
+                
                 if (userUsageCount >= promotion.UsagePerCustomer)
                 {
                     return result.BuildFail($"You have already used this promotion {promotion.UsagePerCustomer} time(s)");
                 }
             }
 
-            // Pre-validate all Express delivery groups BEFORE creating ANY orders
-            // This ensures we fail fast if any Express item is out of range
             foreach (var orderGroup in orderGroups.Where(g => g.Key.DeliveryType == DeliveryTypeEnum.Express))
             {
                 var shop = await _shopRepository.GetByIdAsync(orderGroup.Key.ShopId);
@@ -211,7 +195,6 @@ namespace FoodConnect.Backend.Application.Features.Order.Commands
                     var deliveryType = orderGroup.Key.DeliveryType;
                     var groupItems = orderGroup.ToList();
 
-                    // Get shop details for distance calculation
                     var shop = await _shopRepository.GetByIdAsync(shopId);
                     if (shop == null)
                     {
@@ -219,14 +202,12 @@ namespace FoodConnect.Backend.Application.Features.Order.Commands
                         return result.BuildFail($"Shop not found");
                     }
 
-                    // Validate shop has coordinates
                     if (!shop.Latitude.HasValue || !shop.Longitude.HasValue)
                     {
                         await transaction.RollbackAsync();
                         return result.BuildFail($"Shop '{shop.ShopName}' does not have location coordinates configured");
                     }
 
-                    // Calculate distance
                     double distanceKm = _distanceCalculator.CalculateDistance(
                         shippingAddress.Latitude.Value,
                         shippingAddress.Longitude.Value,
@@ -234,9 +215,6 @@ namespace FoodConnect.Backend.Application.Features.Order.Commands
                         shop.Longitude.Value
                     );
 
-                    // Calculate shipping fee based on delivery type
-                    // Express: Tiered based on distance
-                    // Standard: Distance-based with cap
                     decimal shippingFee = _shippingFeeCalculator.CalculateShippingFee(
                         deliveryType, 
                         distanceKm,
@@ -244,10 +222,8 @@ namespace FoodConnect.Backend.Application.Features.Order.Commands
                         shop.City // Using City as Province
                     );
 
-                    // Calculate order totals
                     double subTotal = (double)groupItems.Sum(ci => (ci.Product?.Price ?? 0) * ci.Quantity);
                     
-                    // Calculate promotion discount
                     double discount = 0;
                     decimal? promotionDiscountAmount = null;
                     string? promotionCode = null;
@@ -255,12 +231,10 @@ namespace FoodConnect.Backend.Application.Features.Order.Commands
 
                     if (promotion != null && promotion.ShopId == shopId)
                     {
-                        // Check if promotion applies to these products
                         bool isApplicable = promotion.ApplicableToAllProducts;
                         
                         if (!isApplicable)
                         {
-                            // Check if any product in this order is part of the promotion
                             var productIds = groupItems.Select(ci => ci.ProductId).ToList();
                             var promotionProductIds = promotion.PromotionProducts.Select(pp => pp.ProductId).ToList();
                             isApplicable = productIds.Any(pid => promotionProductIds.Contains(pid));
@@ -268,13 +242,10 @@ namespace FoodConnect.Backend.Application.Features.Order.Commands
 
                         if (isApplicable)
                         {
-                            // Check minimum order value
                             if ((decimal)subTotal >= promotion.MinimumOrderValue)
                             {
-                                // Calculate discount based on type
                                 if (promotion.PromotionType == PromotionTypeEnum.Percentage)
                                 {
-                                    // Percentage discount (DiscountValue is percentage, e.g., 10 for 10%)
                                     promotionDiscountAmount = (decimal)subTotal * (promotion.DiscountValue / 100);
                                 }
                                 else // FixedAmount
@@ -291,17 +262,18 @@ namespace FoodConnect.Backend.Application.Features.Order.Commands
 
                     double total = subTotal + ((double)shippingFee) - discount;
 
-                    // Generate order code
                     var orderCode = await GenerateOrderCode();
 
-                    // Get note for this shop (if provided)
                     string? shopNote = null;
                     if (request.OrderNotes != null && request.OrderNotes.TryGetValue(shopId.ToString(), out var note))
                     {
                         shopNote = note;
                     }
 
-                    // Create order
+                    var initialStatus = request.PaymentMethod == PaymentMethodEnum.COD
+                        ? OrderStatusEnum.Pending
+                        : OrderStatusEnum.AwaitingPayment;
+
                     var order = new Domain.Entities.Order
                     {
                         Id = Guid.NewGuid(),
@@ -310,7 +282,7 @@ namespace FoodConnect.Backend.Application.Features.Order.Commands
                         ShippingFee = (double)shippingFee,
                         Discount = discount,
                         Total = total,
-                        Status = OrderStatusEnum.Pending,
+                        Status = initialStatus,
                         PaymentMethod = request.PaymentMethod,
                         DeliveryType = deliveryType, // Auto-determined from Product.Category
                         DistanceKm = Math.Round(distanceKm, 2),
@@ -325,7 +297,22 @@ namespace FoodConnect.Backend.Application.Features.Order.Commands
 
                     await _orderRepository.AddAsync(order);
 
-                    // Create order items
+                    if (initialStatus == OrderStatusEnum.Pending)
+                    {
+                        if (deliveryType == DeliveryTypeEnum.Express)
+                        {
+                            BackgroundJob.Schedule<ExpressDeliveryTimeoutJob>(
+                                job => job.CheckAndCancelExpiredOrderAsync(order.Id),
+                                TimeSpan.FromMinutes(30));
+                        }
+                        else if (deliveryType == DeliveryTypeEnum.Standard)
+                        {
+                            BackgroundJob.Schedule<ExpressDeliveryTimeoutJob>(
+                                job => job.CheckAndCancelExpiredOrderAsync(order.Id),
+                                TimeSpan.FromHours(3));
+                        }
+                    }
+
                     foreach (var cartItem in groupItems)
                     {
                         var orderItem = new OrderItem
@@ -343,39 +330,21 @@ namespace FoodConnect.Backend.Application.Features.Order.Commands
 
                     createdOrders.Add(order);
 
-                    // Remove cart items
                     foreach (var cartItem in groupItems)
                     {
                         _cartItemRepository.Remove(cartItem);
                     }
 
-                    // Record promotion usage if applicable
-                    if (applicablePromotionId.HasValue)
+                    if (applicablePromotionId.HasValue && promotion != null)
                     {
-                        var promotionUsage = new PromotionUsage
-                        {
-                            Id = Guid.NewGuid(),
-                            PromotionId = applicablePromotionId.Value,
-                            UserId = buyerId,
-                            OrderId = order.Id,
-                            DiscountAmount = promotionDiscountAmount ?? 0,
-                            UsedAt = DateTime.UtcNow
-                        };
-                        await _promotionUsageRepository.AddAsync(promotionUsage);
-
-                        // Update promotion total used count
-                        if (promotion != null)
-                        {
-                            promotion.TotalUsedCount += 1;
-                            _promotionRepository.Update(promotion);
-                        }
+                        promotion.TotalUsedCount += 1;
+                        _promotionRepository.Update(promotion);
                     }
                 }
 
                 await _unitOfWork.SaveChangesAsync(cancellationToken);
                 await _unitOfWork.CommitTransactionAsync(transaction);
 
-                // Load orders with full details and send notifications
                 var orderDetails = new List<OrderDetailDto>();
                 foreach (var order in createdOrders)
                 {
@@ -384,12 +353,13 @@ namespace FoodConnect.Backend.Application.Features.Order.Commands
                     {
                         orderDetails.Add(OrderMapper.MapToDetailDto(fullOrder));
                         
-                        // Send notification to seller
-                        await _orderNotificationService.NotifyNewOrderAsync(fullOrder, cancellationToken);
+                        if (fullOrder.Status == OrderStatusEnum.Pending)
+                        {
+                            await _orderNotificationService.NotifyNewOrderAsync(fullOrder, cancellationToken);
+                        }
                     }
                 }
 
-                // Build summary message
                 var expressCount = createdOrders.Count(o => o.DeliveryType == DeliveryTypeEnum.Express);
                 var standardCount = createdOrders.Count(o => o.DeliveryType == DeliveryTypeEnum.Standard);
                 var orderSummary = createdOrders.Count == 1 

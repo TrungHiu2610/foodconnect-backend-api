@@ -1,4 +1,5 @@
-﻿using FoodConnect.Backend.Application.Commons.DTOs;
+using FoodConnect.Backend.Application.Commons.DTOs;
+using FoodConnect.Backend.Application.Features.Auth.Commands.ChangePassword;
 using FoodConnect.Backend.Application.Features.Auth.Commands.EmailRegister;
 using FoodConnect.Backend.Application.Features.Auth.Commands.FirebasePhoneLogin;
 using FoodConnect.Backend.Application.Features.Auth.Commands.ForgotPassword;
@@ -121,6 +122,22 @@ namespace FoodConnect.Backend.API.Controllers
             return result != null ? (result.Success ? Ok(result) : BadRequest(result)) : BadRequest();
         }
 
+        [HttpPost]
+        [Authorize]
+        public async Task<IActionResult> ChangePassword(ChangePasswordCommand command)
+        {
+            var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userIdClaim) || !Guid.TryParse(userIdClaim, out var userId))
+            {
+                return Unauthorized(new { message = "Invalid or missing user authentication" });
+            }
+
+            command.UserId = userId;
+
+            var result = await Mediator.Send(command);
+            return result != null ? (result.Success ? Ok(result) : BadRequest(result)) : BadRequest();
+        }
+
         #endregion
 
         #region Legacy Authentication (Deprecated - use LoginWithEmail instead)
@@ -182,7 +199,6 @@ namespace FoodConnect.Backend.API.Controllers
             var fullName = User.FindFirstValue(ClaimTypes.Name);
             var shopId = User.FindFirstValue("shopId"); 
             
-            // Get all roles from claims
             var roles = User.Claims
                 .Where(c => c.Type == ClaimTypes.Role)
                 .Select(c => c.Value)

@@ -1,4 +1,4 @@
-﻿using Amazon.S3;
+using Amazon.S3;
 using Amazon;
 using FluentValidation;
 using FoodConnect.Backend.API.Middlewares;
@@ -26,11 +26,16 @@ using StackExchange.Redis;
 using Resend;
 using FoodConnect.Backend.Infrastructure.Hubs;
 using FoodConnect.Backend.Application.Features.Notification.Services;
+using FoodConnect.Backend.Application.Features.Complaint.Services;
 using FoodConnect.Backend.Application.Commons.Services;
 using Hangfire;
 using Hangfire.PostgreSql;
+using Hangfire.Storage;
 using FoodConnect.Backend.Application.Features.Promotion.Jobs;
 using FoodConnect.Backend.Application.Features.Promotion.Services;
+using FoodConnect.Backend.Application.Features.Complaint.Jobs;
+using FoodConnect.Backend.Application.Features.Order.Jobs;
+using FoodConnect.Backend.Application.Features.Order.Services;
 using FoodConnect.Backend.Application.Features.Wishlist.Services;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -55,7 +60,7 @@ services.AddCors(options =>
                               policy.WithOrigins(allowedOrigins)
                                     .AllowAnyHeader()
                                     .AllowAnyMethod()
-                                    .AllowCredentials(); 
+                                    .AllowCredentials();
                           }
                       });
 });
@@ -64,11 +69,10 @@ services.AddHttpClient();
 
 var configuration = builder.Configuration;
 
-// DbContext  
 services.AddDbContext<AppDbContext>(options =>
-   options.UseNpgsql(configuration.GetConnectionString("DefaultConnection")));
+   options.UseNpgsql(configuration.GetConnectionString("DefaultConnection"),
+       o => o.UseVector()));
 
-// Authen JWT
 services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
@@ -85,7 +89,6 @@ services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ClockSkew = TimeSpan.Zero
         };
 
-        // Configure JWT authentication for SignalR
         options.Events = new JwtBearerEvents
         {
             OnMessageReceived = context =>
@@ -101,7 +104,6 @@ services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         };
     });
 
-// AWS S3
 services.Configure<AwsOptions>(configuration.GetSection("AWS"));
 var awsConfig = configuration.GetSection("AWS").Get<AwsOptions>();
 
@@ -113,7 +115,6 @@ var awsOptions = new Amazon.Extensions.NETCore.Setup.AWSOptions
     Region = region
 };
 
-// Redis
 services.AddSingleton<IConnectionMultiplexer>(sp =>
 {
     var host = builder.Configuration["Redis:Host"];
@@ -127,12 +128,8 @@ services.AddSingleton<IConnectionMultiplexer>(sp =>
 
 services.AddScoped<IRedisService, RedisService>();
 
-// SMS Service
-//services.AddScoped<ISmsService, AwsSnsService>();
 services.AddScoped<ISmsService, SpeedSmsService>();
-//services.AddScoped<ISmsService, VonageSMSService>();
 
-// Email Service
 services.AddOptions();
 services.AddHttpClient<ResendClient>();
 services.Configure<ResendClientOptions>(o =>
@@ -142,18 +139,14 @@ services.Configure<ResendClientOptions>(o =>
 services.AddTransient<IResend, ResendClient>();
 services.AddScoped<IEmailService, ResendEmailService>();
 
-// Google Auth Service
 services.AddScoped<IGoogleAuthService, GoogleAuthService>();
 
-// Firebase Auth Service
 services.AddSingleton<FoodConnect.Backend.Application.Services.FirebaseService.IFirebaseAuthService, FoodConnect.Backend.Application.Services.FirebaseService.FirebaseAuthService>();
 
-// Storage Service
 services.AddDefaultAWSOptions(awsOptions);
 services.AddAWSService<IAmazonS3>();
 services.AddScoped<IFileStorageService, AwsS3FileStorageService>();
 
-// Repositories 
 services.AddScoped(typeof(IBaseRepository<>), typeof(BaseRepository<>));
 services.AddScoped<IUserRepository, UserRepository>();
 services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
@@ -171,15 +164,41 @@ services.AddScoped<INotificationRepository, NotificationRepository>();
 services.AddScoped<IWishlistRepository, WishlistRepository>();
 services.AddScoped<IPromotionRepository, PromotionRepository>();
 services.AddScoped<IPromotionProductRepository, PromotionProductRepository>();
-services.AddScoped<IPromotionUsageRepository, PromotionUsageRepository>();
+services.AddScoped<ISystemConfigRepository, SystemConfigRepository>();
+services.AddScoped<IWalletRepository, WalletRepository>();
+services.AddScoped<IWalletTransactionRepository, WalletTransactionRepository>();
+services.AddScoped<IWithdrawalRequestRepository, WithdrawalRequestRepository>();
+services.AddScoped<IPaymentTransactionRepository, PaymentTransactionRepository>();
+services.AddScoped<IOrderComplaintRepository, OrderComplaintRepository>();
+services.AddScoped<IOrderComplaintAssetRepository, OrderComplaintAssetRepository>();
+services.AddScoped<IConversationRepository, ConversationRepository>();
+services.AddScoped<IMessageRepository, MessageRepository>();
+
+// AI Chatbot repositories
+services.AddScoped<IAIChatConversationRepository, AIChatConversationRepository>();
+services.AddScoped<IAIChatMessageRepository, AIChatMessageRepository>();
+services.AddScoped<IProductEmbeddingRepository, ProductEmbeddingRepository>();
+
 services.AddScoped<IUnitOfWork, UnitOfWork>();
 
-// Application Services  
 services.AddSingleton<IJwtTokenGenerator, JwtTokenGenerator>();
 services.AddHttpContextAccessor();
 services.AddScoped<ICurrentUserService, CurrentUserService>();
 services.AddScoped<IDistanceCalculatorService, DistanceCalculatorService>();
 services.AddScoped<IShippingFeeCalculatorService, ShippingFeeCalculatorService>();
+services.AddScoped<IVNPayService, VNPayService>();
+services.AddScoped<WalletService>();
+
+// Review Moderation Services
+services.AddScoped<IToxicKeywordFilterService, ToxicKeywordFilterService>();
+services.AddScoped<IOpenAIModerationService, OpenAIModerationService>();
+services.AddScoped<ISpamDetectionService, SpamDetectionService>();
+services.AddScoped<IReviewModerationService, ReviewModerationService>();
+
+// AI Chatbot services
+services.AddScoped<IGeminiAIService, GeminiAIService>();
+services.AddScoped<IProductEmbeddingService, ProductEmbeddingService>();
+services.AddScoped<IProductRetrievalService, ProductRetrievalService>();
 
 // SignalR & Notification Services
 services.AddSignalR(options =>
@@ -190,31 +209,53 @@ services.AddSignalR(options =>
     options.HandshakeTimeout = TimeSpan.FromSeconds(15);
 });
 services.AddScoped<INotificationService, NotificationService>();
+services.AddScoped<IChatNotificationService, ChatNotificationService>();
 services.AddScoped<OrderNotificationService>();
 services.AddScoped<PromotionNotificationService>();
+services.AddScoped<ComplaintNotificationService>();
 services.AddScoped<ShopFollowerNotificationService>();
 
-// Hangfire
 services.AddHangfire(config => config
     .SetDataCompatibilityLevel(CompatibilityLevel.Version_180)
     .UseSimpleAssemblyNameTypeSerializer()
     .UseRecommendedSerializerSettings()
     .UsePostgreSqlStorage(options => 
-        options.UseNpgsqlConnection(configuration.GetConnectionString("DefaultConnection"))));
+        options.UseNpgsqlConnection(configuration.GetConnectionString("DefaultConnection")),
+        new PostgreSqlStorageOptions
+        {
+            DistributedLockTimeout = TimeSpan.FromMinutes(2), // Increase from default 10s
+            
+            PrepareSchemaIfNecessary = true,
+            
+            JobExpirationCheckInterval = TimeSpan.FromHours(1), // Check every hour
+            
+            QueuePollInterval = TimeSpan.FromSeconds(15),
+            
+            InvisibilityTimeout = TimeSpan.FromMinutes(30)
+        }));
 
-services.AddHangfireServer();
+services.AddHangfireServer(options =>
+{   
+    options.WorkerCount = Math.Max(Environment.ProcessorCount, 2); // At least 2 workers
+    
+    options.ServerName = $"{Environment.MachineName}:{Guid.NewGuid()}";
+    
+    options.SchedulePollingInterval = TimeSpan.FromSeconds(15);
+    
+    options.Queues = new[] { "default" };
+});
 services.AddScoped<PromotionStatusJob>();
+services.AddScoped<ComplaintEscalationJob>();
+services.AddScoped<OrderAutoCompletionService>();
+services.AddScoped<OrderStatusJob>();
 
-// MediatR  
 services.AddMediatR(cfg =>
    cfg.RegisterServicesFromAssembly(Assembly.Load("FoodConnect.Backend.Application")));
 services.AddTransient(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
 services.AddValidatorsFromAssembly(Assembly.Load("FoodConnect.Backend.Application"));
 
-// Automapper IMapperConfigurationExpression
 services.AddAutoMapper(cfg => { }, typeof(Program).Assembly, Assembly.Load("FoodConnect.Backend.Application"));
 
-// Configure Form Options for large file uploads
 services.Configure<FormOptions>(options =>
 {
     options.ValueLengthLimit = int.MaxValue;
@@ -233,7 +274,6 @@ app.UseWebSockets();
 
 app.UseCors(MyAllowSpecificOrigins);
 
-// Configure the HTTP request pipeline.  
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -252,19 +292,102 @@ app.UseHangfireDashboard("/hangfire", new DashboardOptions
     Authorization = new[] { new HangfireAuthorizationFilter() }
 });
 
-// Schedule recurring jobs
 RecurringJob.AddOrUpdate<PromotionStatusJob>(
     "auto-activate-promotions",
     job => job.AutoActivatePromotionsAsync(),
-    Cron.Minutely);
+    "*/5 * * * *"); // Every 5 minutes (reduced from every minute)
 
 RecurringJob.AddOrUpdate<PromotionStatusJob>(
     "auto-expire-promotions",
     job => job.AutoExpirePromotionsAsync(),
-    Cron.Minutely);
+    "*/5 * * * *"); // Every 5 minutes (reduced from every minute)
+
+RecurringJob.AddOrUpdate<ComplaintEscalationJob>(
+    "escalate-expired-complaints",
+    job => job.EscalateExpiredComplaintsAsync(),
+    Cron.Hourly); // Keep hourly - appropriate for escalations
+
+RecurringJob.AddOrUpdate<OrderStatusJob>(
+    "auto-cancel-unconfirmed-orders",
+    job => job.AutoCancelUnconfirmedOrdersAsync(),
+    "*/10 * * * *"); // Every 10 minutes (reduced from every minute)
+
+RecurringJob.AddOrUpdate<OrderStatusJob>(
+    "auto-complete-delivered-orders",
+    job => job.AutoCompleteDeliveredOrdersAsync(),
+    "*/10 * * * *"); // Every 10 minutes (reduced from every minute)
+
+RecurringJob.AddOrUpdate(
+    "hangfire-cleanup-old-jobs",
+    () => HangfireCleanupService.CleanupOldJobs(),
+    Cron.Daily); // Run once per day at midnight
 
 app.MapControllers();
 app.MapHub<NotificationHub>("/hubs/notifications");
+app.MapHub<ChatHub>("/hubs/chat");
 
 app.Run();
+
 public partial class Program { }
+
+public static class HangfireCleanupService
+{
+    public static void CleanupOldJobs()
+    {
+        var monitor = JobStorage.Current.GetMonitoringApi();
+        
+        var succeededJobs = monitor.SucceededJobs(0, int.MaxValue)
+            .Where(j => j.Value != null && j.Value.SucceededAt.HasValue 
+                        && j.Value.SucceededAt.Value < DateTime.UtcNow.AddDays(-7))
+            .Select(j => j.Key)
+            .ToList();
+        
+        foreach (var jobId in succeededJobs)
+        {
+            try
+            {
+                BackgroundJob.Delete(jobId);
+            }
+            catch (Exception)
+            {
+                // Job may have already been deleted or doesn't exist
+            }
+        }
+        
+        var failedJobs = monitor.FailedJobs(0, int.MaxValue)
+            .Where(j => j.Value != null && j.Value.FailedAt.HasValue 
+                        && j.Value.FailedAt.Value < DateTime.UtcNow.AddDays(-30))
+            .Select(j => j.Key)
+            .ToList();
+        
+        foreach (var jobId in failedJobs)
+        {
+            try
+            {
+                BackgroundJob.Delete(jobId);
+            }
+            catch (Exception)
+            {
+                // Job may have already been deleted or doesn't exist
+            }
+        }
+        
+        var deletedJobs = monitor.DeletedJobs(0, int.MaxValue)
+            .Where(j => j.Value != null && j.Value.DeletedAt.HasValue 
+                        && j.Value.DeletedAt.Value < DateTime.UtcNow.AddDays(-1))
+            .Select(j => j.Key)
+            .ToList();
+        
+        foreach (var jobId in deletedJobs)
+        {
+            try
+            {
+                BackgroundJob.Delete(jobId);
+            }
+            catch (Exception)
+            {
+                // Job may have already been deleted or doesn't exist
+            }
+        }
+    }
+}

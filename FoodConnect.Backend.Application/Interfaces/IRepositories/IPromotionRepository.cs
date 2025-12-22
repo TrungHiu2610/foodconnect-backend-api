@@ -12,7 +12,5 @@ namespace FoodConnect.Backend.Application.Interfaces.IRepositories
         Task<List<Promotion>> GetActivePromotionsByShopAsync(Guid shopId);
         Task<List<Promotion>> GetPromotionsByStatusAsync(PromotionStatusEnum status);
         Task<Promotion?> GetPromotionWithProductsAsync(Guid promotionId);
-        Task<int> GetUserUsageCountAsync(Guid promotionId, Guid userId);
-        Task<bool> HasUserUsedPromotionAsync(Guid promotionId, Guid userId);
     }
 }

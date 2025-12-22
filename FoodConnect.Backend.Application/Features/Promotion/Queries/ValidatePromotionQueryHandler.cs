@@ -10,13 +10,16 @@ namespace FoodConnect.Backend.Application.Features.Promotion.Queries
     public class ValidatePromotionQueryHandler : IRequestHandler<ValidatePromotionQuery, BaseResponse<PromotionValidationResponse>>
     {
         private readonly IPromotionRepository _promotionRepository;
+        private readonly IOrderRepository _orderRepository;
         private readonly ICurrentUserService _currentUserService;
 
         public ValidatePromotionQueryHandler(
             IPromotionRepository promotionRepository,
+            IOrderRepository orderRepository,
             ICurrentUserService currentUserService)
         {
             _promotionRepository = promotionRepository;
+            _orderRepository = orderRepository;
             _currentUserService = currentUserService;
         }
 
@@ -95,7 +98,9 @@ namespace FoodConnect.Backend.Application.Features.Promotion.Queries
 
             if (userId.HasValue)
             {
-                var userUsageCount = await _promotionRepository.GetUserUsageCountAsync(promotion.Id, userId.Value);
+                var userOrders = await _orderRepository.GetOrdersByBuyerAsync(userId.Value, null);
+                var userUsageCount = userOrders.Count(o => o.PromotionId == promotion.Id);
+                
                 if (userUsageCount >= promotion.UsagePerCustomer)
                 {
                     return result.BuildSuccess(new PromotionValidationResponse

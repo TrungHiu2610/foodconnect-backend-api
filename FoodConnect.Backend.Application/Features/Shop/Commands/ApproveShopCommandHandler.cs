@@ -2,6 +2,7 @@ using FoodConnect.Backend.Application.Commons.DTOs.Responses;
 using FoodConnect.Backend.Application.Commons.Interfaces;
 using FoodConnect.Backend.Application.Interfaces;
 using FoodConnect.Backend.Application.Interfaces.IRepositories;
+using FoodConnect.Backend.Domain.Entities;
 using FoodConnect.Backend.Domain.Enums;
 using MediatR;
 
@@ -11,17 +12,20 @@ namespace FoodConnect.Backend.Application.Features.Shop.Commands
     {
         private readonly IShopRepository _shopRepository;
         private readonly IUserRepository _userRepository;
+        private readonly IWalletRepository _walletRepository;
         private readonly IUnitOfWork _unitOfWork;
         private readonly ICurrentUserService _currentUserService;
 
         public ApproveShopCommandHandler(
             IShopRepository shopRepository,
             IUserRepository userRepository,
+            IWalletRepository walletRepository,
             IUnitOfWork unitOfWork,
             ICurrentUserService currentUserService)
         {
             _shopRepository = shopRepository;
             _userRepository = userRepository;
+            _walletRepository = walletRepository;
             _unitOfWork = unitOfWork;
             _currentUserService = currentUserService;
         }
@@ -42,7 +46,6 @@ namespace FoodConnect.Backend.Application.Features.Shop.Commands
                 return result.BuildNotFound("Shop not found");
             }
 
-            // Validate status
             if (shop.Status != ShopStatusEnum.PendingApproval)
             {
                 return result.BuildFail($"Shop must be in PendingApproval status. Current status: {shop.Status}");
@@ -51,14 +54,12 @@ namespace FoodConnect.Backend.Application.Features.Shop.Commands
             await using var transaction = await _unitOfWork.BeginTransactionAsync();
             try
             {
-                // Update shop status
                 shop.Status = ShopStatusEnum.Active;
                 shop.ReviewedBy = userId;
                 shop.ReviewedAt = DateTime.UtcNow;
                 
                 _shopRepository.Update(shop);
 
-                // Add Seller role to user
                 var user = shop.User;
                 var userWithRoles = await _userRepository.GetUserWithRolesAsync(user.Id);
                 if (userWithRoles != null && !userWithRoles.UserRoles.Any(ur => ur.RoleId == RoleEnum.Seller))
@@ -69,6 +70,22 @@ namespace FoodConnect.Backend.Application.Features.Shop.Commands
                         RoleId = RoleEnum.Seller
                     });
                     _userRepository.Update(user);
+                }
+
+                var existingWallet = await _walletRepository.GetByUserIdAndTypeAsync(user.Id, WalletTypeEnum.Seller);
+                if (existingWallet == null)
+                {
+                    var wallet = new Domain.Entities.Wallet
+                    {
+                        UserId = user.Id,
+                        WalletType = WalletTypeEnum.Seller,
+                        Balance = 0,
+                        TotalEarned = 0,
+                        TotalWithdrawn = 0,
+                        PendingBalance = 0,
+                        Status = WalletStatusEnum.Active
+                    };
+                    await _walletRepository.AddAsync(wallet);
                 }
 
                 await _unitOfWork.SaveChangesAsync(cancellationToken);

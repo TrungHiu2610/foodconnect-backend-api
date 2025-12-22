@@ -29,6 +29,7 @@ namespace FoodConnect.Backend.Application.Features.Product.Queries
             {
                 return result.BuildFail("Product not found");
             }
+            product.ProductAssets.OrderBy(pa => pa.IsThumbnail);
             var response = _mapper.Map<GetProductDetailResponse>(product);
 
             return result.BuildSuccess(response, "Get product detail successfully");

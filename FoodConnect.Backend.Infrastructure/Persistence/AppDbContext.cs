@@ -34,10 +34,23 @@ namespace FoodConnect.Backend.Infrastructure.Persistence
         public DbSet<Notification> Notifications { get; set; }
         public DbSet<ProductReview> ProductReviews { get; set; }
         public DbSet<ProductReviewAsset> ProductReviewAssets { get; set; }
+        public DbSet<SystemConfig> SystemConfigs { get; set; }
+        public DbSet<Wallet> Wallets { get; set; }
+        public DbSet<WalletTransaction> WalletTransactions { get; set; }
+        public DbSet<WithdrawalRequest> WithdrawalRequests { get; set; }
+        public DbSet<PaymentTransaction> PaymentTransactions { get; set; }
         public DbSet<Wishlist> Wishlists { get; set; }
         public DbSet<Promotion> Promotions { get; set; }
         public DbSet<PromotionProduct> PromotionProducts { get; set; }
-        public DbSet<PromotionUsage> PromotionUsages { get; set; }
+        public DbSet<OrderComplaint> OrderComplaints { get; set; }
+        public DbSet<OrderComplaintAsset> OrderComplaintAssets { get; set; }
+        public DbSet<Conversation> Conversations { get; set; }
+        public DbSet<Message> Messages { get; set; }
+        
+        // AI Chatbot
+        public DbSet<AIChatConversation> AIChatConversations { get; set; }
+        public DbSet<AIChatMessage> AIChatMessages { get; set; }
+        public DbSet<ProductEmbedding> ProductEmbeddings { get; set; }
 
         #endregion
 

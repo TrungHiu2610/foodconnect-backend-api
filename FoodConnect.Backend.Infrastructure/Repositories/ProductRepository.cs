@@ -1,4 +1,4 @@
-﻿using AutoMapper;
+using AutoMapper;
 using FoodConnect.Backend.Application.Commons.DTOs.Responses.Product;
 using FoodConnect.Backend.Application.Interfaces.IRepositories;
 using FoodConnect.Backend.Domain.Entities;
@@ -53,13 +53,11 @@ namespace FoodConnect.Backend.Infrastructure.Repositories
                 .Where(p => p.ShopId == shopId)
                 .AsQueryable();
 
-            // Filter by status
             if (status.HasValue)
             {
                 query = query.Where(p => p.Status == status.Value);
             }
 
-            // Search by product name or description
             if (!string.IsNullOrWhiteSpace(searchTerm))
             {
                 searchTerm = searchTerm.ToLower();
@@ -88,6 +86,41 @@ namespace FoodConnect.Backend.Infrastructure.Repositories
                 .Where(p => p.Status == ProductStatusEnum.Active && p.IsAvailable)
                 .OrderBy(p => p.Name)
                 .ToListAsync();
+        }
+
+        // AI Chatbot methods
+        public async Task<List<Product>> SearchByKeywordsAsync(List<string> keywords, int limit = 15)
+        {
+            if (!keywords.Any()) return new List<Product>();
+
+            var query = _context.Products
+                .Include(p => p.Category)
+                .Include(p => p.Shop)
+                .Include(p => p.ProductAssets)
+                .Where(p => p.Status == ProductStatusEnum.Active && p.IsAvailable)
+                .AsQueryable();
+
+            // Search in name, description, ingredients
+            foreach (var keyword in keywords)
+            {
+                var lowerKeyword = keyword.ToLower();
+                query = query.Where(p =>
+                    p.Name.ToLower().Contains(lowerKeyword) ||
+                    (p.Description != null && p.Description.ToLower().Contains(lowerKeyword)) ||
+                    (p.Ingredients != null && p.Ingredients.ToLower().Contains(lowerKeyword))
+                );
+            }
+
+            return await query.Take(limit).ToListAsync();
+        }
+
+        public IQueryable<Product> GetQueryable()
+        {
+            return _context.Products
+                .Include(p => p.Category)
+                .Include(p => p.Shop)
+                .Include(p => p.ProductAssets)
+                .AsQueryable();
         }
     }
 }

@@ -26,7 +26,6 @@ namespace FoodConnect.Backend.Application.Features.Notification.Services
 
         public async Task NotifyNewOrderAsync(OrderEntity order, CancellationToken cancellationToken = default)
         {
-            // Create notification for seller
             var notification = new Domain.Entities.Notification
             {
                 UserId = order.Shop!.UserId,
@@ -46,7 +45,6 @@ namespace FoodConnect.Backend.Application.Features.Notification.Services
             await _notificationRepository.AddAsync(notification);
             await _unitOfWork.SaveChangesAsync(cancellationToken);
 
-            // Send real-time notification with sound alert
             var dto = MapToDto(notification, order);
             
             dto.RequiresSound = true;
@@ -55,7 +53,6 @@ namespace FoodConnect.Backend.Application.Features.Notification.Services
             
             await _notificationService.SendNewOrderAlertAsync(order.Shop.UserId, dto);
 
-            // Update unread count
             var unreadCount = await _notificationRepository.GetUnreadCountAsync(order.Shop.UserId);
             await _notificationService.UpdateUnreadCountAsync(order.Shop.UserId, unreadCount);
         }
@@ -169,7 +166,6 @@ namespace FoodConnect.Backend.Application.Features.Notification.Services
 
         public async Task NotifyOrderCompletedAsync(OrderEntity order, CancellationToken cancellationToken = default)
         {
-            // Notify seller
             var sellerNotification = new Domain.Entities.Notification
             {
                 UserId = order.Shop!.UserId,
@@ -195,6 +191,71 @@ namespace FoodConnect.Backend.Application.Features.Notification.Services
             await _notificationService.UpdateUnreadCountAsync(order.Shop.UserId, unreadCount);
         }
 
+        public async Task NotifyOrderReadyForPickupAsync(OrderEntity order, CancellationToken cancellationToken = default)
+        {
+            // Notify Buyer
+            var buyerNotification = new Domain.Entities.Notification
+            {
+                UserId = order.BuyerId,
+                Type = NotificationTypeEnum.OrderReadyForPickup,
+                Title = "Đơn hàng sẵn sàng để lấy",
+                Message = $"Đơn hàng #{order.OrderCode} đã sẵn sàng. Shop {order.Shop?.ShopName} đang chờ bạn đến lấy hàng hoặc sẽ giao đến!",
+                OrderId = order.Id,
+                ShopId = order.ShopId,
+                MetadataJson = JsonSerializer.Serialize(new
+                {
+                    ShopName = order.Shop?.ShopName,
+                    ReadyAt = order.ReadyForPickupAt,
+                    DeliveryType = order.DeliveryType.ToString()
+                })
+            };
+
+            await _notificationRepository.AddAsync(buyerNotification);
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+            var buyerDto = MapToDto(buyerNotification, order);
+            await _notificationService.SendToUserAsync(order.BuyerId, buyerDto);
+            await _notificationService.SendOrderStatusUpdateAsync(order.BuyerId, order.Id, "ReadyForPickup", "Đơn hàng đã sẵn sàng");
+
+            var buyerUnreadCount = await _notificationRepository.GetUnreadCountAsync(order.BuyerId);
+            await _notificationService.UpdateUnreadCountAsync(order.BuyerId, buyerUnreadCount);
+        }
+
+        public async Task NotifyOrderOutForDeliveryAsync(OrderEntity order, CancellationToken cancellationToken = default)
+        {
+            string deliveryMessage = order.DeliveryType == DeliveryTypeEnum.Express
+                ? $"Shop {order.Shop?.ShopName} đang giao đơn hàng #{order.OrderCode} đến bạn"
+                : $"Đơn hàng #{order.OrderCode} đang được shipper giao. Mã tracking: {order.TrackingCode}";
+
+            // Notify Buyer
+            var buyerNotification = new Domain.Entities.Notification
+            {
+                UserId = order.BuyerId,
+                Type = NotificationTypeEnum.OrderOutForDelivery,
+                Title = "Đơn hàng đang được giao",
+                Message = deliveryMessage,
+                OrderId = order.Id,
+                ShopId = order.ShopId,
+                MetadataJson = JsonSerializer.Serialize(new
+                {
+                    ShopName = order.Shop?.ShopName,
+                    DeliveryStartedAt = order.DeliveryStartedAt,
+                    DeliveryType = order.DeliveryType.ToString(),
+                    TrackingCode = order.TrackingCode
+                })
+            };
+
+            await _notificationRepository.AddAsync(buyerNotification);
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+            var buyerDto = MapToDto(buyerNotification, order);
+            await _notificationService.SendToUserAsync(order.BuyerId, buyerDto);
+            await _notificationService.SendOrderStatusUpdateAsync(order.BuyerId, order.Id, "OutForDelivery", "Đơn hàng đang được giao");
+
+            var buyerUnreadCount = await _notificationRepository.GetUnreadCountAsync(order.BuyerId);
+            await _notificationService.UpdateUnreadCountAsync(order.BuyerId, buyerUnreadCount);
+        }
+
         public async Task NotifyOrderCancelledAsync(OrderEntity order, bool isBuyerCancelled, CancellationToken cancellationToken = default)
         {
             Guid recipientUserId;
@@ -203,14 +264,12 @@ namespace FoodConnect.Backend.Application.Features.Notification.Services
 
             if (isBuyerCancelled)
             {
-                // Notify seller
                 recipientUserId = order.Shop!.UserId;
                 title = "Đơn hàng bị hủy";
                 message = $"Khách hàng {order.Buyer?.FullName} đã hủy đơn hàng #{order.OrderCode}. Lý do: {order.CancelReason ?? "Không có"}";
             }
             else
             {
-                // Notify buyer (if seller cancels - currently only buyer can cancel)
                 recipientUserId = order.BuyerId;
                 title = "Đơn hàng bị hủy";
                 message = $"Đơn hàng #{order.OrderCode} đã bị hủy. Lý do: {order.CancelReason ?? "Không có"}";

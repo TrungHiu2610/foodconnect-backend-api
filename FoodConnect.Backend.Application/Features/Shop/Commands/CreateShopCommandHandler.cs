@@ -44,14 +44,12 @@ namespace FoodConnect.Backend.Application.Features.Shop.Commands
                 return result.BuildUnauthorized("User not found");
             }
 
-            // Check if user already has a shop
             var existingShop = await _shopRepository.GetByUserIdAsync((Guid)userId);
             if (existingShop != null)
             {
                 return result.BuildConflict("You already have a shop registered");
             }
 
-            // Validate categories exist
             foreach (var categoryId in request.CategoryIds)
             {
                 var category = await _categoryRepository.GetByIdAsync(categoryId);
@@ -61,7 +59,6 @@ namespace FoodConnect.Backend.Application.Features.Shop.Commands
                 }
             }
 
-            // Parse payout method
             if (!Enum.IsDefined(typeof(PaymentMethodEnum), (int)request.PayoutMethod))
             {
                 return result.BuildFail("Invalid payout method");
@@ -89,7 +86,6 @@ namespace FoodConnect.Backend.Application.Features.Shop.Commands
                 Status = ShopStatusEnum.Draft,
             };
 
-            // Handle file uploads
             var uploadedFiles = new List<string>();
             await using var transaction = await _unitOfWork.BeginTransactionAsync();
 
@@ -98,7 +94,6 @@ namespace FoodConnect.Backend.Application.Features.Shop.Commands
                 var shopAssets = new List<Domain.Entities.ShopAsset>();
                 var prefix = $"{AWSDirectoryConstant.IMAGE_SHOP}/{shop.Id}";
 
-                // ID Card Front
                 if (request.IdCardFront != null)
                 {
                     var url = await _fileStorageService.UploadFileAsync(request.IdCardFront, prefix);
@@ -113,7 +108,6 @@ namespace FoodConnect.Backend.Application.Features.Shop.Commands
                     });
                 }
 
-                // ID Card Back
                 if (request.IdCardBack != null)
                 {
                     var url = await _fileStorageService.UploadFileAsync(request.IdCardBack, prefix);
@@ -128,7 +122,6 @@ namespace FoodConnect.Backend.Application.Features.Shop.Commands
                     });
                 }
 
-                // Portrait Photo
                 if (request.PortraitPhoto != null)
                 {
                     var url = await _fileStorageService.UploadFileAsync(request.PortraitPhoto, prefix);
@@ -143,7 +136,6 @@ namespace FoodConnect.Backend.Application.Features.Shop.Commands
                     });
                 }
 
-                // Food Safety Certificates (Required - Multiple files)
                 if (request.FoodSafetyCertificates != null && request.FoodSafetyCertificates.Any())
                 {
                     foreach (var certificate in request.FoodSafetyCertificates)
@@ -164,14 +156,12 @@ namespace FoodConnect.Backend.Application.Features.Shop.Commands
 
                 shop.Assets = shopAssets;
 
-                // Add shop categories
                 shop.ShopCategories = request.CategoryIds.Select(categoryId => new Domain.Entities.ShopCategory
                 {
                     ShopId = shop.Id,
                     CategoryId = categoryId
                 }).ToList();
 
-                // Parse and add operating hours if provided
                 if (!string.IsNullOrEmpty(request.OperatingHoursJson))
                 {
                     try
@@ -191,7 +181,6 @@ namespace FoodConnect.Backend.Application.Features.Shop.Commands
                     }
                     catch
                     {
-                        // Ignore invalid JSON
                     }
                 }
 
@@ -209,7 +198,6 @@ namespace FoodConnect.Backend.Application.Features.Shop.Commands
             {
                 await transaction.RollbackAsync(cancellationToken);
                 
-                // Cleanup uploaded files
                 if (uploadedFiles.Any())
                 {
                     foreach (var fileUrl in uploadedFiles)

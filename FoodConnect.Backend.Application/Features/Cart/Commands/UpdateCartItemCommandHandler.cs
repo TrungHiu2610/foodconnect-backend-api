@@ -42,7 +42,6 @@ namespace FoodConnect.Backend.Application.Features.Cart.Commands
 
             var userId = _currentUserService.UserId;
 
-            // Verify ownership
             if (userId.HasValue)
             {
                 if (cartItem.Cart.UserId != userId.Value)
@@ -68,12 +67,10 @@ namespace FoodConnect.Backend.Application.Features.Cart.Commands
             {
                 if (request.Quantity <= 0)
                 {
-                    // Remove item if quantity is 0 or less
                     _cartItemRepository.Remove(cartItem);
                 }
                 else
                 {
-                    // Update quantity
                     cartItem.Quantity = request.Quantity;
                     _cartItemRepository.Update(cartItem);
                 }
@@ -81,7 +78,6 @@ namespace FoodConnect.Backend.Application.Features.Cart.Commands
                 await _unitOfWork.SaveChangesAsync(cancellationToken);
                 await _unitOfWork.CommitTransactionAsync(transaction);
 
-                // Get updated cart
                 var getCartQuery = new GetCartQuery { SessionId = request.SessionId };
                 var cartResponse = await _mediator.Send(getCartQuery, cancellationToken);
 
