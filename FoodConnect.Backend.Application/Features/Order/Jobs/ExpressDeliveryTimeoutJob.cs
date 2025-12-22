@@ -73,7 +73,7 @@ namespace FoodConnect.Backend.Application.Features.Order.Jobs
                             _logger.LogInformation("Order {OrderId} not yet timed out (Pending, {Minutes} minutes elapsed)", orderId, timeSinceCreated.TotalMinutes);
                         }
                     }
-                    else if (order.Status == OrderStatusEnum.Preparing || order.Status == OrderStatusEnum.Prepared)
+                    else if (order.Status == OrderStatusEnum.Preparing)
                     {
                         if (timeSinceCreated >= TimeSpan.FromHours(3))
                         {
@@ -119,7 +119,7 @@ namespace FoodConnect.Backend.Application.Features.Order.Jobs
             await using var transaction = await _unitOfWork.BeginTransactionAsync();
             try
             {
-                if (order.Status == OrderStatusEnum.Preparing || order.Status == OrderStatusEnum.Prepared)
+                if (order.Status == OrderStatusEnum.Preparing)
                 {
                     foreach (var orderItem in order.OrderItems)
                     {

@@ -86,10 +86,20 @@ public class SendMessageCommandHandler : IRequestHandler<SendMessageCommand, Bas
         conversation.LastMessageAt = DateTime.UtcNow;
         await _unitOfWork.SaveChangesAsync();
 
-        var messageResponse = _mapper.Map<MessageResponse>(message);
+        var savedMessage = await _messageRepository.GetByIdAsync(message.Id, m => m.Sender);
+        var messageResponse = _mapper.Map<MessageResponse>(savedMessage);
+        
         await _chatNotificationService.SendMessageToConversationAsync(
             conversation.Id.ToString(), 
             messageResponse);
+
+        var recipientUserId = conversation.BuyerId == userId.Value 
+            ? conversation.SellerId 
+            : conversation.BuyerId;
+
+        var unreadCount = await _messageRepository.GetUnreadCountByUserAsync(recipientUserId);
+        
+        await _chatNotificationService.UpdateUnreadCountAsync(recipientUserId, unreadCount);
 
         return result.BuildSuccess(new CreateOrUpdateResponse { Id = message.Id }, "Message sent successfully");
     }

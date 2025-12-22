@@ -44,7 +44,7 @@ namespace FoodConnect.Backend.Application.Features.Order.Commands
                 return result.BuildForbidden("You don't have permission to update this order");
             }
 
-            if (order.Status != OrderStatusEnum.Prepared && order.Status != OrderStatusEnum.Preparing)
+            if (order.Status != OrderStatusEnum.Preparing)
             {
                 return result.BuildFail($"Cannot mark order as ready. Current status is {order.Status}");
             }

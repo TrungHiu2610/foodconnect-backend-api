@@ -20,10 +20,13 @@ public class PaymentController : ApiBaseController
 
     [HttpPost]
     [Authorize]
-    public async Task<IActionResult> CreateVNPayPayment([FromBody] CreateVNPayPaymentCommand command)
+    public async Task<IActionResult> CreateVNPayPayment(
+        [FromBody] CreateVNPayPaymentCommand command,
+        [FromQuery] string platform = "web")
     {
         var ipAddress = HttpContext.Connection.RemoteIpAddress?.MapToIPv4().ToString() ?? "127.0.0.1";
         command.IpAddress = ipAddress;
+        command.Platform = platform; // Set platform (web/mobile)
 
         var result = await Mediator.Send(command);
         return result != null

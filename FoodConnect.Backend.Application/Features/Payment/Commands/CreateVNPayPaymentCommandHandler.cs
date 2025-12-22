@@ -64,7 +64,8 @@ public class CreateVNPayPaymentCommandHandler : IRequestHandler<CreateVNPayPayme
             OrderId = order.Id,
             Amount = (decimal)order.Total,
             OrderInfo = $"Order {order.OrderCode}", 
-            IpAddress = request.IpAddress
+            IpAddress = request.IpAddress,
+            Platform = request.Platform
         };
 
         var paymentUrlResponse = await _vnpayService.CreatePaymentUrlAsync(paymentRequest);

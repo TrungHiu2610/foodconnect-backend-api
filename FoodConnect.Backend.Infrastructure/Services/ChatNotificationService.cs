@@ -50,4 +50,13 @@ public class ChatNotificationService : IChatNotificationService
         
         Console.WriteLine($"[ChatNotificationService] Notified user {recipientUserId} about message in conversation {conversationId}");
     }
+
+    public async Task UpdateUnreadCountAsync(Guid userId, int unreadCount)
+    {
+        await _hubContext.Clients
+            .Group($"user_{userId}")
+            .UpdateUnreadCount(unreadCount);
+        
+        Console.WriteLine($"[ChatNotificationService] Updated unread count for user {userId}: {unreadCount}");
+    }
 }
