@@ -225,11 +225,25 @@ namespace FoodConnect.Backend.Application.Features.Order.Commands
                         }
                     }
 
-                    var shop = await _shopRepository.GetByIdAsync(shopId);
+                    var shop = await _shopRepository.GetDetailByIdAsync(shopId);
                     if (shop == null)
                     {
                         await transaction.RollbackAsync();
                         return result.BuildFail($"Shop not found");
+                    }
+
+                    // Check shop status - must be Active to accept orders
+                    if (shop.Status != ShopStatusEnum.Active)
+                    {
+                        await transaction.RollbackAsync();
+                        return result.BuildFail($"Shop '{shop.ShopName}' is currently {shop.Status}. Orders cannot be placed at this time.");
+                    }
+
+                    // Check operating hours for Express delivery only
+                    if (deliveryType == DeliveryTypeEnum.Express && !shop.IsOpenNow())
+                    {
+                        await transaction.RollbackAsync();
+                        return result.BuildFail($"Shop '{shop.ShopName}' is currently closed. Express delivery is only available during operating hours.");
                     }
 
                     if (!shop.Latitude.HasValue || !shop.Longitude.HasValue)
