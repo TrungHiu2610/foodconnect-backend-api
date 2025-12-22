@@ -91,7 +91,6 @@ namespace FoodConnect.Backend.Application.Features.Product.Commands
                     request.ProductId
                 );
 
-                // Create review
                 var review = new ProductReview
                 {
                     OrderId = request.OrderId,
@@ -144,14 +143,34 @@ namespace FoodConnect.Backend.Application.Features.Product.Commands
 
                 await _unitOfWork.CommitTransactionAsync(transaction);
 
-                // Tạo message phù hợp dựa trên kết quả kiểm duyệt
-                var message = moderationResult.Status switch
+                var (message, statusCode) = moderationResult.Status switch
                 {
-                    ReviewStatusEnum.Approved => "Product review submitted and approved successfully",
-                    ReviewStatusEnum.Toxic => "Review submitted but flagged as toxic and will not be displayed",
-                    ReviewStatusEnum.Spam => "Review submitted but flagged as spam and will not be displayed",
-                    _ => "Product review submitted for moderation"
+                    ReviewStatusEnum.Approved => 
+                        ("Đánh giá sản phẩm đã được gửi và hiển thị thành công!", 200),
+                    
+                    ReviewStatusEnum.Toxic => 
+                        ("Review của bạn chứa nội dung không phù hợp hoặc vi phạm quy định cộng đồng. " +
+                         $"Lý do: {moderationResult.Details}. " +
+                         "Review của bạn đã được lưu lại để quản trị viên xem xét. " +
+                         "Nếu tiếp tục vi phạm, tài khoản của bạn có thể bị khóa.", 
+                         400),
+                    
+                    ReviewStatusEnum.Spam => 
+                        ("Review của bạn bị phát hiện là spam hoặc không có nội dung. " +
+                         $"Lý do: {moderationResult.Details}. " +
+                         "Review của bạn đã được lưu lại để quản trị viên xem xét. " +
+                         "Vui lòng viết đánh giá chi tiết và chân thực hơn. " +
+                         "Nếu tiếp tục vi phạm, tài khoản của bạn có thể bị khóa.",
+                         400),
+                    
+                    _ => ("Review đã được gửi để kiểm duyệt.", 200)
                 };
+
+                if (moderationResult.Status == ReviewStatusEnum.Toxic || 
+                    moderationResult.Status == ReviewStatusEnum.Spam)
+                {
+                    return result.BuildFail(message, statusCode);
+                }
 
                 return result.BuildSuccess(
                     new CreateOrUpdateResponse { Id = review.Id },
