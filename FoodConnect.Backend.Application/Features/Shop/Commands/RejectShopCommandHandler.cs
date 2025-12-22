@@ -39,13 +39,11 @@ namespace FoodConnect.Backend.Application.Features.Shop.Commands
                 return result.BuildNotFound("Shop not found");
             }
 
-            // Validate status
             if (shop.Status != ShopStatusEnum.PendingApproval)
             {
                 return result.BuildFail($"Shop must be in PendingApproval status. Current status: {shop.Status}");
             }
 
-            // Update shop status
             shop.Status = ShopStatusEnum.Rejected;
             shop.AdminReason = request.Reason;
             shop.ReviewedBy = userId;

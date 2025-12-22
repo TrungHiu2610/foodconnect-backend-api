@@ -41,7 +41,6 @@ public class UpdateSystemConfigCommandHandler : IRequestHandler<UpdateSystemConf
         if (!config.IsEditable)
             return result.BuildFail($"Config '{config.ConfigKey}' is not editable");
 
-        // Validate data type
         if (request.DataType == "decimal" || request.DataType == "number")
         {
             if (!decimal.TryParse(request.ConfigValue, out _))
@@ -58,14 +57,12 @@ public class UpdateSystemConfigCommandHandler : IRequestHandler<UpdateSystemConf
         await using var transaction = await _unitOfWork.BeginTransactionAsync();
         try
         {
-            // Upload new banner image if provided
             string? newBannerImageUrl = null;
             if (request.Type == (int)SystemConfigTypeEnum.Banner && request.BannerImage != null)
             {
                 newBannerImageUrl = await _fileStorageService.UploadFileAsync(request.BannerImage, "banners");
                 uploadedBannerImageUrl = newBannerImageUrl;
 
-                // Delete old banner image if exists
                 if (!string.IsNullOrEmpty(config.ConfigValue) && config.ConfigValue.Contains("/"))
                 {
                     try
@@ -77,7 +74,6 @@ public class UpdateSystemConfigCommandHandler : IRequestHandler<UpdateSystemConf
                 }
             }
 
-            // Auto-adjust display order when changing position for Banner type
             if (request.Type == (int)SystemConfigTypeEnum.Banner && 
                 config.DisplayOrder != request.DisplayOrder)
             {
@@ -89,7 +85,6 @@ public class UpdateSystemConfigCommandHandler : IRequestHandler<UpdateSystemConf
                 
                 if (newOrder < oldOrder)
                 {
-                    // Moving up: shift banners in range [newOrder, oldOrder) down by 1
                     foreach (var banner in allBanners
                         .Where(b => b.Id != request.Id && 
                                    (b.DisplayOrder ?? int.MaxValue) >= newOrder && 
@@ -104,7 +99,6 @@ public class UpdateSystemConfigCommandHandler : IRequestHandler<UpdateSystemConf
                 }
                 else if (newOrder > oldOrder)
                 {
-                    // Moving down: shift banners in range (oldOrder, newOrder] up by 1
                     foreach (var banner in allBanners
                         .Where(b => b.Id != request.Id && 
                                    (b.DisplayOrder ?? int.MaxValue) > oldOrder && 
@@ -119,7 +113,6 @@ public class UpdateSystemConfigCommandHandler : IRequestHandler<UpdateSystemConf
                 }
             }
 
-            // If IsActive = true and type changed or newly activated, deactivate other configs of the same type
             if (request.IsActive && request.Type != (int)SystemConfigTypeEnum.Other)
             {
                 var existingConfigsOfType = await _systemConfigRepository.GetConfigsByTypeAsync(request.Type);
@@ -132,7 +125,6 @@ public class UpdateSystemConfigCommandHandler : IRequestHandler<UpdateSystemConf
                 }
             }
 
-            // Update config
             config.ConfigKey = request.ConfigKey;
             config.ConfigValue = newBannerImageUrl ?? request.ConfigValue; // Use new image URL if uploaded
             config.Description = request.Description;
@@ -158,7 +150,6 @@ public class UpdateSystemConfigCommandHandler : IRequestHandler<UpdateSystemConf
         catch (Exception ex)
         {
             await transaction.RollbackAsync();
-            // delete uploaded banner image if any
             if (!string.IsNullOrEmpty(uploadedBannerImageUrl))
             {
                 try

@@ -26,7 +26,6 @@ namespace FoodConnect.Backend.Application.Features.Notification.Services
 
         public async Task NotifyNewOrderAsync(OrderEntity order, CancellationToken cancellationToken = default)
         {
-            // Create notification for seller
             var notification = new Domain.Entities.Notification
             {
                 UserId = order.Shop!.UserId,
@@ -46,7 +45,6 @@ namespace FoodConnect.Backend.Application.Features.Notification.Services
             await _notificationRepository.AddAsync(notification);
             await _unitOfWork.SaveChangesAsync(cancellationToken);
 
-            // Send real-time notification with sound alert
             var dto = MapToDto(notification, order);
             
             dto.RequiresSound = true;
@@ -55,7 +53,6 @@ namespace FoodConnect.Backend.Application.Features.Notification.Services
             
             await _notificationService.SendNewOrderAlertAsync(order.Shop.UserId, dto);
 
-            // Update unread count
             var unreadCount = await _notificationRepository.GetUnreadCountAsync(order.Shop.UserId);
             await _notificationService.UpdateUnreadCountAsync(order.Shop.UserId, unreadCount);
         }
@@ -169,7 +166,6 @@ namespace FoodConnect.Backend.Application.Features.Notification.Services
 
         public async Task NotifyOrderCompletedAsync(OrderEntity order, CancellationToken cancellationToken = default)
         {
-            // Notify seller
             var sellerNotification = new Domain.Entities.Notification
             {
                 UserId = order.Shop!.UserId,
@@ -203,14 +199,12 @@ namespace FoodConnect.Backend.Application.Features.Notification.Services
 
             if (isBuyerCancelled)
             {
-                // Notify seller
                 recipientUserId = order.Shop!.UserId;
                 title = "Đơn hàng bị hủy";
                 message = $"Khách hàng {order.Buyer?.FullName} đã hủy đơn hàng #{order.OrderCode}. Lý do: {order.CancelReason ?? "Không có"}";
             }
             else
             {
-                // Notify buyer (if seller cancels - currently only buyer can cancel)
                 recipientUserId = order.BuyerId;
                 title = "Đơn hàng bị hủy";
                 message = $"Đơn hàng #{order.OrderCode} đã bị hủy. Lý do: {order.CancelReason ?? "Không có"}";

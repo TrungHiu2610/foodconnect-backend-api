@@ -26,10 +26,11 @@ namespace FoodConnect.Backend.Application.Features.Order.Mappers
                 CreatedAt = order.CreatedAtUtc,
                 AcceptedAt = order.AcceptedAt,
                 PreparedAt = order.PreparedAt,
+                ReadyForPickupAt = order.ReadyForPickupAt,
+                DeliveryStartedAt = order.DeliveryStartedAt,
                 DeliveredAt = order.DeliveredAt,
                 CompletedAt = order.CompletedAt,
                 CancelledAt = order.CancelledAt,
-                // Standard Delivery fields
                 PackagePhotoUrl = order.PackagePhotoUrl,
                 TrackingCode = order.TrackingCode,
                 DeliveryProofImageUrl = order.DeliveryProofImageUrl,
@@ -65,6 +66,7 @@ namespace FoodConnect.Backend.Application.Features.Order.Mappers
                 Total = order.Total,
                 Status = order.Status,
                 PaymentMethod = order.PaymentMethod,
+                DeliveryType = order.DeliveryType,
                 CreatedAt = order.CreatedAtUtc,
                 EstimatedDelivery = CalculateEstimatedDelivery(order.DeliveryType, order.ShippingAddressJson, order.Shop),
                 ShopId = order.ShopId,
@@ -100,19 +102,16 @@ namespace FoodConnect.Backend.Application.Features.Order.Mappers
             string shippingAddressJson,
             Domain.Entities.Shop? shop)
         {
-            // Express delivery: 1-2 giờ
             if (deliveryType == DeliveryTypeEnum.Express)
             {
                 return "1-2 giờ";
             }
             
-            // Standard delivery: kiểm tra cùng tỉnh hay khác tỉnh
             try
             {
                 var shippingAddress = JsonSerializer.Deserialize<ShippingAddressDto>(shippingAddressJson);
                 if (shippingAddress != null && shop != null)
                 {
-                    // So sánh tỉnh/thành phố (normalize để tránh lỗi do khoảng trắng, hoa thường)
                     var buyerProvince = shippingAddress.Province?.Trim().ToLowerInvariant() ?? string.Empty;
                     var shopProvince = shop.City?.Trim().ToLowerInvariant() ?? string.Empty;
                     
@@ -128,10 +127,8 @@ namespace FoodConnect.Backend.Application.Features.Order.Mappers
             }
             catch
             {
-                // Nếu có lỗi parse JSON, mặc định trả về 3-4 ngày
             }
             
-            // Mặc định cho Standard
             return "3-4 ngày";
         }
     }

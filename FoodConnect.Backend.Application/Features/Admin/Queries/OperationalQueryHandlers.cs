@@ -28,7 +28,6 @@ namespace FoodConnect.Backend.Application.Features.Admin.Queries
         {
             var result = new BaseResponse<OrderStatusOverviewResponse>();
 
-            // Check cache
             var cacheKey = CacheKeys.OrderStatusOverview(request.FromDate, request.ToDate);
             var cachedResponse = await _redisService.GetAsync<BaseResponse<OrderStatusOverviewResponse>>(cacheKey);
             if (cachedResponse != null)
@@ -98,7 +97,6 @@ namespace FoodConnect.Backend.Application.Features.Admin.Queries
         {
             var result = new BaseResponse<CancellationRateResponse>();
 
-            // Check cache
             var cacheKey = CacheKeys.CancellationRate(request.FromDate, request.ToDate);
             var cachedResponse = await _redisService.GetAsync<BaseResponse<CancellationRateResponse>>(cacheKey);
             if (cachedResponse != null)

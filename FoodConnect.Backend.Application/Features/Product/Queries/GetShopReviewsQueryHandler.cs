@@ -28,14 +28,12 @@ namespace FoodConnect.Backend.Application.Features.Product.Queries
 
             try
             {
-                // Verify shop exists
                 var shop = await _shopRepository.GetByIdAsync(request.ShopId);
                 if (shop == null)
                 {
                     return result.BuildNotFound("Shop not found");
                 }
 
-                // Get paginated reviews
                 var (reviews, totalCount) = await _reviewRepository.GetShopReviewsAsync(
                     request.ShopId,
                     request.PageNumber,
@@ -44,7 +42,6 @@ namespace FoodConnect.Backend.Application.Features.Product.Queries
                     request.HasSellerResponse
                 );
 
-                // Map to response DTOs
                 var reviewDtos = _mapper.Map<List<ProductReviewResponse>>(reviews);
 
                 var pagedResponse = new PagedResponse<ProductReviewResponse>

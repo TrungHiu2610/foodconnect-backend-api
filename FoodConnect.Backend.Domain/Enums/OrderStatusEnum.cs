@@ -10,17 +10,15 @@ namespace FoodConnect.Backend.Domain.Enums
     {
         Pending = 0,
         Preparing = 1,
-        Prepared = 2,
-        ReadyForPickup = 3,
-        DeliveryingBySeller = 4,
-        DeliveryingByShipper = 5,
-        OutForDelivery = 6,
-        Delivered = 7,
-        Completed = 8,
-        Cancelled = 9,
-        Returned = 10,
-        AwaitingPayment = 11,
-        Disputing = 12,
-        Rejected = 13
+        ReadyForPickup = 2,
+        DeliveryingBySeller = 3,
+        DeliveryingByShipper = 4,
+        Delivered = 5,  
+        Completed = 6,
+        Cancelled = 7,
+        Returned = 8,
+        AwaitingPayment = 9,
+        Disputing = 10,
+        Rejected = 11
     }
 }

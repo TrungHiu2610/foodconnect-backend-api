@@ -15,15 +15,12 @@ namespace FoodConnect.Backend.Application.Features.Complaint.DTOs
         public DateTime? SellerRespondedAt { get; set; }
         public DateTime? AdminDecidedAt { get; set; }
         
-        // Order info
         public Guid OrderId { get; set; }
         public string OrderCode { get; set; } = string.Empty;
         public double OrderTotal { get; set; }
         
-        // For buyer view
         public string? ShopName { get; set; }
         
-        // For seller view
         public string? BuyerName { get; set; }
     }
 }

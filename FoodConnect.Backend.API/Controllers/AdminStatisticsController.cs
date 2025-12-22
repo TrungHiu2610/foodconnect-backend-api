@@ -9,7 +9,6 @@ namespace FoodConnect.Backend.API.Controllers
     [Authorize(Roles = "Admin")]
     public class AdminStatisticsController : ApiBaseController
     {
-        // A. Financial Analytics
 
         [HttpGet]
         public async Task<IActionResult> GetSystemRevenue(
@@ -62,7 +61,6 @@ namespace FoodConnect.Backend.API.Controllers
             return result.Success ? Ok(result) : BadRequest(result);
         }
 
-        // B. Operational Analytics
 
         [HttpGet]
         public async Task<IActionResult> GetOrderStatusOverview(
@@ -113,7 +111,6 @@ namespace FoodConnect.Backend.API.Controllers
             return result.Success ? Ok(result) : BadRequest(result);
         }
 
-        // C. User Analytics
 
         [HttpGet]
         public async Task<IActionResult> GetNewUserStatistics(
@@ -157,7 +154,6 @@ namespace FoodConnect.Backend.API.Controllers
             return result.Success ? Ok(result) : BadRequest(result);
         }
 
-        // D. Quality Analytics
 
         [HttpGet]
         public async Task<IActionResult> GetComplaintStatistics(

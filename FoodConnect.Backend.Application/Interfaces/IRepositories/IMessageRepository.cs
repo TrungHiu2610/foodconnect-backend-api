@@ -8,4 +8,5 @@ public interface IMessageRepository : IBaseRepository<Message>
     Task<List<Message>> GetByConversationIdAsync(Guid conversationId, int pageNumber, int pageSize);
     Task<int> CountByConversationIdAsync(Guid conversationId);
     Task<int> CountUnreadMessagesAsync(Guid conversationId, Guid userId);
+    Task<int> GetUnreadCountByUserAsync(Guid userId);
 }

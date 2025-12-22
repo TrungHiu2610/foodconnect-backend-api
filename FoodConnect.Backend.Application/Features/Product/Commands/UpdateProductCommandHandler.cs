@@ -1,4 +1,4 @@
-﻿using AutoMapper;
+using AutoMapper;
 using FoodConnect.Backend.Application.Commons.DTOs.Responses;
 using FoodConnect.Backend.Application.Commons.DTOs.Responses.Product;
 using FoodConnect.Backend.Application.Commons.Interfaces;
@@ -44,7 +44,6 @@ namespace FoodConnect.Backend.Application.Features.Product.Commands
 
             var userId = _currentUserService.UserId;
 
-            // validate user
             if (userId == null)
             {
                 return result.BuildFail("User not found");
@@ -59,7 +58,6 @@ namespace FoodConnect.Backend.Application.Features.Product.Commands
                 return result.BuildFail("Shop is not active");
             }
 
-            // validate category
             if (request.CategoryId.HasValue && request.CategoryId != Guid.Empty)
             {
                 var category = await _categoryRepository.GetByIdAsync((Guid)request.CategoryId);
@@ -68,14 +66,12 @@ namespace FoodConnect.Backend.Application.Features.Product.Commands
                     return result.BuildFail("Category not found");
                 }
 
-                // Validate that category is a leaf category (no children)
                 var hasChildren = await _categoryRepository.HasChildrenAsync(request.CategoryId.Value);
                 if (hasChildren)
                 {
                     return result.BuildFail("Product can only be assigned to a leaf category (category without sub-categories)");
                 }
 
-                // Validate that category belongs to shop's registered categories (including children)
                 var shopCategoryIds = await _shopRepository.GetAllCategoryIdsForShopAsync(shop.Id);
                 if (!shopCategoryIds.Contains(request.CategoryId.Value))
                 {
@@ -83,7 +79,6 @@ namespace FoodConnect.Backend.Application.Features.Product.Commands
                 }
             }
 
-            // validate product
             var product = await _productRepository.GetProductWithAssetsAsync(request.Id, tracking: true);
 
             if (product == null)
@@ -99,7 +94,6 @@ namespace FoodConnect.Backend.Application.Features.Product.Commands
             await using var transaction = await _unitOfWork.BeginTransactionAsync();
             try
             {
-                // update some fields of product
                 _mapper.Map(request, product);
 
                 if (request.CategoryId.HasValue && request.CategoryId.Value != Guid.Empty)
@@ -107,7 +101,6 @@ namespace FoodConnect.Backend.Application.Features.Product.Commands
                     product.CategoryId = request.CategoryId.Value;
                 }
 
-                // delete product assets
                 var productAssetsToDelete = new List<ProductAsset>();
                 var urlsToDeleteFromS3 = new List<string>();
 
@@ -116,7 +109,6 @@ namespace FoodConnect.Backend.Application.Features.Product.Commands
                     var thumbnailTrueCountInDb = product.ProductAssets.Count(pa => pa.IsThumbnail == true);
                     var thumbnailTrueCountNewRequest = (request.NewProductAssets == null || !request.NewProductAssets.Any()) ? 0 : request.NewProductAssets.Count(pa => pa.IsThumbnail == true);
 
-                    // validate thumbnail in case we delete a thumbnail and there is no new thumbnail in the new request
                     var removingThumbnails = product.ProductAssets.Count(pa => pa.IsThumbnail == true && request.RemovedProductAssetIds.Contains(pa.Id));
                     if (thumbnailTrueCountInDb - removingThumbnails + thumbnailTrueCountNewRequest < 1)
                     {
@@ -135,10 +127,8 @@ namespace FoodConnect.Backend.Application.Features.Product.Commands
                     productAssetsToDelete.ForEach(pa => product.ProductAssets.Remove(pa));
                 }
 
-                // update product assets
                 if (request.UpdateProductAssets != null && request.UpdateProductAssets.Any())
                 {
-                    // validate thumbnail
                     var thumbnailTrueCountRequest = request.UpdateProductAssets.Count(pa => pa.IsThumbnail == true);
                     var thumbnailFalseCountRequest = request.UpdateProductAssets.Count(pa => pa.IsThumbnail == false);
                     var thumbnailTrueCountInDb = product.ProductAssets.Count(pa => pa.IsThumbnail == true);
@@ -149,7 +139,6 @@ namespace FoodConnect.Backend.Application.Features.Product.Commands
                         await _unitOfWork.RollbackTransactionAsync(transaction);
                         return result.BuildFail("Only one thumbnail is allowed.");
                     }
-                    // validate in case we update false to true for a thumbnail
                     if (thumbnailFalseCountRequest == request.UpdateProductAssets.Count() && thumbnailTrueCountNewRequest == 0
                         && thumbnailTrueCountInDb == 0)
                     {
@@ -166,7 +155,6 @@ namespace FoodConnect.Backend.Application.Features.Product.Commands
                         {
                             assetInDb.AssetDescription = assetUpdateInfo.AssetDescription;
                         }
-                        // set thumbnail 
                         if (newThumbnailId != null)
                         {
                             assetInDb.IsThumbnail = (assetInDb.Id == newThumbnailId);
@@ -174,10 +162,8 @@ namespace FoodConnect.Backend.Application.Features.Product.Commands
                     }
                 }
 
-                // add new product assets
                 if (request.NewProductAssets != null && request.NewProductAssets.Any())
                 {
-                    // validate thumbnail
                     var thumbnailTrueCountRequest = request.NewProductAssets.Count(pa => pa.IsThumbnail == true);
                     var thumbnailTrueCountInDb = product.ProductAssets.Count(pa => pa.IsThumbnail == true);
                     if (thumbnailTrueCountRequest + thumbnailTrueCountInDb > 1)
@@ -199,7 +185,6 @@ namespace FoodConnect.Backend.Application.Features.Product.Commands
                         }
                     }
                     
-                    // Map DTOs to entities and add to product collection
                     var newAssets = _mapper.Map<ICollection<ProductAsset>>(request.NewProductAssets);
                     foreach (var newAsset in newAssets)
                     {
@@ -232,7 +217,6 @@ namespace FoodConnect.Backend.Application.Features.Product.Commands
                 await _unitOfWork.SaveChangesAsync(cancellationToken);
                 await _unitOfWork.CommitTransactionAsync(transaction);
 
-                // delete product assets from S3 for those deleted assets
                 if (urlsToDeleteFromS3.Any())
                 {
                     await _fileStorageService.DeleteFilesAsync(urlsToDeleteFromS3);

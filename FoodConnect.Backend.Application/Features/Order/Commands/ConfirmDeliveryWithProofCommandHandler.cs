@@ -34,39 +34,33 @@ namespace FoodConnect.Backend.Application.Features.Order.Commands
             await using var transaction = await _unitOfWork.BeginTransactionAsync();
             try
             {
-                // Check authorization
                 var userId = _currentUserService.UserId;
                 if (!userId.HasValue)
                 {
                     return result.BuildUnauthorized();
                 }
 
-                // Get order with shop info
                 var order = await _orderRepository.GetOrderWithDetailsAsync(request.OrderId);
                 if (order == null)
                 {
                     return result.BuildNotFound("Order not found");
                 }
 
-                // Verify seller owns this order's shop
                 if (order.Shop.UserId != userId.Value)
                 {
                     return result.BuildForbidden("You don't have permission to update this order");
                 }
 
-                // Validate status transition
                 if (order.Status != OrderStatusEnum.DeliveryingBySeller)
                 {
                     return result.BuildFail($"Order must be in DeliveryingBySeller status. Current status is {order.Status}");
                 }
 
-                // Upload delivery proof image to S3
                 uploadedImageUrl = await _fileStorageService.UploadFileAsync(
                     request.DeliveryProofImage,
                     $"Orders/{order.OrderCode}/DeliveryProof"
                 );
 
-                // Update order
                 order.DeliveryProofImageUrl = uploadedImageUrl;
                 order.Status = OrderStatusEnum.Delivered;
                 order.DeliveredAt = DateTime.UtcNow;
@@ -84,7 +78,6 @@ namespace FoodConnect.Backend.Application.Features.Order.Commands
             {
                 await transaction.RollbackAsync();
 
-                // Delete uploaded image if transaction fails
                 if (!string.IsNullOrEmpty(uploadedImageUrl))
                 {
                     await _fileStorageService.DeleteFileAsync(uploadedImageUrl);

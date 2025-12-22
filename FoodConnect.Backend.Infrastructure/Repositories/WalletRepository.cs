@@ -19,7 +19,6 @@ public class WalletRepository : BaseRepository<Wallet>, IWalletRepository
             .FirstOrDefaultAsync(w => w.UserId == userId && w.WalletType == walletType);
         if (wallet == null)
         {
-            // Auto-create wallet if not exists
             wallet = new Domain.Entities.Wallet
             {
                 UserId = userId,

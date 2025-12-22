@@ -1,4 +1,4 @@
-﻿using FoodConnect.Backend.Domain.Enums;
+using FoodConnect.Backend.Domain.Enums;
 
 namespace FoodConnect.Backend.Application.Features.Order.DTOs
 {
@@ -19,32 +19,30 @@ namespace FoodConnect.Backend.Application.Features.Order.DTOs
         public string? CancelReason { get; set; }
         public string? RejectionReason { get; set; }
         
-        // Delivery Images & Tracking
         public string? PackagePhotoUrl { get; set; }
         public string? TrackingCode { get; set; }
         public string? DeliveryProofImageUrl { get; set; }
         
-        // Timestamps
         public DateTime CreatedAt { get; set; }
         public DateTime? AcceptedAt { get; set; }
         public DateTime? PreparedAt { get; set; }
+        public DateTime? ReadyForPickupAt { get; set; }
+        public DateTime? DeliveryStartedAt { get; set; }
         public DateTime? DeliveredAt { get; set; }
         public DateTime? CompletedAt { get; set; }
         public DateTime? CancelledAt { get; set; }
+
         
-        // Buyer info
         public Guid BuyerId { get; set; }
         public string BuyerName { get; set; } = string.Empty;
         public string? BuyerEmail { get; set; }
         public string? BuyerPhone { get; set; }
         
-        // Shop info
         public Guid ShopId { get; set; }
         public string ShopName { get; set; } = string.Empty;
         public string? ShopPhone { get; set; }
         public string? ShopAddress { get; set; }
         
-        // Order items
         public List<OrderItemDto> OrderItems { get; set; } = new List<OrderItemDto>();
         public OrderReviewStatusEnum? ReviewStatus { get; set; }
     }

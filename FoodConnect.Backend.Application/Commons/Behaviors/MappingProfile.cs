@@ -1,4 +1,4 @@
-﻿using AutoMapper;
+using AutoMapper;
 using FoodConnect.Backend.Application.Commons.DTOs;
 using FoodConnect.Backend.Application.Commons.DTOs.Responses.Category;
 using FoodConnect.Backend.Application.Commons.DTOs.Responses.Product;
@@ -21,7 +21,6 @@ namespace FoodConnect.Backend.Application.Commons.Behaviors
         {
             #region product mappings
 
-            // create product
             CreateMap<CreateProductCommand, Product>()
                 .ForMember(dest => dest.Status,
                     opt => opt.ConvertUsing(new StringToEnumConverter<ProductStatusEnum>(), src => src.Status))
@@ -33,7 +32,6 @@ namespace FoodConnect.Backend.Application.Commons.Behaviors
                 .ForMember(dest => dest.Product, opt => opt.Ignore())
                 .ReverseMap();
 
-            // get product
             CreateMap<ProductAssetGetDto, ProductAsset>()
                 .ForMember(dest => dest.ProductId, opt => opt.Ignore())
                 .ForMember(dest => dest.Product, opt => opt.Ignore())
@@ -71,7 +69,6 @@ namespace FoodConnect.Backend.Application.Commons.Behaviors
                 .ForMember(dest => dest.ShopId,
                            opt => opt.MapFrom(src => src.Shop.Id));
 
-            // update product
             CreateMap<UpdateProductCommand, Product>()
                 .ForMember(dest => dest.Id, opt => opt.Ignore())
                 .ForMember(dest => dest.CategoryId, opt => opt.Ignore())
@@ -91,7 +88,6 @@ namespace FoodConnect.Backend.Application.Commons.Behaviors
             #endregion
 
             #region category mappings
-            // get category
             CreateMap<Category, GetListCategoryItem>()
                 .ForMember(dest => dest.ParentName,
                     opt => opt.MapFrom(src => src.Parent.Name))
@@ -100,14 +96,12 @@ namespace FoodConnect.Backend.Application.Commons.Behaviors
                 .ForMember(dest => dest.ProductCount,
                     opt => opt.MapFrom(src => src.Products.Count()));
 
-            // create category
             CreateMap<CreateCategoryCommand, Category>()
                 .ForMember(dest=>dest.DeliveryType,
                     opt => opt.ConvertUsing(new StringToEnumConverter<DeliveryTypeEnum>(), src => src.DeliveryType))
                 .ForMember(dest => dest.Parent, opt => opt.Ignore())
                 .ForMember(dest => dest.Products, opt => opt.Ignore());
 
-            // update category
             CreateMap<UpdateCategoryCommand, Category>()
                 .ForMember(dest => dest.Id, opt => opt.Ignore())
                 .ForMember(dest => dest.ParentId, opt => opt.Ignore())
@@ -120,7 +114,6 @@ namespace FoodConnect.Backend.Application.Commons.Behaviors
             #endregion
 
             #region shop mappings
-            // get shop detail
             CreateMap<Domain.Entities.Shop, ShopResponse>()
                 .ForMember(dest => dest.Status, opt => opt.MapFrom(src => (int)src.Status))
                 .ForMember(dest => dest.StatusName, opt => opt.MapFrom(src => src.Status.ToString()))
@@ -147,7 +140,6 @@ namespace FoodConnect.Backend.Application.Commons.Behaviors
 
             CreateMap<ShopOperatingHour, ShopOperatingHourResponse>();
 
-            // get shop list
             CreateMap<Domain.Entities.Shop, ShopListResponse>()
                 .ForMember(dest => dest.Status, opt => opt.MapFrom(src => (int)src.Status))
                 .ForMember(dest => dest.StatusName, opt => opt.MapFrom(src => src.Status.ToString()))
@@ -158,7 +150,6 @@ namespace FoodConnect.Backend.Application.Commons.Behaviors
                     string.Join(", ", new[] { src.Street, src.Ward, src.District, src.City, src.Country }
                         .Where(s => !string.IsNullOrWhiteSpace(s)))));
 
-            // update shop - only map non-null properties
             CreateMap<UpdateShopCommand, Domain.Entities.Shop>()
                 .ForMember(dest => dest.Id, opt => opt.Ignore())
                 .ForMember(dest => dest.UserId, opt => opt.Ignore())
@@ -181,7 +172,6 @@ namespace FoodConnect.Backend.Application.Commons.Behaviors
             #endregion
 
             #region address mappings
-            // update address - only map non-null properties
             CreateMap<Application.Features.Address.Commands.UpdateAddressCommand, Domain.Entities.Address>()
                 .ForMember(dest => dest.Id, opt => opt.Ignore())
                 .ForMember(dest => dest.UserId, opt => opt.Ignore())
@@ -195,12 +185,10 @@ namespace FoodConnect.Backend.Application.Commons.Behaviors
 
             #region product review mappings
 
-            // ProductReviewAsset → ProductReviewAssetDto
             CreateMap<ProductReviewAsset, ProductReviewAssetDto>()
                 .ForMember(dest => dest.AssetType, opt => opt.MapFrom(src => (int)src.AssetType))
                 .ForMember(dest => dest.AssetTypeName, opt => opt.MapFrom(src => src.AssetType.ToString()));
 
-            // ProductReview → ProductReviewResponse
             CreateMap<ProductReview, ProductReviewResponse>()
                 .ForMember(dest => dest.ProductName, opt => opt.MapFrom(src => src.Product.Name))
                 .ForMember(dest => dest.BuyerName, opt => opt.MapFrom(src => src.Buyer.FullName))

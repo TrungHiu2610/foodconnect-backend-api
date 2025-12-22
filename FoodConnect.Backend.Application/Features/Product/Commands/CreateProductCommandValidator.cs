@@ -1,4 +1,4 @@
-﻿using FluentValidation;
+using FluentValidation;
 using FoodConnect.Backend.Application.Commons.DTOs;
 using FoodConnect.Backend.Application.Interfaces.IRepositories;
 using FoodConnect.Backend.Domain.Enums;
@@ -28,14 +28,12 @@ namespace FoodConnect.Backend.Application.Features.Product.Commands
             RuleFor(x => x.CategoryId)
                 .NotEmpty().WithMessage("CategoryId is required.");
 
-            // Inventory validation based on DeliveryType
             RuleFor(x => x)
                 .MustAsync(async (command, cancellation) =>
                 {
                     var category = await _categoryRepository.GetByIdAsync(command.CategoryId);
                     if (category == null) return true; // Let other validation handle missing category
 
-                    // Standard (packaged) products require StockQuantity
                     if (category.DeliveryType == DeliveryTypeEnum.Standard)
                     {
                         return command.StockQuantity.HasValue;

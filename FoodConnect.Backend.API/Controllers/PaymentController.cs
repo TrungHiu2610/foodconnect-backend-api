@@ -20,10 +20,13 @@ public class PaymentController : ApiBaseController
 
     [HttpPost]
     [Authorize]
-    public async Task<IActionResult> CreateVNPayPayment([FromBody] CreateVNPayPaymentCommand command)
+    public async Task<IActionResult> CreateVNPayPayment(
+        [FromBody] CreateVNPayPaymentCommand command,
+        [FromQuery] string platform = "web")
     {
         var ipAddress = HttpContext.Connection.RemoteIpAddress?.MapToIPv4().ToString() ?? "127.0.0.1";
         command.IpAddress = ipAddress;
+        command.Platform = platform; // Set platform (web/mobile)
 
         var result = await Mediator.Send(command);
         return result != null
@@ -36,28 +39,22 @@ public class PaymentController : ApiBaseController
     {
         var frontendUrl = _configuration["AppSettings:FrontendUrl"] ?? "http://localhost:5173";
         
-        // Process callback and update order
         var command = new VNPayCallbackCommand { VnpayData = vnpayData };
         var result = await Mediator.Send(command);
 
-        // Extract info for redirect
         var responseCode = vnpayData.GetValueOrDefault("vnp_ResponseCode", "");
         var transactionId = vnpayData.GetValueOrDefault("vnp_TxnRef", "");
 
-        // Redirect user to frontend based on result
         if (result != null && result.Success && responseCode == "00")
         {
-            // Success - get orderId and redirect
             var orderId = result.Data?.OrderId ?? Guid.Empty;
             return Redirect($"{frontendUrl}/payment/success?orderId={orderId}");
         }
         else
         {
-            // Failed - redirect with error message
             var message = GetVNPayErrorMessage(responseCode);
             var redirectUrl = $"{frontendUrl}/payment/failed?message={Uri.EscapeDataString(message)}";
             
-            // Try to include orderId if available
             if (result?.Data?.OrderId != null && result.Data.OrderId != Guid.Empty)
             {
                 redirectUrl += $"&orderId={result.Data.OrderId}";

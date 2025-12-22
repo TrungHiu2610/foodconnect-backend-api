@@ -35,7 +35,6 @@ namespace FoodConnect.Backend.Application.Features.Auth.Commands.EmailRegister
         {
             var result = new BaseResponse<AuthResponse>();
 
-            // Get registration data from Redis
             var redisKey = $"otp:email:{request.Email}";
             var registrationData = await _redisService.GetAsync<EmailRegistrationData>(redisKey);
 
@@ -49,17 +48,14 @@ namespace FoodConnect.Backend.Application.Features.Auth.Commands.EmailRegister
                 return result.BuildFail("Invalid OTP");
             }
 
-            // Delete OTP after successful verification
             await _redisService.DeleteAsync(redisKey);
 
-            // Check if user already exists (double check)
             var existingUser = await _userRepository.GetByEmailAsync(request.Email);
             if (existingUser != null)
             {
                 return result.BuildConflict("Email already registered");
             }
 
-            // Create new user
             var user = new UserEntity
             {
                 Email = request.Email,
@@ -71,7 +67,6 @@ namespace FoodConnect.Backend.Application.Features.Auth.Commands.EmailRegister
                 AvatarUrl = null
             };
 
-            // Assign default Buyer role
             user.UserRoles.Add(new Domain.Entities.UserRole
             {
                 UserId = user.Id,
@@ -81,10 +76,8 @@ namespace FoodConnect.Backend.Application.Features.Auth.Commands.EmailRegister
             await _userRepository.AddAsync(user);
             await _unitOfWork.SaveChangesAsync(cancellationToken);
 
-            // Get user roles
             var roleNames = new List<string> { "Buyer" };
 
-            // Generate JWT and Refresh Token
             var (accessToken, refreshToken) = await _jwtTokenGenerator.GenerateTokens(user, roleNames, null);
 
             await _refreshTokenRepository.AddAsync(refreshToken);

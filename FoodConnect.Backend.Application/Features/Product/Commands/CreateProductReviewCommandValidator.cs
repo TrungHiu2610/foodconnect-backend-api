@@ -25,7 +25,6 @@ namespace FoodConnect.Backend.Application.Features.Product.Commands
                 .MaximumLength(1000).WithMessage("Comment must not exceed 1000 characters")
                 .When(x => !string.IsNullOrEmpty(x.Comment));
 
-            // Validate review assets (images/videos)
             When(x => x.ReviewAssets != null && x.ReviewAssets.Any(), () =>
             {
                 RuleFor(x => x.ReviewAssets)

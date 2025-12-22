@@ -14,7 +14,6 @@ namespace FoodConnect.Backend.Application.Features.Shop.Commands
         public string SellerEmail { get; set; } = string.Empty;
         public string SellerPhone { get; set; } = string.Empty;
         
-        // Address
         public string? Street { get; set; }
         public string? Ward { get; set; }
         public string? District { get; set; }

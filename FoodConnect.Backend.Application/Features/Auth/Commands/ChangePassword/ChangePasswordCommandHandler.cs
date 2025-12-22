@@ -25,20 +25,17 @@ namespace FoodConnect.Backend.Application.Features.Auth.Commands.ChangePassword
         {
             var result = new BaseResponse<PasswordChangeResponse>();
 
-            // Get user by ID
             var user = await _userRepository.GetByIdAsync((Guid)request.UserId);
             if (user == null)
             {
                 return result.BuildNotFound("User not found");
             }
 
-            // Check if user uses Local provider
             if (user.Provider != AuthProviderEnum.Local)
             {
                 return result.BuildFail($"This account uses {user.Provider} login. Password change is not available.");
             }
 
-            // Check user status
             if (user.Status == UserStatusEnum.Banned)
             {
                 return result.BuildFail("Your account has been banned");
@@ -49,20 +46,17 @@ namespace FoodConnect.Backend.Application.Features.Auth.Commands.ChangePassword
                 return result.BuildFail("Your account has been locked");
             }
 
-            // Check if password hash exists
             if (string.IsNullOrEmpty(user.PasswordHash))
             {
                 return result.BuildFail("Account does not have a password set");
             }
 
-            // Verify current password
             bool isCurrentPasswordValid = BCrypt.Net.BCrypt.Verify(request.CurrentPassword, user.PasswordHash);
             if (!isCurrentPasswordValid)
             {
                 return result.BuildFail("Current password is incorrect");
             }
 
-            // Check if enough time has passed since last password change (7 days cooldown)
             if (user.LastPasswordChangedAt.HasValue)
             {
                 var daysSinceLastChange = (DateTime.UtcNow - user.LastPasswordChangedAt.Value).TotalDays;
@@ -74,10 +68,8 @@ namespace FoodConnect.Backend.Application.Features.Auth.Commands.ChangePassword
                 }
             }
 
-            // Hash new password
             var newPasswordHash = BCrypt.Net.BCrypt.HashPassword(request.NewPassword);
 
-            // Update user password and timestamp
             user.PasswordHash = newPasswordHash;
             user.LastPasswordChangedAt = DateTime.UtcNow;
             

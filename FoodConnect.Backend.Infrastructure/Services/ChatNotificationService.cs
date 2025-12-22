@@ -44,11 +44,19 @@ public class ChatNotificationService : IChatNotificationService
 
     public async Task NotifyNewMessageAsync(Guid conversationId, Guid messageId, Guid recipientUserId, string messagePreview)
     {
-        // Send to user's personal group (for notifications even when not in conversation)
         await _hubContext.Clients
             .Group($"user_{recipientUserId}")
             .ReceiveError($"New message: {messagePreview}");
         
         Console.WriteLine($"[ChatNotificationService] Notified user {recipientUserId} about message in conversation {conversationId}");
+    }
+
+    public async Task UpdateUnreadCountAsync(Guid userId, int unreadCount)
+    {
+        await _hubContext.Clients
+            .Group($"user_{userId}")
+            .UpdateUnreadCount(unreadCount);
+        
+        Console.WriteLine($"[ChatNotificationService] Updated unread count for user {userId}: {unreadCount}");
     }
 }

@@ -39,7 +39,6 @@ public class GetSystemConfigsQueryHandler : IRequestHandler<GetSystemConfigsQuer
             configs = await _systemConfigRepository.GetAllConfigsAsync();
         }
 
-        // ⭐ Order Banner type by DisplayOrder
         if (request.Type == (int)Domain.Enums.SystemConfigTypeEnum.Banner)
         {
             configs = configs.OrderBy(c => c.DisplayOrder ?? int.MaxValue).ToList();

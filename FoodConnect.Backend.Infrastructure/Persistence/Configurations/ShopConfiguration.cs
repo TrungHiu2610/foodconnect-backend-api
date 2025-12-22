@@ -1,4 +1,4 @@
-﻿using FoodConnect.Backend.Domain.Entities;
+using FoodConnect.Backend.Domain.Entities;
 using FoodConnect.Backend.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
@@ -54,7 +54,6 @@ namespace FoodConnect.Backend.Infrastructure.Persistence.Configurations
                 .IsRequired()
                 .HasMaxLength(100);
 
-            // Optional detailed address fields
             builder.Property(s => s.Street)
                 .HasMaxLength(255);
 
@@ -70,11 +69,8 @@ namespace FoodConnect.Backend.Infrastructure.Persistence.Configurations
             builder.Property(s => s.Country)
                 .HasMaxLength(100);
 
-            // Ignore calculated fields (not mapped to database)
             builder.Ignore(s => s.CalculatedDistance);
 
-            // 1-1 Relationship: User (Principal) ← Shop (Dependent)
-            // Shop.UserId is the foreign key
             builder.HasOne(s => s.User)
                 .WithOne(u => u.Shop)  // Bidirectional navigation
                 .HasForeignKey<Shop>(s => s.UserId)

@@ -1,4 +1,4 @@
-﻿using AutoMapper;
+using AutoMapper;
 using FoodConnect.Backend.Application.Commons.DTOs.Responses.Product;
 using FoodConnect.Backend.Application.Interfaces.IRepositories;
 using FoodConnect.Backend.Domain.Entities;
@@ -53,13 +53,11 @@ namespace FoodConnect.Backend.Infrastructure.Repositories
                 .Where(p => p.ShopId == shopId)
                 .AsQueryable();
 
-            // Filter by status
             if (status.HasValue)
             {
                 query = query.Where(p => p.Status == status.Value);
             }
 
-            // Search by product name or description
             if (!string.IsNullOrWhiteSpace(searchTerm))
             {
                 searchTerm = searchTerm.ToLower();

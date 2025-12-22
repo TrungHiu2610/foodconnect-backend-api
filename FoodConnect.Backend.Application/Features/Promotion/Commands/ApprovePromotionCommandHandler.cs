@@ -64,7 +64,6 @@ namespace FoodConnect.Backend.Application.Features.Promotion.Commands
             _promotionRepository.Update(promotion);
             await _unitOfWork.SaveChangesAsync(cancellationToken);
 
-            // Send notification based on status
             if (promotion.Status == PromotionStatusEnum.Active)
             {
                 await _promotionNotificationService.NotifyPromotionActivatedAsync(promotion, cancellationToken);

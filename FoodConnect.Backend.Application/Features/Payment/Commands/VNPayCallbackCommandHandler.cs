@@ -60,7 +60,6 @@ public class VNPayCallbackCommandHandler : IRequestHandler<VNPayCallbackCommand,
 
         if (payment.Status == TransactionStatusEnum.Completed)
         {
-            // Order already confirmed - return success to prevent retry
             return result.BuildSuccess(new PaymentCallbackResult
             {
                 Success = true,
@@ -85,7 +84,6 @@ public class VNPayCallbackCommandHandler : IRequestHandler<VNPayCallbackCommand,
                 return result.BuildNotFound("Order not found");
             }
 
-            // Validate amount matches
             if (order.Total != (double)callbackResponse.Amount)
             {
                 payment.Status = TransactionStatusEnum.Failed;
@@ -97,7 +95,6 @@ public class VNPayCallbackCommandHandler : IRequestHandler<VNPayCallbackCommand,
 
             order.PaymentStatus = PaymentStatusEnum.Paid;
             
-            // Change status from AwaitingPayment to Pending so seller can see the order
             bool wasAwaitingPayment = order.Status == OrderStatusEnum.AwaitingPayment;
             if (wasAwaitingPayment)
             {
@@ -109,7 +106,6 @@ public class VNPayCallbackCommandHandler : IRequestHandler<VNPayCallbackCommand,
             _paymentRepository.Update(payment);
             await _unitOfWork.SaveChangesAsync();
 
-            // Send notification to seller if order just changed from AwaitingPayment to Pending
             if (order != null && order.Status == OrderStatusEnum.Pending)
             {
                 var fullOrder = await _orderRepository.GetOrderWithDetailsAsync(order.Id);

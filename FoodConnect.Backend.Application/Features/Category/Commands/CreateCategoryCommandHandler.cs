@@ -1,4 +1,4 @@
-﻿using AutoMapper;
+using AutoMapper;
 using FoodConnect.Backend.Application.Commons.Constants;
 using FoodConnect.Backend.Application.Commons.DTOs.Responses;
 using FoodConnect.Backend.Application.Commons.DTOs.Responses.Category;
@@ -34,7 +34,6 @@ namespace FoodConnect.Backend.Application.Features.Category.Commands
             var result = new BaseResponse<CreateCategoryResponse>();
             var response = new CreateCategoryResponse();
 
-            // Validate ParentId
             var parentCategory = null as Domain.Entities.Category;
             if (request.ParentId != null)
             {
@@ -51,21 +50,17 @@ namespace FoodConnect.Backend.Application.Features.Category.Commands
             }
 
             await using var transaction = await _unitOfWork.BeginTransactionAsync();
-            // for rollback to delete uploaded image if any error occurs
             string? uploadFile = null;
             try
             {
-                // map to entity
                 var category = _mapper.Map<Domain.Entities.Category>(request);
                 category.Id = Guid.NewGuid();
                 
-                // If this is a child category, inherit DeliveryType from parent
                 if (parentCategory != null)
                 {
                     category.DeliveryType = parentCategory.DeliveryType;
                 }
 
-                // save file
                 if (request.File != null)
                 {
                     var prefix = $"{AWSDirectoryConstant.IMAGE_CATEGORY}/{category.Id}";

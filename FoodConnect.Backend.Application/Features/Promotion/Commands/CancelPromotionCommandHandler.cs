@@ -54,7 +54,6 @@ namespace FoodConnect.Backend.Application.Features.Promotion.Commands
 
             if (promotion.Status == PromotionStatusEnum.Active)
             {
-                // Check if promotion has been used in any orders
                 var orders = await _orderRepository.GetOrdersByShopAsync(promotion.ShopId, null);
                 var hasBeenUsed = orders.Any(o => o.PromotionId == request.PromotionId);
                 

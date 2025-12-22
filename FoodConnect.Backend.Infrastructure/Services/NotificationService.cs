@@ -20,7 +20,6 @@ namespace FoodConnect.Backend.Infrastructure.Services
         {
             try
             {
-                // Send to user's group
                 await _hubContext.Clients
                     .Group($"user_{userId}")
                     .ReceiveNotification(notification);
@@ -53,7 +52,6 @@ namespace FoodConnect.Backend.Infrastructure.Services
         {
             try
             {
-                // Send to shop owner's group
                 await _hubContext.Clients
                     .Group($"user_{shopOwnerId}")
                     .ReceiveNewOrderAlert(notification);
@@ -114,7 +112,6 @@ namespace FoodConnect.Backend.Infrastructure.Services
                     Priority = "high"
                 };
 
-                // Send to all admin users (assuming there's an admin group)
                 await _hubContext.Clients
                     .Group("admin")
                     .ReceiveWithdrawalNotification(notification);

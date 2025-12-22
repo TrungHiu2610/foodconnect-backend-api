@@ -1,4 +1,4 @@
-﻿using System.Net;
+using System.Net;
 using System.Security.Cryptography;
 using System.Text;
 using System.Web;
@@ -33,11 +33,9 @@ public static class VNPayHelper
 
         foreach (var param in sortedParams)
         {
-            // Use WebUtility.UrlEncode for both key and value (VNPay standard)
             data.Append(WebUtility.UrlEncode(param.Key) + "=" + WebUtility.UrlEncode(param.Value) + "&");
         }
 
-        // Remove last '&'
         if (data.Length > 0)
         {
             data.Remove(data.Length - 1, 1);

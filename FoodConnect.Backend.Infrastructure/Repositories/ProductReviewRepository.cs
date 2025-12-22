@@ -28,7 +28,6 @@ namespace FoodConnect.Backend.Infrastructure.Repositories
                 .Include(r => r.Assets.OrderBy(a => a.DisplayOrder))
                 .Where(r => r.Product.ShopId == shopId && r.Status == Domain.Enums.ReviewStatusEnum.Approved);
 
-            // Apply filters
             if (minRating.HasValue)
             {
                 query = query.Where(r => r.Rating >= minRating.Value);
@@ -46,13 +45,10 @@ namespace FoodConnect.Backend.Infrastructure.Repositories
                 }
             }
 
-            // Order by latest first
             query = query.OrderByDescending(r => r.CreatedAtUtc);
 
-            // Get total count
             var totalCount = await query.CountAsync();
 
-            // Apply pagination
             var reviews = await query
                 .Skip((pageNumber - 1) * pageSize)
                 .Take(pageSize)

@@ -1,4 +1,4 @@
-﻿using FoodConnect.Backend.Application.Commons.DTOs.Responses;
+using FoodConnect.Backend.Application.Commons.DTOs.Responses;
 using FoodConnect.Backend.Application.Commons.Exceptions;
 using FoodConnect.Backend.Application.Interfaces;
 using FoodConnect.Backend.Application.Interfaces.IRepositories;
@@ -31,7 +31,6 @@ namespace FoodConnect.Backend.Application.Features.Auth.Queries.Login
                 return result.BuildFail("Invalid credentials.");
             }
 
-            // Check password hash exists (for Local provider)
             if (string.IsNullOrEmpty(user.PasswordHash))
             {
                 return result.BuildFail("This account uses a different login method (Phone/Google).");
@@ -43,7 +42,6 @@ namespace FoodConnect.Backend.Application.Features.Auth.Queries.Login
                 return result.BuildFail("Invalid credentials.");
             }
 
-            // Check user status
             if (user.Status == UserStatusEnum.Pending)
             {
                 return result.BuildFail("Please verify your email first.");

@@ -1,4 +1,4 @@
-﻿using FoodConnect.Backend.Application.Interfaces.IRepositories;
+using FoodConnect.Backend.Application.Interfaces.IRepositories;
 using FoodConnect.Backend.Domain.Entities;
 using FoodConnect.Backend.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
@@ -51,13 +51,11 @@ namespace FoodConnect.Backend.Infrastructure.Repositories
                 .AsQueryable();
 
             query = query.Where(s=>s.Status != Domain.Enums.ShopStatusEnum.Draft); 
-            // Filter by status
             if (status.HasValue)
             {
                 query = query.Where(s => s.Status == status.Value);
             }
 
-            // Search by shop name or owner name (from User)
             if (!string.IsNullOrEmpty(searchTerm))
             {
                 query = query.Where(s => 
@@ -79,7 +77,6 @@ namespace FoodConnect.Backend.Infrastructure.Repositories
 
         public async Task<List<Guid>> GetAllCategoryIdsForShopAsync(Guid shopId)
         {
-            // Get direct categories that shop registered
             var directCategoryIds = await _context.ShopCategories
                 .AsNoTracking()
                 .Where(sc => sc.ShopId == shopId)
@@ -91,7 +88,6 @@ namespace FoodConnect.Backend.Infrastructure.Repositories
                 return new List<Guid>();
             }
 
-            // Get all parent category IDs recursively
             var allCategoryIds = new HashSet<Guid>(directCategoryIds);
             var categoriesToCheck = new Queue<Guid>(directCategoryIds);
 
@@ -99,7 +95,6 @@ namespace FoodConnect.Backend.Infrastructure.Repositories
             {
                 var currentCategoryId = categoriesToCheck.Dequeue();
 
-                // Get all children of current category
                 var children = await _context.Categories
                     .AsNoTracking()
                     .Where(c => c.ParentId == currentCategoryId)

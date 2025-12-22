@@ -44,42 +44,33 @@ namespace FoodConnect.Backend.Application.Features.Order.Commands
 
             var buyerId = _currentUserService.UserId.Value;
 
-            // Get order
             var order = await _orderRepository.GetOrderWithDetailsAsync(request.OrderId);
             if (order == null)
             {
                 return result.BuildNotFound("Order not found");
             }
 
-            // Check if order belongs to buyer
             if (order.BuyerId != buyerId)
             {
                 return result.BuildForbidden("You don't have permission to cancel this order");
             }
 
-            // Check if order can be cancelled
-            // Allow cancelling: Pending (COD before seller accepts) or AwaitingPayment (unpaid online orders)
             if (order.Status != OrderStatusEnum.Pending && order.Status != OrderStatusEnum.AwaitingPayment)
             {
                 return result.BuildFail("Only pending or awaiting payment orders can be cancelled");
             }
 
-            // Update order status
             order.Status = OrderStatusEnum.Cancelled;
             order.CancelReason = request.CancelReason;
             order.CancelledAt = DateTime.UtcNow;
 
-            // Note: No need to restore stock because stock is only deducted when order is accepted (Preparing status)
-            // Since we only allow cancelling Pending orders, stock hasn't been deducted yet
 
             _orderRepository.Update(order);
             await _unitOfWork.SaveChangesAsync(cancellationToken);
 
-            // Reload order with full details
             order = await _orderRepository.GetOrderWithDetailsAsync(request.OrderId);
             var orderDto = OrderMapper.MapToDetailDto(order!);
 
-            // Send notification to seller (buyer cancelled)
             await _orderNotificationService.NotifyOrderCancelledAsync(order!, true, cancellationToken);
 
             return result.BuildSuccess(orderDto, "Order cancelled successfully");

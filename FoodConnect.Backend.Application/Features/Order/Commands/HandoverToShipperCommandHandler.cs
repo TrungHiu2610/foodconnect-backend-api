@@ -59,9 +59,9 @@ namespace FoodConnect.Backend.Application.Features.Order.Commands
                     return result.BuildFail("Only Standard delivery orders can be handed over to shipper");
                 }
 
-                if (order.Status != OrderStatusEnum.Prepared)
+                if (order.Status != OrderStatusEnum.ReadyForPickup)
                 {
-                    return result.BuildFail($"Only Prepared orders can be handed to shipper. Current status: {order.Status}");
+                    return result.BuildFail($"Only ReadyForPickup orders can be handed to shipper. Current status: {order.Status}");
                 }
 
                 if (string.IsNullOrWhiteSpace(request.TrackingCode))
@@ -76,7 +76,7 @@ namespace FoodConnect.Backend.Application.Features.Order.Commands
 
                 order.PackagePhotoUrl = uploadedImageUrl;
                 order.TrackingCode = request.TrackingCode;
-                order.Status = OrderStatusEnum.OutForDelivery;
+                order.Status = OrderStatusEnum.DeliveryingByShipper;
                 order.DeliveryStartedAt = DateTime.UtcNow;
 
                 _orderRepository.Update(order);

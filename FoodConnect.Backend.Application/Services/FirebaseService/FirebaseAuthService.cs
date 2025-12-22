@@ -46,7 +46,6 @@ public class FirebaseAuthService : IFirebaseAuthService
                 throw new ArgumentException("ID token cannot be null or empty", nameof(idToken));
             }
 
-            // Verify the ID token
             var decodedToken = await _firebaseAuth.VerifyIdTokenAsync(idToken);
             
             _logger.LogInformation("Successfully verified Firebase token for UID: {Uid}", decodedToken.Uid);

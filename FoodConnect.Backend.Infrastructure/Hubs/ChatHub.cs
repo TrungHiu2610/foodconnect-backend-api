@@ -1,4 +1,5 @@
 using FoodConnect.Backend.Application.Commons.Interfaces;
+using FoodConnect.Backend.Application.Interfaces;
 using FoodConnect.Backend.Application.Interfaces.IRepositories;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.SignalR;
@@ -10,12 +11,22 @@ namespace FoodConnect.Backend.Infrastructure.Hubs
     public class ChatHub : Hub<IChatClient>
     {
         private readonly IConversationRepository _conversationRepository;
+        private readonly IMessageRepository _messageRepository;
+        private readonly IChatNotificationService _chatNotificationService;
+        private readonly IUnitOfWork _unitOfWork;
         private static readonly Dictionary<string, HashSet<string>> UserConnections = new();
         private static readonly object Lock = new();
 
-        public ChatHub(IConversationRepository conversationRepository)
+        public ChatHub(
+            IConversationRepository conversationRepository,
+            IMessageRepository messageRepository,
+            IChatNotificationService chatNotificationService,
+            IUnitOfWork unitOfWork)
         {
             _conversationRepository = conversationRepository;
+            _messageRepository = messageRepository;
+            _chatNotificationService = chatNotificationService;
+            _unitOfWork = unitOfWork;
         }
 
         public override async Task OnConnectedAsync()
@@ -33,7 +44,6 @@ namespace FoodConnect.Backend.Infrastructure.Hubs
                     UserConnections[userId].Add(Context.ConnectionId);
                 }
 
-                // Add to user's personal group
                 await Groups.AddToGroupAsync(Context.ConnectionId, $"user_{userId}");
                 
                 Console.WriteLine($"[ChatHub] User {userId} connected. ConnectionId: {Context.ConnectionId}");
@@ -81,7 +91,6 @@ namespace FoodConnect.Backend.Infrastructure.Hubs
                 return;
             }
 
-            // Validate user belongs to this conversation
             var conversation = await _conversationRepository.GetByIdAsync(Guid.Parse(conversationId));
             if (conversation == null)
             {
@@ -117,7 +126,6 @@ namespace FoodConnect.Backend.Infrastructure.Hubs
             var userId = Context.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             if (!string.IsNullOrEmpty(userId))
             {
-                // Send to conversation group except the caller
                 await Clients.OthersInGroup($"conversation_{conversationId}")
                     .ReceiveTypingIndicator(userId);
             }
@@ -142,15 +150,44 @@ namespace FoodConnect.Backend.Infrastructure.Hubs
         public async Task MarkMessagesAsRead(string conversationId, List<string> messageIds)
         {
             var userId = Context.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (!string.IsNullOrEmpty(userId))
+            if (string.IsNullOrEmpty(userId))
+                return;
+
+            try
             {
-                // Notify other user in conversation
+                // Update messages in database
+                var guidMessageIds = messageIds.Select(Guid.Parse).ToList();
+                var messages = await _messageRepository.GetByIdsAsync(guidMessageIds);
+                
+                foreach (var message in messages)
+                {
+                    if (message.SenderId.ToString() != userId) // Only mark messages you received
+                    {
+                        message.IsRead = true;
+                        _messageRepository.Update(message);
+                    }
+                }
+                
+                await _unitOfWork.SaveChangesAsync();
+
+                // Notify sender about read receipt
                 await Clients.OthersInGroup($"conversation_{conversationId}")
                     .ReceiveReadReceipt(userId, messageIds);
+
+                // Update unread count for current user
+                var userGuid = Guid.Parse(userId);
+                var unreadCount = await _messageRepository.GetUnreadCountByUserAsync(userGuid);
+                await _chatNotificationService.UpdateUnreadCountAsync(userGuid, unreadCount);
+
+                Console.WriteLine($"[ChatHub] User {userId} marked {messages.Count()} messages as read");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[ChatHub] Error marking messages as read: {ex.Message}");
+                await Clients.Caller.ReceiveError($"Failed to mark messages as read: {ex.Message}");
             }
         }
 
-        // Helper method to get user's connection IDs
         public static List<string> GetUserConnectionIds(string userId)
         {
             lock (Lock)
@@ -161,7 +198,6 @@ namespace FoodConnect.Backend.Infrastructure.Hubs
             }
         }
 
-        // Helper to check if user is online
         public static bool IsUserOnline(string userId)
         {
             lock (Lock)
@@ -170,7 +206,6 @@ namespace FoodConnect.Backend.Infrastructure.Hubs
             }
         }
 
-        // Test connection
         public async Task Ping()
         {
             await Clients.Caller.ReceiveError("Pong!");

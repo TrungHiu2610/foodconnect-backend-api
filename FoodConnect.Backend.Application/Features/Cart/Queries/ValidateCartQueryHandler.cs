@@ -56,7 +56,6 @@ namespace FoodConnect.Backend.Application.Features.Cart.Queries
                 return result.BuildFail("Cart is empty", 400);
             }
 
-            // Filter items to validate
             var itemsToValidate = cart.CartItems;
             if (request.CartItemIds != null && request.CartItemIds.Any())
             {
@@ -70,7 +69,6 @@ namespace FoodConnect.Backend.Application.Features.Cart.Queries
                 var product = cartItem.Product;
                 var shop = product?.Shop;
 
-                // Validate product exists
                 if (product == null)
                 {
                     validationResult.Errors.Add(new CartValidationError
@@ -84,7 +82,6 @@ namespace FoodConnect.Backend.Application.Features.Cart.Queries
                     continue;
                 }
 
-                // Validate product is active
                 if (product.Status != ProductStatusEnum.Active)
                 {
                     validationResult.Errors.Add(new CartValidationError
@@ -97,7 +94,6 @@ namespace FoodConnect.Backend.Application.Features.Cart.Queries
                     validationResult.IsValid = false;
                 }
 
-                // Validate product availability (manual or stock-based)
                 if (!product.IsAvailable)
                 {
                     validationResult.Errors.Add(new CartValidationError
@@ -110,7 +106,6 @@ namespace FoodConnect.Backend.Application.Features.Cart.Queries
                     validationResult.IsValid = false;
                 }
 
-                // Validate shop exists and is active
                 if (shop == null)
                 {
                     validationResult.Errors.Add(new CartValidationError
@@ -137,8 +132,6 @@ namespace FoodConnect.Backend.Application.Features.Cart.Queries
                     validationResult.IsValid = false;
                 }
 
-                // Validate stock availability (only for Standard delivery products with stock tracking)
-                // Skip stock validation for Express delivery products
                 var category = product.Category;
                 if (product.StockQuantity.HasValue && category?.DeliveryType != DeliveryTypeEnum.Express)
                 {
@@ -180,19 +173,13 @@ namespace FoodConnect.Backend.Application.Features.Cart.Queries
                     }
                 }
 
-                // Note: Price validation would require storing original price in CartItem
-                // For now, we assume current price is correct
 
-                // ===== LOCATION-BASED VALIDATION FOR EXPRESS DELIVERY =====
-                // Check if product requires Express delivery and validate distance
                 if (category != null && category.DeliveryType == DeliveryTypeEnum.Express)
                 {
-                    // Check if buyer has provided location
                     bool buyerHasLocation = request.BuyerLatitude.HasValue && request.BuyerLongitude.HasValue;
 
                     if (!buyerHasLocation)
                     {
-                        // Buyer hasn't enabled location for Express product
                         validationResult.Warnings.Add(new CartValidationWarning
                         {
                             CartItemId = cartItem.Id,
@@ -203,7 +190,6 @@ namespace FoodConnect.Backend.Application.Features.Cart.Queries
                     }
                     else if (shop.Latitude.HasValue && shop.Longitude.HasValue)
                     {
-                        // Calculate distance between buyer and shop
                         double distance = _distanceCalculator.CalculateDistance(
                             request.BuyerLatitude.Value,
                             request.BuyerLongitude.Value,
@@ -213,7 +199,6 @@ namespace FoodConnect.Backend.Application.Features.Cart.Queries
 
                         if (distance > (double)ShippingFeeConstant.EXPRESS_MAX_DISTANCE)
                         {
-                            // Product is outside Express delivery range
                             validationResult.Warnings.Add(new CartValidationWarning
                             {
                                 CartItemId = cartItem.Id,
@@ -225,7 +210,6 @@ namespace FoodConnect.Backend.Application.Features.Cart.Queries
                     }
                     else
                     {
-                        // Shop has no coordinates, cannot deliver Express
                         validationResult.Warnings.Add(new CartValidationWarning
                         {
                             CartItemId = cartItem.Id,

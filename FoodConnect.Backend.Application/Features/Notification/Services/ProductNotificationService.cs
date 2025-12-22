@@ -1,4 +1,4 @@
-﻿using FoodConnect.Backend.Application.Commons.DTOs.Notifications;
+using FoodConnect.Backend.Application.Commons.DTOs.Notifications;
 using FoodConnect.Backend.Application.Commons.Interfaces;
 using FoodConnect.Backend.Application.Interfaces;
 using FoodConnect.Backend.Application.Interfaces.IRepositories;
@@ -32,13 +32,10 @@ namespace FoodConnect.Backend.Application.Features.Notification.Services
         }
         public async Task NotifyProductOutOfStockAsync(ProductEntity product, CancellationToken cancellationToken = default)
         {
-            // 1. Find all buyers with this product in their cart
             var buyersWithCart = await _cartRepository.GetBuyersWithProductInCartAsync(product.Id);
 
-            // 2. Find all buyers with pending orders containing this product
             var buyersWithPendingOrders = await _orderRepository.GetBuyersWithPendingOrdersContainingProductAsync(product.Id);
 
-            // Combine and deduplicate
             var affectedBuyerIds = buyersWithCart
                 .Union(buyersWithPendingOrders)
                 .Distinct()
@@ -47,7 +44,6 @@ namespace FoodConnect.Backend.Application.Features.Notification.Services
             if (!affectedBuyerIds.Any())
                 return;
 
-            // 3. Create notifications for each affected buyer
             var metadata = new
             {
                 productId = product.Id,
@@ -75,7 +71,6 @@ namespace FoodConnect.Backend.Application.Features.Notification.Services
 
             await _unitOfWork.SaveChangesAsync(cancellationToken);
 
-            // 4. Send real-time notifications
             foreach (var buyerId in affectedBuyerIds)
             {
                 var notificationDto = new NotificationDto
@@ -89,17 +84,14 @@ namespace FoodConnect.Backend.Application.Features.Notification.Services
                     CreatedAt = DateTime.UtcNow
                 };
 
-                // Send via SignalR
                 await _notificationService.SendToUserAsync(buyerId, notificationDto);
 
-                // Update unread count
                 var unreadCount = await _notificationRepository.GetUnreadCountAsync(buyerId);
                 await _notificationService.UpdateUnreadCountAsync(buyerId, unreadCount);
             }
         }
         public async Task NotifyProductBackInStockAsync(ProductEntity product, CancellationToken cancellationToken = default)
         {
-            // Find buyers who have this product in their cart or orders
             var buyersWithCart = await _cartRepository.GetBuyersWithProductInCartAsync(product.Id);
             var buyersWithPendingOrders = await _orderRepository.GetBuyersWithPendingOrdersContainingProductAsync(product.Id);
             
@@ -139,7 +131,6 @@ namespace FoodConnect.Backend.Application.Features.Notification.Services
 
             await _unitOfWork.SaveChangesAsync(cancellationToken);
 
-            // Send real-time notifications
             foreach (var buyerId in buyerIds)
             {
                 var notificationDto = new NotificationDto

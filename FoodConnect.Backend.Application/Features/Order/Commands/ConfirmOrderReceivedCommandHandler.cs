@@ -50,20 +50,17 @@ namespace FoodConnect.Backend.Application.Features.Order.Commands
 
             var buyerId = _currentUserService.UserId.Value;
 
-            // Get order
             var order = await _orderRepository.GetOrderWithDetailsAsync(request.OrderId);
             if (order == null)
             {
                 return result.BuildNotFound("Order not found");
             }
 
-            // Check if order belongs to buyer
             if (order.BuyerId != buyerId)
             {
                 return result.BuildForbidden("You don't have permission to confirm this order");
             }
 
-            // Check if order is delivered
             if (order.Status != OrderStatusEnum.Delivered)
             {
                 return result.BuildFail("Only delivered orders can be confirmed as received");
@@ -105,17 +102,13 @@ namespace FoodConnect.Backend.Application.Features.Order.Commands
                 var commissionAmount = commissionableAmount * (commissionRate / 100);
                 var sellerEarning = commissionableAmount - commissionAmount;
 
-                // Different logic for COD vs Online Payment
                 if (order.PaymentMethod == PaymentMethodEnum.COD)
                 {
-                    // COD: Seller already received cash, now must pay commission and release pending
                     var orderTotal = (decimal)order.Total;
                     
-                    // Deduct commission from wallet balance
                     var balanceBefore = wallet.Balance;
                     wallet.Balance -= commissionAmount;
                     
-                    // Release pending balance
                     wallet.PendingBalance -= orderTotal;
 
                     var commissionTransaction = new WalletTransaction
@@ -134,7 +127,6 @@ namespace FoodConnect.Backend.Application.Features.Order.Commands
                 }
                 else
                 {
-                    // Online Payment: Money from Admin, add to seller wallet
                     var balanceBefore = wallet.Balance;
 
                     var earningTransaction = new WalletTransaction

@@ -1,4 +1,4 @@
-﻿using FoodConnect.Backend.Application.Commons.DTOs.Responses;
+using FoodConnect.Backend.Application.Commons.DTOs.Responses;
 using FoodConnect.Backend.Application.Commons.DTOs.Responses.Shop;
 using FoodConnect.Backend.Application.Interfaces.IRepositories;
 using FoodConnect.Backend.Domain.Enums;
@@ -24,16 +24,13 @@ namespace FoodConnect.Backend.Application.Features.Shop.Queries
 
             try
             {
-                // Get featured and active shops
                 var query = _shopRepository.GetShopsAsQueryable()
                     .Where(s => s.IsFeatured && s.Status == ShopStatusEnum.Active);
 
-                // Calculate distance if user location provided
                 if (request.UserLatitude.HasValue && request.UserLongitude.HasValue)
                 {
                     var shops = await query.ToListAsync(cancellationToken);
 
-                    // Calculate distance for each shop
                     foreach (var shop in shops)
                     {
                         if (shop.Latitude.HasValue && shop.Longitude.HasValue)
@@ -46,7 +43,6 @@ namespace FoodConnect.Backend.Application.Features.Shop.Queries
                         }
                     }
 
-                    // Sort by Rating DESC, then TotalOrders DESC
                     shops = shops
                         .OrderByDescending(s => s.Rating)
                         .ThenByDescending(s => s.TotalOrders)
@@ -58,7 +54,6 @@ namespace FoodConnect.Backend.Application.Features.Shop.Queries
                 }
                 else
                 {
-                    // No location provided - just sort and limit
                     var shops = await query
                         .OrderByDescending(s => s.Rating)
                         .ThenByDescending(s => s.TotalOrders)
