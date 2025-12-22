@@ -1,3 +1,4 @@
+using FoodConnect.Backend.Domain.Enums;
 using FoodConnect.Backend.Domain.Interfaces;
 
 namespace FoodConnect.Backend.Domain.Entities
@@ -6,6 +7,11 @@ namespace FoodConnect.Backend.Domain.Entities
     {
         public int Rating { get; set; } // 1-5 stars
         public string? Comment { get; set; }
+        
+        public ReviewStatusEnum Status { get; set; } = ReviewStatusEnum.Pending;
+        public ReviewRejectionReasonEnum? RejectionReason { get; set; }
+        public string? RejectionDetails { get; set; } // Chi tiết lý do reject (keyword, rule violated, etc.)
+        public DateTime? ModeratedAt { get; set; }
         
         // Relations
         public Guid ProductId { get; set; }

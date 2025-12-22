@@ -56,5 +56,24 @@ namespace FoodConnect.Backend.API.Controllers
                 ? (result.Success ? Ok(result) : BadRequest(result))
                 : BadRequest();
         }
+
+        [HttpGet]
+        public async Task<IActionResult> GetFlaggedReviews(
+            [FromQuery] ReviewStatusEnum? status,
+            [FromQuery] int pageNumber = 1,
+            [FromQuery] int pageSize = 20)
+        {
+            var query = new GetFlaggedReviewsQuery
+            {
+                Status = status,
+                PageNumber = pageNumber,
+                PageSize = pageSize
+            };
+
+            var result = await Mediator.Send(query);
+            return result != null
+                ? (result.Success ? Ok(result) : BadRequest(result))
+                : BadRequest();
+        }
     }
 }

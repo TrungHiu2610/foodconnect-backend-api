@@ -18,6 +18,7 @@ namespace FoodConnect.Backend.Application.Features.Product.Commands
         private readonly IUnitOfWork _unitOfWork;
         private readonly ICurrentUserService _currentUserService;
         private readonly IFileStorageService _fileStorageService;
+        private readonly IReviewModerationService _reviewModerationService;
 
         public CreateProductReviewCommandHandler(
             IOrderRepository orderRepository,
@@ -26,7 +27,8 @@ namespace FoodConnect.Backend.Application.Features.Product.Commands
             IBaseRepository<ProductReviewAsset> reviewAssetRepository,
             IUnitOfWork unitOfWork,
             ICurrentUserService currentUserService,
-            IFileStorageService fileStorageService)
+            IFileStorageService fileStorageService,
+            IReviewModerationService reviewModerationService)
         {
             _orderRepository = orderRepository;
             _productRepository = productRepository;
@@ -35,6 +37,7 @@ namespace FoodConnect.Backend.Application.Features.Product.Commands
             _unitOfWork = unitOfWork;
             _currentUserService = currentUserService;
             _fileStorageService = fileStorageService;
+            _reviewModerationService = reviewModerationService;
         }
 
         public async Task<BaseResponse<CreateOrUpdateResponse>> Handle(CreateProductReviewCommand request, CancellationToken cancellationToken)
@@ -87,6 +90,13 @@ namespace FoodConnect.Backend.Application.Features.Product.Commands
                     return result.BuildConflict("You have already reviewed this product");
                 }
 
+                // Tầng 1: Toxic Keyword -> Tầng 2: OpenAI Moderation -> Tầng 3: Spam Detection
+                var moderationResult = await _reviewModerationService.ModerateReviewAsync(
+                    request.Comment ?? string.Empty,
+                    userId.Value,
+                    request.ProductId
+                );
+
                 // Create review
                 var review = new ProductReview
                 {
@@ -94,7 +104,11 @@ namespace FoodConnect.Backend.Application.Features.Product.Commands
                     ProductId = request.ProductId,
                     BuyerId = userId.Value,
                     Rating = request.Rating,
-                    Comment = request.Comment
+                    Comment = request.Comment,
+                    Status = moderationResult.Status,
+                    RejectionReason = moderationResult.RejectionReason,
+                    RejectionDetails = moderationResult.Details,
+                    ModeratedAt = DateTime.UtcNow
                 };
 
                 await _reviewRepository.AddAsync(review);
@@ -140,9 +154,18 @@ namespace FoodConnect.Backend.Application.Features.Product.Commands
 
                 await _unitOfWork.CommitTransactionAsync(transaction);
 
+                // Tạo message phù hợp dựa trên kết quả kiểm duyệt
+                var message = moderationResult.Status switch
+                {
+                    ReviewStatusEnum.Approved => "Product review submitted and approved successfully",
+                    ReviewStatusEnum.Toxic => "Review submitted but flagged as toxic and will not be displayed",
+                    ReviewStatusEnum.Spam => "Review submitted but flagged as spam and will not be displayed",
+                    _ => "Product review submitted for moderation"
+                };
+
                 return result.BuildSuccess(
                     new CreateOrUpdateResponse { Id = review.Id },
-                    "Product review submitted successfully"
+                    message
                 );
             }
             catch (Exception ex)

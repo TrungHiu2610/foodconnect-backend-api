@@ -194,6 +194,12 @@ services.AddScoped<IShippingFeeCalculatorService, ShippingFeeCalculatorService>(
 services.AddScoped<IVNPayService, VNPayService>();
 services.AddScoped<WalletService>();
 
+// Review Moderation Services
+services.AddScoped<IToxicKeywordFilterService, ToxicKeywordFilterService>();
+services.AddScoped<IOpenAIModerationService, OpenAIModerationService>();
+services.AddScoped<ISpamDetectionService, SpamDetectionService>();
+services.AddScoped<IReviewModerationService, ReviewModerationService>();
+
 // SignalR & Notification Services
 services.AddSignalR(options =>
 {

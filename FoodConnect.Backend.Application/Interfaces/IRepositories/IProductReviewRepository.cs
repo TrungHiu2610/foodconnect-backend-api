@@ -10,5 +10,9 @@ namespace FoodConnect.Backend.Application.Interfaces.IRepositories
             int pageSize,
             int? minRating = null,
             bool? hasSellerResponse = null);
+        
+        Task<int> CountDuplicateReviewsAsync(string normalizedContent);
+        
+        Task<int> CountUserReviewsInTimeRangeAsync(Guid userId, DateTime from, DateTime to);
     }
 }
