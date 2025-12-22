@@ -30,5 +30,9 @@ namespace FoodConnect.Backend.Application.Commons.DTOs.Responses.Product
         public string ShopName { get; set; }
         public string ShopId { get; set; }
         public double? CalculatedDistance { get; set; } // km from user location
+        
+        public decimal? AverageRating { get; set; } // Average rating from reviews (1-5 stars)
+        public int ReviewCount { get; set; } = 0; // Total number of reviews
+        public int SoldCount { get; set; } = 0; // Total quantity sold from completed orders
     }
 }

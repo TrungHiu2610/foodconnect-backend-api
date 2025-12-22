@@ -12,6 +12,8 @@ using FoodConnect.Backend.Domain.Entities;
 using FoodConnect.Backend.Domain.Enums;
 using Hangfire;
 using MediatR;
+using Microsoft.EntityFrameworkCore;
+using System.Data;
 using System.Text.Json;
 
 namespace FoodConnect.Backend.Application.Features.Order.Commands
@@ -82,6 +84,7 @@ namespace FoodConnect.Backend.Application.Features.Order.Commands
                 return result.BuildFail("No valid cart items found");
             }
 
+            // Pre-validate products exist (but don't check stock yet - will do inside transaction)
             foreach (var cartItem in selectedCartItems)
             {
                 var product = await _productRepository.GetByIdAsync(cartItem.ProductId);
@@ -93,11 +96,6 @@ namespace FoodConnect.Backend.Application.Features.Order.Commands
                 if (!product.IsAvailable)
                 {
                     return result.BuildFail($"Product '{product.Name}' is currently unavailable");
-                }
-
-                if (product.StockQuantity.HasValue && product.StockQuantity.Value < cartItem.Quantity)
-                {
-                    return result.BuildFail($"Insufficient stock for '{product.Name}'. Available: {product.StockQuantity}, Required: {cartItem.Quantity}");
                 }
             }
 
@@ -185,7 +183,9 @@ namespace FoodConnect.Backend.Application.Features.Order.Commands
 
             var createdOrders = new List<Domain.Entities.Order>();
 
-            await using var transaction = await _unitOfWork.BeginTransactionAsync();
+            // Use Serializable isolation level for pessimistic locking to prevent race conditions
+            // This ensures that concurrent transactions cannot interfere with stock checks and updates
+            await using var transaction = await _unitOfWork.BeginTransactionAsync(IsolationLevel.Serializable);
 
             try
             {
@@ -194,6 +194,36 @@ namespace FoodConnect.Backend.Application.Features.Order.Commands
                     var shopId = orderGroup.Key.ShopId;
                     var deliveryType = orderGroup.Key.DeliveryType;
                     var groupItems = orderGroup.ToList();
+
+                    // PESSIMISTIC LOCKING: Lock products for update and validate stock within transaction
+                    // This prevents race conditions when multiple users order the same low-stock item
+                    foreach (var cartItem in groupItems)
+                    {
+                        // Get product with tracking and row-level lock (SELECT FOR UPDATE equivalent)
+                        var productToLock = await _productRepository.GetProductsAsQueryable()
+                            .Where(p => p.Id == cartItem.ProductId)
+                            .FirstOrDefaultAsync(cancellationToken);
+
+                        if (productToLock == null)
+                        {
+                            await transaction.RollbackAsync();
+                            return result.BuildFail($"Product not found during order creation");
+                        }
+
+                        // Check stock availability inside transaction with lock held
+                        if (productToLock.StockQuantity.HasValue)
+                        {
+                            if (productToLock.StockQuantity.Value < cartItem.Quantity)
+                            {
+                                await transaction.RollbackAsync();
+                                return result.BuildFail($"Insufficient stock for '{productToLock.Name}'. Available: {productToLock.StockQuantity}, Required: {cartItem.Quantity}");
+                            }
+
+                            // CRITICAL: Deduct stock immediately to reserve inventory
+                            productToLock.StockQuantity -= cartItem.Quantity;
+                            _productRepository.Update(productToLock);
+                        }
+                    }
 
                     var shop = await _shopRepository.GetByIdAsync(shopId);
                     if (shop == null)

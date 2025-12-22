@@ -19,14 +19,16 @@ namespace FoodConnect.Backend.Application.Features.Product.Commands
         private readonly IShopRepository _shopRepository;
         private readonly IUnitOfWork _unitOfWork;
         private readonly ICurrentUserService _currentUserService;
+        private readonly IRedisService _redisService;
 
         public DeleteProductCommandHandler(IProductRepository productRepository, IShopRepository shopRepository,
-            IUnitOfWork unitOfWork, ICurrentUserService currentUserService)
+            IUnitOfWork unitOfWork, ICurrentUserService currentUserService, IRedisService redisService)
         {
             _productRepository = productRepository;
             _shopRepository = shopRepository;
             _unitOfWork = unitOfWork;
             _currentUserService = currentUserService;
+            _redisService = redisService;
         }
         public async Task<BaseResponse<DeleteProductResponse>> Handle(DeleteProductCommand request, CancellationToken cancellationToken)
         {
@@ -68,6 +70,9 @@ namespace FoodConnect.Backend.Application.Features.Product.Commands
 
                 await _unitOfWork.SaveChangesAsync(cancellationToken);
                 await _unitOfWork.CommitTransactionAsync(transaction);
+
+                await _redisService.DeleteByPatternAsync("products:list:*");
+
                 response.DeletedCount = request.Ids.Count;
                 return result.BuildSuccess(response, "Delete products successfully");
             }

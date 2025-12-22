@@ -20,10 +20,11 @@ namespace FoodConnect.Backend.Application.Features.Product.Commands
         private readonly IMapper _mapper;
         private readonly IFileStorageService _fileStorageService;
         private readonly ICurrentUserService _currentUserService;
+        private readonly IRedisService _redisService;
 
         public CreateProductCommandHandler(IProductRepository productRepository, IShopRepository shopRepository,
             ICategoryRepository categoryRepository, IUnitOfWork unitOfWork, IMapper mapper, 
-            IFileStorageService fileStorageService, ICurrentUserService currentUserService)
+            IFileStorageService fileStorageService, ICurrentUserService currentUserService, IRedisService redisService)
         {
             _productRepository = productRepository;
             _shopRepository = shopRepository;
@@ -32,6 +33,7 @@ namespace FoodConnect.Backend.Application.Features.Product.Commands
             _mapper = mapper;
             _fileStorageService = fileStorageService;
             _currentUserService = currentUserService;
+            _redisService = redisService;
         }
         public async Task<BaseResponse<CreateProductResponse>> Handle(CreateProductCommand request, CancellationToken cancellationToken)
         {
@@ -129,6 +131,9 @@ namespace FoodConnect.Backend.Application.Features.Product.Commands
                 await _unitOfWork.SaveChangesAsync(cancellationToken);
                 await _unitOfWork.CommitTransactionAsync(transaction);
 
+                // Invalidate product list cache after successful product creation
+                await InvalidateProductCacheAsync(shop.Id, product.CategoryId);
+
                 response.Id = product.Id;
                 response.IsSuccess = true;
 
@@ -153,6 +158,22 @@ namespace FoodConnect.Backend.Application.Features.Product.Commands
                 }
                 return result.BuildFail($"Create product failed: {ex.Message}");
             }
+        }
+
+        /// <summary>
+        /// Invalidates product list cache when a product is created/updated/deleted
+        /// Strategy: Invalidate all cached product lists for the affected shop and category
+        /// </summary>
+        private async Task InvalidateProductCacheAsync(Guid shopId, Guid categoryId)
+        {
+            // Invalidate all product list caches - using pattern matching
+            // This ensures all variations of the query (different filters, pagination, etc.) are cleared
+            await _redisService.DeleteByPatternAsync("products:list:*");
+            
+            // Note: We could be more granular by only invalidating specific patterns like:
+            // - products:list:*:{shopId}:*
+            // - products:list:{categoryId}:*
+            // But for simplicity and to avoid stale data, we clear all product lists
         }
     }
 }

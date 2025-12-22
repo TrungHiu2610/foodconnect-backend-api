@@ -13,6 +13,7 @@ namespace FoodConnect.Backend.Application.Features.Order.Commands
     public class RejectOrderCommandHandler : IRequestHandler<RejectOrderCommand, BaseResponse<OrderDetailDto>>
     {
         private readonly IOrderRepository _orderRepository;
+        private readonly IProductRepository _productRepository;
         private readonly IUnitOfWork _unitOfWork;
         private readonly ICurrentUserService _currentUserService;
         private readonly OrderNotificationService _orderNotificationService;
@@ -21,6 +22,7 @@ namespace FoodConnect.Backend.Application.Features.Order.Commands
 
         public RejectOrderCommandHandler(
             IOrderRepository orderRepository,
+            IProductRepository productRepository,
             IUnitOfWork unitOfWork,
             ICurrentUserService currentUserService,
             OrderNotificationService orderNotificationService,
@@ -28,6 +30,7 @@ namespace FoodConnect.Backend.Application.Features.Order.Commands
             INotificationService notificationService)
         {
             _orderRepository = orderRepository;
+            _productRepository = productRepository;
             _unitOfWork = unitOfWork;
             _currentUserService = currentUserService;
             _orderNotificationService = orderNotificationService;
@@ -65,6 +68,24 @@ namespace FoodConnect.Backend.Application.Features.Order.Commands
             if (string.IsNullOrWhiteSpace(request.RejectionReason))
             {
                 return result.BuildFail("Rejection reason is required");
+            }
+
+            // Restore stock for rejected orders (stock was deducted during CreateOrder)
+            foreach (var orderItem in order.OrderItems)
+            {
+                var product = await _productRepository.GetByIdAsync(orderItem.ProductId);
+                if (product != null && product.StockQuantity.HasValue)
+                {
+                    product.StockQuantity += orderItem.Quantity;
+                    
+                    // Make product available again if it was out of stock
+                    if (product.StockQuantity > 0 && !product.IsAvailable)
+                    {
+                        product.IsAvailable = true;
+                    }
+                    
+                    _productRepository.Update(product);
+                }
             }
 
             order.Status = OrderStatusEnum.Rejected;

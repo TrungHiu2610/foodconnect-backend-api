@@ -110,31 +110,6 @@ namespace FoodConnect.Backend.Application.Features.Order.Commands
                 _walletRepository.Update(sellerWallet);
             }
 
-            foreach (var orderItem in order.OrderItems)
-            {
-                var product = await _productRepository.GetByIdAsync(orderItem.ProductId);
-                if (product == null)
-                {
-                    return result.BuildFail($"Product {orderItem.ProductId} not found");
-                }
-
-                if (product.StockQuantity.HasValue)
-                {
-                    if (product.StockQuantity.Value < orderItem.Quantity)
-                    {
-                        return result.BuildFail($"Insufficient stock for product: {product.Name}. Available: {product.StockQuantity}, Required: {orderItem.Quantity}");
-                    }
-
-                    product.StockQuantity -= orderItem.Quantity;
-                    
-                    if (product.StockQuantity <= 0)
-                    {
-                        product.IsAvailable = false;
-                    }
-
-                    _productRepository.Update(product);
-                }
-            }
 
             order.Status = OrderStatusEnum.Preparing;
             order.AcceptedAt = DateTime.UtcNow;

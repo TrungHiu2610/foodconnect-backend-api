@@ -1,10 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using FoodConnect.Backend;
 using FoodConnect.Backend.Application.Interfaces;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
 
 namespace FoodConnect.Backend.Infrastructure.Persistence
@@ -19,6 +21,12 @@ namespace FoodConnect.Backend.Infrastructure.Persistence
         {
             return await _context.Database.BeginTransactionAsync();
         }
+
+        public async Task<IDbContextTransaction> BeginTransactionAsync(IsolationLevel isolationLevel)
+        {
+            return await _context.Database.BeginTransactionAsync(isolationLevel);
+        }
+
         public async Task CommitTransactionAsync(IDbContextTransaction transaction)
         {
             await transaction.CommitAsync();

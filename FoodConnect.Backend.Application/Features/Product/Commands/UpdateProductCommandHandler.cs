@@ -22,11 +22,12 @@ namespace FoodConnect.Backend.Application.Features.Product.Commands
         private readonly IMapper _mapper;
         private readonly IFileStorageService _fileStorageService;
         private readonly ICurrentUserService _currentUserService;
+        private readonly IRedisService _redisService;
 
         public UpdateProductCommandHandler(IProductRepository productRepository, IShopRepository shopRepository,
             IProductAssetRepository productAssetRepository,
             ICategoryRepository categoryRepository, IUnitOfWork unitOfWork, IMapper mapper,
-            IFileStorageService fileStorageService, ICurrentUserService currentUserService)
+            IFileStorageService fileStorageService, ICurrentUserService currentUserService, IRedisService redisService)
         {
             _productRepository = productRepository;
             _productAssetRepository = productAssetRepository;
@@ -36,6 +37,7 @@ namespace FoodConnect.Backend.Application.Features.Product.Commands
             _mapper = mapper;
             _fileStorageService = fileStorageService;
             _currentUserService = currentUserService;
+            _redisService = redisService;
         }
         public async Task<BaseResponse<UpdateProductResponse>> Handle(UpdateProductCommand request, CancellationToken cancellationToken)
         {
@@ -217,6 +219,8 @@ namespace FoodConnect.Backend.Application.Features.Product.Commands
                 await _unitOfWork.SaveChangesAsync(cancellationToken);
                 await _unitOfWork.CommitTransactionAsync(transaction);
 
+                await InvalidateProductCacheAsync(product.ShopId, product.CategoryId);
+
                 if (urlsToDeleteFromS3.Any())
                 {
                     await _fileStorageService.DeleteFilesAsync(urlsToDeleteFromS3);
@@ -247,6 +251,10 @@ namespace FoodConnect.Backend.Application.Features.Product.Commands
                 }
                 return result.BuildFail("An error occurred while updating the product: " + ex.Message);
             }
+        }
+        private async Task InvalidateProductCacheAsync(Guid shopId, Guid categoryId)
+        {
+            await _redisService.DeleteByPatternAsync("products:list:*");
         }
     }
 }
