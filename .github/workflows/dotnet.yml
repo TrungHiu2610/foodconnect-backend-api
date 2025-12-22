@@ -97,6 +97,8 @@ jobs:
             -e "VNPay__HashSecret=${{ secrets.VNPAY_HASHSECRET }}" \
             -e "VNPay__Url=${{ secrets.VNPAY_URL }}" \
             -e "VNPay__ReturnUrl=${{ secrets.VNPAY_RETURNURL }}" \
+            -e "OpenAI__ApiKey=${{ secrets.OPENAI_API_KEY }}" \
+            -e "GeminiAI__ApiKey=${{ secrets.GEMINIAI_API_KEY }}" \
             --restart always \
             ${{ secrets.DOCKERHUB_USERNAME }}/foodconnect-backend:develop
 
