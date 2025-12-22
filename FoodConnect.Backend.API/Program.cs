@@ -36,6 +36,7 @@ using FoodConnect.Backend.Application.Features.Promotion.Services;
 using FoodConnect.Backend.Application.Features.Complaint.Jobs;
 using FoodConnect.Backend.Application.Features.Order.Jobs;
 using FoodConnect.Backend.Application.Features.Order.Services;
+using FoodConnect.Backend.Application.Features.Wishlist.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -160,6 +161,7 @@ services.AddScoped<IAddressRepository, AddressRepository>();
 services.AddScoped<IOrderRepository, OrderRepository>();
 services.AddScoped<IOrderItemRepository, OrderItemRepository>();
 services.AddScoped<INotificationRepository, NotificationRepository>();
+services.AddScoped<IWishlistRepository, WishlistRepository>();
 services.AddScoped<IPromotionRepository, PromotionRepository>();
 services.AddScoped<IPromotionProductRepository, PromotionProductRepository>();
 services.AddScoped<ISystemConfigRepository, SystemConfigRepository>();
@@ -211,6 +213,7 @@ services.AddScoped<IChatNotificationService, ChatNotificationService>();
 services.AddScoped<OrderNotificationService>();
 services.AddScoped<PromotionNotificationService>();
 services.AddScoped<ComplaintNotificationService>();
+services.AddScoped<ShopFollowerNotificationService>();
 
 services.AddHangfire(config => config
     .SetDataCompatibilityLevel(CompatibilityLevel.Version_180)
