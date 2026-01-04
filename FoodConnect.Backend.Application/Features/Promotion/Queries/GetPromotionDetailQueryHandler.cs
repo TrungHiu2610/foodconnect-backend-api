@@ -39,7 +39,7 @@ namespace FoodConnect.Backend.Application.Features.Promotion.Queries
                 return result.BuildNotFound("Promotion not found");
             }
 
-            if (promotion.Shop.UserId != userId.Value)
+            if (_currentUserService.Role != "Admin" && promotion.Shop.UserId != userId.Value)
             {
                 return result.BuildForbidden();
             }

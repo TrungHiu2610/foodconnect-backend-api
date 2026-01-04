@@ -60,10 +60,25 @@ namespace FoodConnect.Backend.Application.Features.Order.Commands
                 return result.BuildFail("Only pending or awaiting payment orders can be cancelled");
             }
 
+            foreach (var orderItem in order.OrderItems)
+            {
+                var product = await _productRepository.GetByIdAsync(orderItem.ProductId);
+                if (product != null && product.StockQuantity.HasValue)
+                {
+                    product.StockQuantity += orderItem.Quantity;
+                    
+                    if (product.StockQuantity > 0 && !product.IsAvailable)
+                    {
+                        product.IsAvailable = true;
+                    }
+                    
+                    _productRepository.Update(product);
+                }
+            }
+
             order.Status = OrderStatusEnum.Cancelled;
             order.CancelReason = request.CancelReason;
             order.CancelledAt = DateTime.UtcNow;
-
 
             _orderRepository.Update(order);
             await _unitOfWork.SaveChangesAsync(cancellationToken);

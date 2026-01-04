@@ -12,6 +12,9 @@ using FoodConnect.Backend.Domain.Entities;
 using FoodConnect.Backend.Domain.Enums;
 using Hangfire;
 using MediatR;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
+using System.Data;
 using System.Text.Json;
 
 namespace FoodConnect.Backend.Application.Features.Order.Commands
@@ -29,6 +32,7 @@ namespace FoodConnect.Backend.Application.Features.Order.Commands
         private readonly OrderNotificationService _orderNotificationService;
         private readonly IDistanceCalculatorService _distanceCalculator;
         private readonly IShippingFeeCalculatorService _shippingFeeCalculator;
+        private readonly ILogger<CreateOrderCommandHandler> _logger;
 
         public CreateOrderCommandHandler(
             IOrderRepository orderRepository,
@@ -41,7 +45,8 @@ namespace FoodConnect.Backend.Application.Features.Order.Commands
             ICurrentUserService currentUserService,
             OrderNotificationService orderNotificationService,
             IDistanceCalculatorService distanceCalculator,
-            IShippingFeeCalculatorService shippingFeeCalculator)
+            IShippingFeeCalculatorService shippingFeeCalculator,
+            ILogger<CreateOrderCommandHandler> logger)
         {
             _orderRepository = orderRepository;
             _cartRepository = cartRepository;
@@ -54,6 +59,7 @@ namespace FoodConnect.Backend.Application.Features.Order.Commands
             _orderNotificationService = orderNotificationService;
             _distanceCalculator = distanceCalculator;
             _shippingFeeCalculator = shippingFeeCalculator;
+            _logger = logger;
         }
 
         public async Task<BaseResponse<List<OrderDetailDto>>> Handle(CreateOrderCommand request, CancellationToken cancellationToken)
@@ -82,6 +88,7 @@ namespace FoodConnect.Backend.Application.Features.Order.Commands
                 return result.BuildFail("No valid cart items found");
             }
 
+            // Pre-validate products exist (but don't check stock yet - will do inside transaction)
             foreach (var cartItem in selectedCartItems)
             {
                 var product = await _productRepository.GetByIdAsync(cartItem.ProductId);
@@ -93,11 +100,6 @@ namespace FoodConnect.Backend.Application.Features.Order.Commands
                 if (!product.IsAvailable)
                 {
                     return result.BuildFail($"Product '{product.Name}' is currently unavailable");
-                }
-
-                if (product.StockQuantity.HasValue && product.StockQuantity.Value < cartItem.Quantity)
-                {
-                    return result.BuildFail($"Insufficient stock for '{product.Name}'. Available: {product.StockQuantity}, Required: {cartItem.Quantity}");
                 }
             }
 
@@ -170,12 +172,20 @@ namespace FoodConnect.Backend.Application.Features.Order.Commands
                     return result.BuildFail($"Shop location not configured");
                 }
 
+                _logger.LogInformation("=== Express Distance Check ===");
+                _logger.LogInformation("Shop: {ShopName}", shop.ShopName);
+                _logger.LogInformation("Shop Location: Lat={ShopLat}, Lon={ShopLon}", shop.Latitude.Value, shop.Longitude.Value);
+                _logger.LogInformation("Shipping Address: Lat={AddressLat}, Lon={AddressLon}", shippingAddress.Latitude.Value, shippingAddress.Longitude.Value);
+
                 double distanceKm = _distanceCalculator.CalculateDistance(
                     shippingAddress.Latitude.Value,
                     shippingAddress.Longitude.Value,
                     shop.Latitude.Value,
                     shop.Longitude.Value
                 );
+
+                _logger.LogInformation("Calculated Distance: {Distance:F2} km", distanceKm);
+                _logger.LogInformation("Max Distance Allowed: {MaxDistance} km", ShippingFeeConstant.EXPRESS_MAX_DISTANCE);
 
                 if (distanceKm > (double)ShippingFeeConstant.EXPRESS_MAX_DISTANCE)
                 {
@@ -185,7 +195,9 @@ namespace FoodConnect.Backend.Application.Features.Order.Commands
 
             var createdOrders = new List<Domain.Entities.Order>();
 
-            await using var transaction = await _unitOfWork.BeginTransactionAsync();
+            // Use Serializable isolation level for pessimistic locking to prevent race conditions
+            // This ensures that concurrent transactions cannot interfere with stock checks and updates
+            await using var transaction = await _unitOfWork.BeginTransactionAsync(IsolationLevel.Serializable);
 
             try
             {
@@ -195,11 +207,55 @@ namespace FoodConnect.Backend.Application.Features.Order.Commands
                     var deliveryType = orderGroup.Key.DeliveryType;
                     var groupItems = orderGroup.ToList();
 
-                    var shop = await _shopRepository.GetByIdAsync(shopId);
+                    // PESSIMISTIC LOCKING: Lock products for update and validate stock within transaction
+                    // This prevents race conditions when multiple users order the same low-stock item
+                    foreach (var cartItem in groupItems)
+                    {
+                        // Get product with tracking and row-level lock (SELECT FOR UPDATE equivalent)
+                        var productToLock = await _productRepository.GetProductsAsQueryable()
+                            .Where(p => p.Id == cartItem.ProductId)
+                            .FirstOrDefaultAsync(cancellationToken);
+
+                        if (productToLock == null)
+                        {
+                            await transaction.RollbackAsync();
+                            return result.BuildFail($"Product not found during order creation");
+                        }
+
+                        // Check stock availability inside transaction with lock held
+                        if (productToLock.StockQuantity.HasValue)
+                        {
+                            if (productToLock.StockQuantity.Value < cartItem.Quantity)
+                            {
+                                await transaction.RollbackAsync();
+                                return result.BuildFail($"Insufficient stock for '{productToLock.Name}'. Available: {productToLock.StockQuantity}, Required: {cartItem.Quantity}");
+                            }
+
+                            // CRITICAL: Deduct stock immediately to reserve inventory
+                            productToLock.StockQuantity -= cartItem.Quantity;
+                            _productRepository.Update(productToLock);
+                        }
+                    }
+
+                    var shop = await _shopRepository.GetDetailByIdAsync(shopId);
                     if (shop == null)
                     {
                         await transaction.RollbackAsync();
                         return result.BuildFail($"Shop not found");
+                    }
+
+                    // Check shop status - must be Active to accept orders
+                    if (shop.Status != ShopStatusEnum.Active)
+                    {
+                        await transaction.RollbackAsync();
+                        return result.BuildFail($"Shop '{shop.ShopName}' is currently {shop.Status}. Orders cannot be placed at this time.");
+                    }
+
+                    // Check operating hours for Express delivery only
+                    if (deliveryType == DeliveryTypeEnum.Express && !shop.IsOpenNow())
+                    {
+                        await transaction.RollbackAsync();
+                        return result.BuildFail($"Shop '{shop.ShopName}' is currently closed. Express delivery is only available during operating hours.");
                     }
 
                     if (!shop.Latitude.HasValue || !shop.Longitude.HasValue)

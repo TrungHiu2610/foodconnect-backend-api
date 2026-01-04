@@ -18,7 +18,7 @@ namespace FoodConnect.Backend.Application.Features.Product.Commands
         public string? ExpiryDate { get; set; }
         public string? StorageInstructions { get; set; }
         public string? UsageInstructions { get; set; }
-        public string? Status { get; set; } = nameof(ProductStatusEnum.Draft);
+        public string? Status { get; set; } = nameof(ProductStatusEnum.Active);
         public Guid? CategoryId { get; set; }
 
         public bool? IsAvailable { get; set; }

@@ -37,6 +37,12 @@ public class GetWithdrawalHistoryQueryHandler : IRequestHandler<GetWithdrawalHis
             return result.BuildUnauthorized();
 
         var wallet = await _walletRepository.GetByUserIdAndTypeAsync(userId.Value, WalletTypeEnum.Seller);
+        
+        if (wallet == null)
+        {
+            wallet = await _walletRepository.GetByUserIdAndTypeAsync(userId.Value, WalletTypeEnum.Buyer);
+        }
+
         if (wallet == null)
             return result.BuildNotFound("Wallet not found");
 

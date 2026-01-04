@@ -18,8 +18,10 @@ namespace FoodConnect.Backend.Application.Features.Product.Queries
         private readonly IProductRepository _productRepository;
         private readonly ICategoryRepository _categoryRepository;
         private readonly IAddressRepository _addressRepository;
+        private readonly IOrderItemRepository _orderItemRepository;
         private readonly ICurrentUserService _currentUserService;
         private readonly IDistanceCalculatorService _distanceCalculator;
+        private readonly IRedisService _redisService;
         private readonly IMapper _mapper;
         
         private static readonly Dictionary<string, Expression<Func<Domain.Entities.Product, object>>> _sortableColumns =
@@ -34,20 +36,35 @@ namespace FoodConnect.Backend.Application.Features.Product.Queries
             IProductRepository productRepository, 
             ICategoryRepository categoryRepository,
             IAddressRepository addressRepository,
+            IOrderItemRepository orderItemRepository,
             ICurrentUserService currentUserService,
             IDistanceCalculatorService distanceCalculator,
+            IRedisService redisService,
             IMapper mapper)
         {
             _productRepository = productRepository;
             _categoryRepository = categoryRepository;
             _addressRepository = addressRepository;
+            _orderItemRepository = orderItemRepository;
             _currentUserService = currentUserService;
             _distanceCalculator = distanceCalculator;
+            _redisService = redisService;
             _mapper = mapper;
         }
         public async Task<BaseResponse<PaginatedList<GetListProductItemResponse>>> Handle(GetListProductQuery request, CancellationToken cancellationToken)
         {
             var result = new BaseResponse<PaginatedList<GetListProductItemResponse>>();
+
+            var cacheKey = GenerateCacheKey(request);
+
+            if (!request.BuyerLatitude.HasValue && !request.BuyerLongitude.HasValue && !request.UserId.HasValue)
+            {
+                var cachedResult = await _redisService.GetAsync<PaginatedList<GetListProductItemResponse>>(cacheKey);
+                if (cachedResult != null)
+                {
+                    return result.BuildSuccess(cachedResult, "Get list products successfully (from cache)");
+                }
+            }
 
             var buyerLocation = await GetBuyerLocationAsync(request);
 
@@ -55,6 +72,7 @@ namespace FoodConnect.Backend.Application.Features.Product.Queries
                 .Include(p => p.ProductAssets)
                 .Include(p => p.Shop)
                 .Include(p => p.Category)
+                .Include(p => p.ProductReviews)
                 .AsNoTracking();
             
             query = await ApplyFiltersAsync(query, request, cancellationToken);
@@ -70,13 +88,56 @@ namespace FoodConnect.Backend.Application.Features.Product.Queries
                 .ToList();
 
             var productDtos = _mapper.Map<List<GetListProductItemResponse>>(paginatedProducts);
+            
+            // Calculate sold count for each product
+            var productIds = productDtos.Select(p => p.Id).ToList();
+            var soldCounts = await _orderItemRepository.GetAllQueryable()
+                .Where(oi => productIds.Contains(oi.ProductId) && 
+                            oi.Order.Status == OrderStatusEnum.Completed)
+                .GroupBy(oi => oi.ProductId)
+                .Select(g => new { ProductId = g.Key, TotalSold = g.Sum(oi => oi.Quantity) })
+                .ToListAsync();
+
+            foreach (var dto in productDtos)
+            {
+                var soldInfo = soldCounts.FirstOrDefault(sc => sc.ProductId == dto.Id);
+                dto.SoldCount = soldInfo?.TotalSold ?? 0;
+            }
+            
             var paginatedList = new PaginatedList<GetListProductItemResponse>(
                 productDtos, totalCount, request.PageNumber, request.PageSize);
+
+            if (!request.BuyerLatitude.HasValue && !request.BuyerLongitude.HasValue && !request.UserId.HasValue)
+            {
+                await _redisService.SetAsync(cacheKey, paginatedList, TimeSpan.FromMinutes(5));
+            }
 
             return result.BuildSuccess(paginatedList, "Get list products successfully");
         }
 
         #region Private Helper Methods
+
+        private string GenerateCacheKey(GetListProductQuery request)
+        {
+            var parts = new List<string>
+            {
+                "products:list",
+                request.CategoryId?.ToString() ?? "null",
+                request.ShopId?.ToString() ?? "null",
+                request.IsAvailable?.ToString() ?? "null",
+                request.Status ?? "null",
+                request.DeliveryType?.ToString() ?? "null",
+                request.TextSearch ?? "null",
+                request.SortInfos != null && request.SortInfos.Any()
+                    ? string.Join("_", request.SortInfos.Select(s => $"{s.PropertyName}-{s.IsAscending}"))
+                    : "null",
+                request.SortOutOfStockLast.ToString(),
+                request.PageNumber.ToString(),
+                request.PageSize.ToString()
+            };
+
+            return string.Join(":", parts);
+        }
         private async Task<(double? Latitude, double? Longitude)> GetBuyerLocationAsync(GetListProductQuery request)
         {
             if (request.BuyerLatitude.HasValue && request.BuyerLongitude.HasValue)
@@ -103,7 +164,7 @@ namespace FoodConnect.Backend.Application.Features.Product.Queries
         {
             if (request.CategoryId.HasValue)
             {
-                var category = await _categoryRepository.GetByIdAsync(request.CategoryId.Value, c => c.Parent);
+                var category = await _categoryRepository.GetByIdAsync(request.CategoryId.Value, c => c.Parent!);
                 if (category != null && category.Parent == null)
                 {
                     var childrenCategory = await _categoryRepository.GetChildrenByParentIdAsync(category.Id);

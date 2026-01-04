@@ -51,7 +51,7 @@ namespace FoodConnect.Backend.API.Controllers
         }
 
         [HttpGet("{id}")]
-        [Authorize(Roles = "Seller")]
+        [Authorize(Roles = "Admin,Seller")]
         public async Task<IActionResult> GetPromotionDetail(Guid id, [FromQuery] GetPromotionDetailQuery query)
         {
             query.PromotionId = id;

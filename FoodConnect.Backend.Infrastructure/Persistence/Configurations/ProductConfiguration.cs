@@ -39,7 +39,7 @@ namespace FoodConnect.Backend.Infrastructure.Persistence.Configurations
                 .HasMaxLength(1000);
             builder.Property(p=> p.Status)
                 .IsRequired()
-                .HasDefaultValue(ProductStatusEnum.Draft);
+                .HasDefaultValue(ProductStatusEnum.Active);
             
             builder.Ignore(p => p.CalculatedDistance);
             

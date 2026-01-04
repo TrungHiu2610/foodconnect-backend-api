@@ -7,6 +7,7 @@ using FoodConnect.Backend.Application.Interfaces.IRepositories;
 using FoodConnect.Backend.Domain.Enums;
 using MediatR;
 using System.Text.Json;
+using Microsoft.Extensions.Logging;
 
 namespace FoodConnect.Backend.Application.Features.Payment.Commands;
 
@@ -17,34 +18,49 @@ public class VNPayCallbackCommandHandler : IRequestHandler<VNPayCallbackCommand,
     private readonly IVNPayService _vnpayService;
     private readonly IUnitOfWork _unitOfWork;
     private readonly OrderNotificationService _orderNotificationService;
+    private readonly ILogger<VNPayCallbackCommandHandler> _logger;
 
     public VNPayCallbackCommandHandler(
         IPaymentTransactionRepository paymentRepository,
         IOrderRepository orderRepository,
         IVNPayService vnpayService,
         IUnitOfWork unitOfWork,
-        OrderNotificationService orderNotificationService)
+        OrderNotificationService orderNotificationService,
+        ILogger<VNPayCallbackCommandHandler> logger)
     {
         _paymentRepository = paymentRepository;
         _orderRepository = orderRepository;
         _vnpayService = vnpayService;
         _unitOfWork = unitOfWork;
         _orderNotificationService = orderNotificationService;
+        _logger = logger;
     }
 
     public async Task<BaseResponse<PaymentCallbackResult>> Handle(VNPayCallbackCommand request, CancellationToken cancellationToken)
     {
         var result = new BaseResponse<PaymentCallbackResult>();
 
+        // Log all callback data for debugging
+        _logger.LogInformation("=== VNPay Callback Debug Info ===");
+        _logger.LogInformation("Callback Data Count: {Count}", request.VnpayData.Count);
+        foreach (var kvp in request.VnpayData.OrderBy(x => x.Key))
+        {
+            _logger.LogInformation("  {Key} = {Value}", kvp.Key, kvp.Value);
+        }
+
         var secureHash = request.VnpayData.GetValueOrDefault("vnp_SecureHash", string.Empty);
         if (string.IsNullOrEmpty(secureHash))
         {
+            _logger.LogError("VNPay callback missing vnp_SecureHash");
             return result.BuildFail("Invalid callback data");
         }
+
+        _logger.LogInformation("Received SecureHash: {Hash}", secureHash);
 
         var isValidSignature = _vnpayService.ValidateSignature(request.VnpayData, secureHash);
         if (!isValidSignature)
         {
+            _logger.LogError("VNPay signature validation failed");
             return result.BuildFail("Invalid signature");
         }
 
@@ -75,52 +91,92 @@ public class VNPayCallbackCommandHandler : IRequestHandler<VNPayCallbackCommand,
         {
             payment.Status = TransactionStatusEnum.Completed;
 
-            var order = await _orderRepository.GetByIdAsync(payment.OrderId);
-            if (order == null)
+            // Handle multi-order payment
+            var orderIds = new List<Guid>();
+            if (!string.IsNullOrEmpty(payment.OrderIds))
             {
-                payment.Status = TransactionStatusEnum.Failed;
-                _paymentRepository.Update(payment);
-                await _unitOfWork.SaveChangesAsync();
-                return result.BuildNotFound("Order not found");
+                try
+                {
+                    orderIds = JsonSerializer.Deserialize<List<Guid>>(payment.OrderIds) ?? new List<Guid>();
+                }
+                catch
+                {
+                    orderIds = new List<Guid> { payment.OrderId };
+                }
+            }
+            else
+            {
+                orderIds = new List<Guid> { payment.OrderId };
             }
 
-            if (order.Total != (double)callbackResponse.Amount)
+            // Validate total amount matches sum of all orders
+            decimal totalOrderAmount = 0;
+            var orders = new List<Domain.Entities.Order>();
+            
+            foreach (var orderId in orderIds)
+            {
+                var order = await _orderRepository.GetByIdAsync(orderId);
+                if (order == null)
+                {
+                    payment.Status = TransactionStatusEnum.Failed;
+                    _paymentRepository.Update(payment);
+                    await _unitOfWork.SaveChangesAsync();
+                    return result.BuildNotFound($"Order {orderId} not found");
+                }
+                orders.Add(order);
+                totalOrderAmount += (decimal)order.Total;
+            }
+
+            // Validate payment amount
+            if (totalOrderAmount != callbackResponse.Amount)
             {
                 payment.Status = TransactionStatusEnum.Failed;
                 _paymentRepository.Update(payment);
                 await _unitOfWork.SaveChangesAsync();
                 
-                return result.BuildFail("Invalid amount");
+                return result.BuildFail($"Invalid amount. Expected: {totalOrderAmount}, Received: {callbackResponse.Amount}");
             }
 
-            order.PaymentStatus = PaymentStatusEnum.Paid;
-            
-            bool wasAwaitingPayment = order.Status == OrderStatusEnum.AwaitingPayment;
-            if (wasAwaitingPayment)
+            // Update all orders
+            foreach (var order in orders)
             {
-                order.Status = OrderStatusEnum.Pending;
+                order.PaymentStatus = PaymentStatusEnum.Paid;
+                
+                bool wasAwaitingPayment = order.Status == OrderStatusEnum.AwaitingPayment;
+                if (wasAwaitingPayment)
+                {
+                    order.Status = OrderStatusEnum.Pending;
+                }
+                
+                _orderRepository.Update(order);
             }
-            
-            _orderRepository.Update(order);
 
             _paymentRepository.Update(payment);
             await _unitOfWork.SaveChangesAsync();
 
-            if (order != null && order.Status == OrderStatusEnum.Pending)
+            // Send notifications for all orders
+            foreach (var order in orders)
             {
-                var fullOrder = await _orderRepository.GetOrderWithDetailsAsync(order.Id);
-                if (fullOrder != null)
+                if (order.Status == OrderStatusEnum.Pending)
                 {
-                    await _orderNotificationService.NotifyNewOrderAsync(fullOrder, cancellationToken);
+                    var fullOrder = await _orderRepository.GetOrderWithDetailsAsync(order.Id);
+                    if (fullOrder != null)
+                    {
+                        await _orderNotificationService.NotifyNewOrderAsync(fullOrder, cancellationToken);
+                    }
                 }
             }
+
+            var successMessage = orders.Count == 1
+                ? "Payment completed successfully"
+                : $"Payment completed successfully for {orders.Count} orders";
 
             return result.BuildSuccess(new PaymentCallbackResult
             {
                 Success = true,
-                Message = "Payment completed successfully",
+                Message = successMessage,
                 OrderId = payment.OrderId
-            }, "Payment completed successfully");
+            }, successMessage);
         }
         else
         {

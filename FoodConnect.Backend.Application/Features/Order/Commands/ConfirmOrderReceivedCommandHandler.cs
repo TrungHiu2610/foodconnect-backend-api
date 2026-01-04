@@ -20,6 +20,7 @@ namespace FoodConnect.Backend.Application.Features.Order.Commands
         private readonly IUnitOfWork _unitOfWork;
         private readonly ICurrentUserService _currentUserService;
         private readonly OrderNotificationService _orderNotificationService;
+        private readonly IRedisService _redisService;
 
         public ConfirmOrderReceivedCommandHandler(
             IOrderRepository orderRepository,
@@ -28,7 +29,8 @@ namespace FoodConnect.Backend.Application.Features.Order.Commands
             ISystemConfigRepository systemConfigRepository,
             IUnitOfWork unitOfWork,
             ICurrentUserService currentUserService,
-            OrderNotificationService orderNotificationService)
+            OrderNotificationService orderNotificationService,
+            IRedisService redisService)
         {
             _orderRepository = orderRepository;
             _walletRepository = walletRepository;
@@ -37,6 +39,7 @@ namespace FoodConnect.Backend.Application.Features.Order.Commands
             _unitOfWork = unitOfWork;
             _currentUserService = currentUserService;
             _orderNotificationService = orderNotificationService;
+            _redisService = redisService;
         }
 
         public async Task<BaseResponse<OrderDetailDto>> Handle(ConfirmOrderReceivedCommand request, CancellationToken cancellationToken)
@@ -169,6 +172,8 @@ namespace FoodConnect.Backend.Application.Features.Order.Commands
 
                 await _unitOfWork.SaveChangesAsync(cancellationToken);
                 await transaction.CommitAsync(cancellationToken);
+
+                await _redisService.DeleteByPatternAsync("products:list:*");
 
                 order = await _orderRepository.GetOrderWithDetailsAsync(request.OrderId);
                 await _orderNotificationService.NotifyOrderCompletedAsync(order!, cancellationToken);

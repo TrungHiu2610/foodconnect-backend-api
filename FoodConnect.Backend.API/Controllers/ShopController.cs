@@ -135,5 +135,26 @@ namespace FoodConnect.Backend.API.Controllers
             var result = await Mediator.Send(query);
             return result != null ? (result.Success ? Ok(result) : BadRequest(result)) : BadRequest();
         }
+
+        [HttpPost]
+        public async Task<IActionResult> GetNearbyShops([FromBody] GetNearbyShopsQuery query)
+        {
+            var result = await Mediator.Send(query);
+            return result != null ? (result.Success ? Ok(result) : BadRequest(result)) : BadRequest();
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> GetShopsWithActivePromotions([FromBody] GetShopsWithActivePromotionsQuery query)
+        {
+            var result = await Mediator.Send(query);
+            return result != null ? (result.Success ? Ok(result) : BadRequest(result)) : BadRequest();
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> GetOvernightShops([FromBody] GetOvernightShopsQuery query)
+        {
+            var result = await Mediator.Send(query);
+            return result != null ? (result.Success ? Ok(result) : BadRequest(result)) : BadRequest();
+        }
     }
 }
