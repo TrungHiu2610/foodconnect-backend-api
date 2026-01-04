@@ -77,7 +77,7 @@ namespace FoodConnect.Backend.Application.Features.Product.Commands
                 }
 
                 var existingReview = await _reviewRepository.GetAsync(
-                    r => r.OrderId == request.OrderId && r.ProductId == request.ProductId && r.BuyerId == userId.Value
+                    r => r.OrderId == request.OrderId && r.ProductId == request.ProductId && r.BuyerId == userId.Value && r.Status == ReviewStatusEnum.Approved
                 );
                 if (existingReview != null)
                 {

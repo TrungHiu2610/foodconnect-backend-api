@@ -4,6 +4,7 @@ using FoodConnect.Backend.Application.Commons.Helpers;
 using FoodConnect.Backend.Application.Commons.Interfaces;
 using FoodConnect.Backend.Application.Interfaces.IRepositories;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 using System.Globalization;
 
 namespace FoodConnect.Backend.Infrastructure.Services;
@@ -12,13 +13,16 @@ public class VNPayService : IVNPayService
 {
     private readonly ISystemConfigRepository _configRepository;
     private readonly IConfiguration _configuration;
+    private readonly ILogger<VNPayService> _logger;
 
     public VNPayService(
         ISystemConfigRepository configRepository,
-        IConfiguration configuration)
+        IConfiguration configuration,
+        ILogger<VNPayService> logger)
     {
         _configRepository = configRepository;
         _configuration = configuration;
+        _logger = logger;
     }
 
     public async Task<VNPayPaymentUrlResponse> CreatePaymentUrlAsync(VNPayCreatePaymentRequest request)
@@ -63,9 +67,19 @@ public class VNPayService : IVNPayService
             { "vnp_TxnRef", txnRef }
         };
 
+        _logger.LogInformation("=== Creating VNPay Payment URL ===");
+        _logger.LogInformation("OrderInfo: {OrderInfo}", request.OrderInfo);
+        _logger.LogInformation("Amount: {Amount} (Original: {OriginalAmount})", amount, request.Amount);
+        foreach (var kvp in vnpay.OrderBy(x => x.Key))
+        {
+            _logger.LogInformation("  {Key} = {Value}", kvp.Key, kvp.Value);
+        }
+
         var rawData = VNPayHelper.BuildRawData(vnpay);
+        _logger.LogInformation("Raw Data for URL: {RawData}", rawData);
         
         var vnpSecureHash = VNPayHelper.HmacSHA512(hashSecret, rawData);
+        _logger.LogInformation("Generated SecureHash: {Hash}", vnpSecureHash);
 
         var queryString = rawData;
         
@@ -104,12 +118,26 @@ public class VNPayService : IVNPayService
     {
         var hashSecret = _configuration["VNPay:HashSecret"];
 
+        _logger.LogInformation("=== VNPay Signature Validation ===");
+        _logger.LogInformation("HashSecret: {Secret}", hashSecret?.Substring(0, Math.Min(10, hashSecret?.Length ?? 0)) + "...");
+
         var filteredData = vnpayData
             .Where(kv => kv.Key.StartsWith("vnp_") && kv.Key != "vnp_SecureHash")
             .ToDictionary(kv => kv.Key, kv => kv.Value);
 
+        _logger.LogInformation("Filtered Parameters ({Count}):", filteredData.Count);
+        foreach (var kvp in filteredData.OrderBy(x => x.Key))
+        {
+            _logger.LogInformation("  {Key} = {Value}", kvp.Key, kvp.Value);
+        }
+
         var rawData = VNPayHelper.BuildRawData(filteredData);
+        _logger.LogInformation("Raw Data String: {RawData}", rawData);
+
         var checksum = VNPayHelper.HmacSHA512(hashSecret, rawData);
+        _logger.LogInformation("Calculated Checksum: {Checksum}", checksum);
+        _logger.LogInformation("Received SecureHash: {SecureHash}", secureHash);
+        _logger.LogInformation("Match: {Match}", checksum.Equals(secureHash, StringComparison.InvariantCultureIgnoreCase));
 
         return checksum.Equals(secureHash, StringComparison.InvariantCultureIgnoreCase);
     }

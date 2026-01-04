@@ -39,31 +39,52 @@ public class CreateVNPayPaymentCommandHandler : IRequestHandler<CreateVNPayPayme
         if (userId == null)
             return result.BuildUnauthorized();
 
-        var order = await _orderRepository.GetOrderWithDetailsAsync(request.OrderId);
-        if (order == null)
-            return result.BuildNotFound("Order not found");
+        // Support multi-order payment
+        var orderIds = request.OrderIds?.Any() == true ? request.OrderIds : new List<Guid> { request.OrderId };
+        
+        var orders = new List<Domain.Entities.Order>();
+        decimal totalAmount = 0;
+        
+        foreach (var orderId in orderIds)
+        {
+            var order = await _orderRepository.GetOrderWithDetailsAsync(orderId);
+            if (order == null)
+                return result.BuildNotFound($"Order {orderId} not found");
 
-        if (order.BuyerId != userId.Value)
-            return result.BuildForbidden("You can only pay for your own orders");
+            if (order.BuyerId != userId.Value)
+                return result.BuildForbidden("You can only pay for your own orders");
 
-        if (order.PaymentMethod != PaymentMethodEnum.VNPay)
-            return result.BuildFail("This order is not configured for VNPay payment");
+            if (order.PaymentMethod != PaymentMethodEnum.VNPay)
+                return result.BuildFail($"Order {order.OrderCode} is not configured for VNPay payment");
 
-        if (order.PaymentStatus == PaymentStatusEnum.Paid)
-            return result.BuildConflict("This order has already been paid");
+            if (order.PaymentStatus == PaymentStatusEnum.Paid)
+                return result.BuildFail($"Order {order.OrderCode} has already been paid");
 
-        if (order.Status == OrderStatusEnum.Cancelled)
-            return result.BuildFail("Cannot pay for cancelled orders");
+            if (order.Status == OrderStatusEnum.Cancelled)
+                return result.BuildFail($"Cannot pay for cancelled order {order.OrderCode}");
 
-        var existingPayment = await _paymentRepository.GetByOrderIdAsync(request.OrderId);
-        if (existingPayment != null && existingPayment.Status == TransactionStatusEnum.Completed)
-            return result.BuildConflict("Payment already completed for this order");
+            orders.Add(order);
+            totalAmount += (decimal)order.Total;
+        }
+
+        // Check if payment already exists for any order
+        foreach (var orderId in orderIds)
+        {
+            var existingPayment = await _paymentRepository.GetByOrderIdAsync(orderId);
+            if (existingPayment != null && existingPayment.Status == TransactionStatusEnum.Completed)
+                return result.BuildConflict($"Payment already completed for one or more orders");
+        }
+
+        var primaryOrder = orders.First();
+        var orderInfo = orders.Count == 1 
+            ? $"Order {primaryOrder.OrderCode}"
+            : $"Payment for {orders.Count} orders - Total {totalAmount} VND";
 
         var paymentRequest = new VNPayCreatePaymentRequest
         {
-            OrderId = order.Id,
-            Amount = (decimal)order.Total,
-            OrderInfo = $"Order {order.OrderCode}", 
+            OrderId = primaryOrder.Id,
+            Amount = totalAmount,
+            OrderInfo = orderInfo,
             IpAddress = request.IpAddress,
             Platform = request.Platform
         };
@@ -72,12 +93,13 @@ public class CreateVNPayPaymentCommandHandler : IRequestHandler<CreateVNPayPayme
 
         var paymentTransaction = new PaymentTransaction
         {
-            OrderId = order.Id,
+            OrderId = primaryOrder.Id,
             BuyerId = userId.Value,
-            Amount = (decimal)order.Total,
+            Amount = totalAmount,
             TransactionId = paymentUrlResponse.TransactionId,
             Status = TransactionStatusEnum.Pending,
-            PaymentMethod = "VNPay"
+            PaymentMethod = "VNPay",
+            OrderIds = orders.Count > 1 ? System.Text.Json.JsonSerializer.Serialize(orderIds) : null
         };
 
         await _paymentRepository.AddAsync(paymentTransaction);

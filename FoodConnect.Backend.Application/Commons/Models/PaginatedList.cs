@@ -2,11 +2,16 @@
 {
     public class PaginatedList<T>
     {
-        public List<T> Items { get; }
-        public int PageNumber { get; }
-        public int PageSize { get; }
-        public int TotalPages { get; }
-        public int TotalCount { get; }
+        public List<T> Items { get; set; } = new List<T>();
+        public int PageNumber { get; set; }
+        public int PageSize { get; set; }
+        public int TotalPages { get; set; }
+        public int TotalCount { get; set; }
+
+        // Parameterless constructor for JSON deserialization
+        public PaginatedList()
+        {
+        }
 
         public PaginatedList(List<T> items, int count, int pageNumber, int pageSize)
         {
@@ -14,7 +19,7 @@
             PageSize = pageSize;
             TotalPages = (int)Math.Ceiling(count / (double)pageSize);
             TotalCount = count;
-            Items = items;
+            Items = items ?? new List<T>();
         }
     }
 }

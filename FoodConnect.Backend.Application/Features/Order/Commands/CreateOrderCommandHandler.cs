@@ -13,6 +13,7 @@ using FoodConnect.Backend.Domain.Enums;
 using Hangfire;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using System.Data;
 using System.Text.Json;
 
@@ -31,6 +32,7 @@ namespace FoodConnect.Backend.Application.Features.Order.Commands
         private readonly OrderNotificationService _orderNotificationService;
         private readonly IDistanceCalculatorService _distanceCalculator;
         private readonly IShippingFeeCalculatorService _shippingFeeCalculator;
+        private readonly ILogger<CreateOrderCommandHandler> _logger;
 
         public CreateOrderCommandHandler(
             IOrderRepository orderRepository,
@@ -43,7 +45,8 @@ namespace FoodConnect.Backend.Application.Features.Order.Commands
             ICurrentUserService currentUserService,
             OrderNotificationService orderNotificationService,
             IDistanceCalculatorService distanceCalculator,
-            IShippingFeeCalculatorService shippingFeeCalculator)
+            IShippingFeeCalculatorService shippingFeeCalculator,
+            ILogger<CreateOrderCommandHandler> logger)
         {
             _orderRepository = orderRepository;
             _cartRepository = cartRepository;
@@ -56,6 +59,7 @@ namespace FoodConnect.Backend.Application.Features.Order.Commands
             _orderNotificationService = orderNotificationService;
             _distanceCalculator = distanceCalculator;
             _shippingFeeCalculator = shippingFeeCalculator;
+            _logger = logger;
         }
 
         public async Task<BaseResponse<List<OrderDetailDto>>> Handle(CreateOrderCommand request, CancellationToken cancellationToken)
@@ -168,12 +172,20 @@ namespace FoodConnect.Backend.Application.Features.Order.Commands
                     return result.BuildFail($"Shop location not configured");
                 }
 
+                _logger.LogInformation("=== Express Distance Check ===");
+                _logger.LogInformation("Shop: {ShopName}", shop.ShopName);
+                _logger.LogInformation("Shop Location: Lat={ShopLat}, Lon={ShopLon}", shop.Latitude.Value, shop.Longitude.Value);
+                _logger.LogInformation("Shipping Address: Lat={AddressLat}, Lon={AddressLon}", shippingAddress.Latitude.Value, shippingAddress.Longitude.Value);
+
                 double distanceKm = _distanceCalculator.CalculateDistance(
                     shippingAddress.Latitude.Value,
                     shippingAddress.Longitude.Value,
                     shop.Latitude.Value,
                     shop.Longitude.Value
                 );
+
+                _logger.LogInformation("Calculated Distance: {Distance:F2} km", distanceKm);
+                _logger.LogInformation("Max Distance Allowed: {MaxDistance} km", ShippingFeeConstant.EXPRESS_MAX_DISTANCE);
 
                 if (distanceKm > (double)ShippingFeeConstant.EXPRESS_MAX_DISTANCE)
                 {

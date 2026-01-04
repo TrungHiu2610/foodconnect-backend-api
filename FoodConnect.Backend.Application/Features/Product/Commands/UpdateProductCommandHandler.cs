@@ -98,6 +98,11 @@ namespace FoodConnect.Backend.Application.Features.Product.Commands
             {
                 _mapper.Map(request, product);
 
+                if(request.Price != null && request.Price > 0)
+                {
+                    product.Price = Math.Round(request.Price.Value, 2);
+                }
+
                 if (request.CategoryId.HasValue && request.CategoryId.Value != Guid.Empty)
                 {
                     product.CategoryId = request.CategoryId.Value;

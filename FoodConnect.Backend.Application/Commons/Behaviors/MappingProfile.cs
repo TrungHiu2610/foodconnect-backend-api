@@ -87,6 +87,7 @@ namespace FoodConnect.Backend.Application.Commons.Behaviors
                 .ForMember(dest => dest.ProductAssets, opt => opt.Ignore())
                 .ForMember(dest => dest.IsAvailable, opt => opt.Ignore())
                 .ForMember(dest => dest.StockQuantity, opt => opt.Ignore())
+                .ForMember(dest => dest.Price, opt => opt.Ignore())
                 .ForMember(dest => dest.Status,
                     opt => opt.ConvertUsing(new StringToEnumConverter<ProductStatusEnum>(), src => src.Status))
                 .ForMember(dest => dest.CreatedAtUtc, opt => opt.Ignore())

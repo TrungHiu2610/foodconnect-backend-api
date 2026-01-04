@@ -26,8 +26,7 @@ namespace FoodConnect.Backend.Application.Features.Product.Commands
 
         public CreateProductCommandHandler(IProductRepository productRepository, IShopRepository shopRepository,
             ICategoryRepository categoryRepository, IUnitOfWork unitOfWork, IMapper mapper, 
-            IFileStorageService fileStorageService, ICurrentUserService currentUserService, IRedisService redisService)
-            IFileStorageService fileStorageService, ICurrentUserService currentUserService,
+            IFileStorageService fileStorageService, ICurrentUserService currentUserService, IRedisService redisService,
             ShopFollowerNotificationService shopFollowerNotificationService)
         {
             _productRepository = productRepository;
